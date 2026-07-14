@@ -11,11 +11,21 @@ function read(relativePath) {
   return fs.readFileSync(path.join(ROOT, relativePath), "utf8");
 }
 
-test("Knowledge relation UI uses protruding left tabs", () => {
+test("Knowledge relation UI renders tabs behind an opaque article edge without connector lines", () => {
   const css = read("css/knowledge-sections.css");
-  assert.match(css, /\.knowledge-related-list\s*\{[\s\S]*padding-left:\s*18px/);
-  assert.match(css, /\.knowledge-related-link::before[\s\S]*left:\s*-18px/);
-  assert.match(css, /\.knowledge-related-link:hover[\s\S]*translateX\(-2px\)/);
+  const system = read("js/system-registry.js");
+  const encyclopedia = read("js/encyclopedia-module.js");
+
+  assert.match(css, /@media \(min-width: 1280px\)[\s\S]*\.knowledge-record-layout--with-sidecar/);
+  assert.match(css, /isolation:\s*isolate/);
+  assert.match(css, /grid-template-columns:\s*212px minmax\(0, 1fr\)/);
+  assert.match(css, /margin-left:\s*-212px/);
+  assert.match(css, /\.knowledge-related-sidecar[\s\S]*z-index:\s*0/);
+  assert.match(css, /\.knowledge-reading-panel[\s\S]*z-index:\s*2[\s\S]*background:\s*#0b1011/);
+  assert.match(css, /\.knowledge-related-sidecar \.knowledge-related-link,[\s\S]*right:\s*-24px/);
+  assert.match(css, /\.knowledge-related-sidecar \.knowledge-related-list::before,[\s\S]*content:\s*none/);
+  assert.match(system, /<aside class="knowledge-related-sidecar"/);
+  assert.match(encyclopedia, /<aside class="knowledge-related-sidecar"/);
 });
 
 test("System Index renderer and editor do not expose Encyclopedia relations", () => {

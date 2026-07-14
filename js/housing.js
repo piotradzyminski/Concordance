@@ -499,6 +499,10 @@ window.WS_APP = window.WS_APP || {};
   function renderHousingRecord(record, index, activeRecordId = "") {
     const storageSlots = record.storageUnits.reduce((sum, unit) => sum + Number(unit.slotCapacity || 0), 0);
     const isActive = record.id === activeRecordId;
+    const transition = record.rentTransition && typeof record.rentTransition === "object" ? record.rentTransition : null;
+    const transitionTarget = transition?.targetUnit || null;
+    const transferCount = Number(transition?.transferManifest?.instanceIds?.length || 0);
+    const standardLabel = [record.standardCode, record.standardTierId].filter(Boolean).join(" / ") || record.type;
     return `
       <article class="housing-record-card ${index === 0 ? "is-primary" : ""} ${isActive ? "is-active" : ""}">
         <header>
@@ -511,12 +515,21 @@ window.WS_APP = window.WS_APP || {};
         </header>
         <dl class="housing-record-unit">
           <div><dt>Rent</dt><dd>${escapeHtml(record.rentStatus)}</dd></div>
+          <div><dt>Standard</dt><dd>${escapeHtml(standardLabel)}</dd></div>
+          <div><dt>Occupancy</dt><dd>${escapeHtml(record.occupancyStatus || record.status)}</dd></div>
           <div><dt>Visible Address</dt><dd>${escapeHtml(record.visibleAddress || "UNASSIGNED")}</dd></div>
           <div><dt>Access</dt><dd>${escapeHtml(record.accessLevel)}</dd></div>
           <div><dt>Security</dt><dd>${escapeHtml(record.securityLevel)}</dd></div>
           <div><dt>Privacy</dt><dd>${escapeHtml(record.privacyLevel)}</dd></div>
           <div><dt>Storage</dt><dd>${escapeHtml(storageSlots ? `${storageSlots} SLOTS` : "NONE")}</dd></div>
         </dl>
+        ${transition ? `
+          <div class="housing-record-transition" data-housing-rent-transition="${escapeHtml(transition.transitionId || "pending")}">
+            <b>${escapeHtml(String(transition.type || "RENT TRANSITION").replace(/_/g, " "))}</b>
+            <small>${escapeHtml(transitionTarget ? `${transitionTarget.standardCode || "?"} / ${transitionTarget.standardTierId || "?"} / ${transitionTarget.areaM2 ?? "?"} m²` : "UNIT RELEASE")}</small>
+            <small>${escapeHtml(`${transferCount} ITEM${transferCount === 1 ? "" : "S"} REQUIRE TRANSFER`)}</small>
+          </div>
+        ` : ""}
         <div class="housing-record-actions">
           <button class="housing-inline-action" type="button" data-housing-select-unit="${escapeHtml(record.id)}">${isActive ? "ACTIVE UNIT" : "SET ACTIVE"}</button>
           <button class="housing-inline-action" type="button" data-housing-record-id="${escapeHtml(record.id)}">OPEN STORAGE</button>

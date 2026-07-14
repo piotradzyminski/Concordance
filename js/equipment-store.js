@@ -1139,9 +1139,10 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
-  function normalizeEquipmentWorkspaceView(view = "CYBERGRID") {
-    const normalized = String(view || "CYBERGRID").trim().toUpperCase();
-    return ["CYBERGRID", "CYBERWARE"].includes(normalized) ? normalized : "CYBERGRID";
+  function normalizeEquipmentWorkspaceView() {
+    // Cyberware is a standalone module. Legacy persisted CYBERWARE workspace
+    // values are intentionally normalized back to the Equipment-only Cybergrid.
+    return "CYBERGRID";
   }
 
   function getEquipmentWorkspaceView(citizenId = "") {

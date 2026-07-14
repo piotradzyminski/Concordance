@@ -3,7 +3,7 @@
 ## Baseline
 
 ```text
-runtime: Parallel Scope Merge 15.12x
+runtime: Parallel Scope Merge 15.15x
 documentation: Canonical Documentation 4.0x
 phase: pre-alpha
 ```
@@ -145,7 +145,7 @@ Admin Operations is a dedicated lazy workspace over World Bridge Operation Store
 
 Subscriptions Catalog Presentation normalizes benefits, limitations, usage, tier comparison, coverage and entitlement content in the catalog definition/store projection. The UI does not infer structure by tokenizing prose.
 
-`css/system-tabs.css?v=7` is the eager shared owner of segment, inline and mode tab families. Housing, Market, Terminal, Subscriptions and other modules consume this component instead of duplicating base tab rules.
+`css/system-tabs.css?v=8` is the eager shared owner of segment, inline and mode tab families. Housing, Market, Terminal, Subscriptions and other modules consume this component instead of duplicating base tab rules.
 
 Housing Household adds one campaign-persistent Household Store, floor-plan/furniture placement, safe-space readiness and `HOUSING_ROOM` location support. Housing Market is split into the lazy `housing-market-workspace`; `housing.js` remains the shell for Unit, Household and Storage.
 
@@ -406,16 +406,84 @@ World Bridge remains the player-operation coordinator
 Campaign Snapshot remains schema v6 and includes Billing transfer state
 Admin Audit remains campaign-persistent
 no full Housing or Equipment rerender on pointermove
+one active Rent contract projects to at most one linked Housing Unit
+same-area Rent modernization preserves unit ID and deterministic layout assignment
+relocation/release preparation never mutates ItemInstance locations
+Knowledge sidecar layering is presentation-only and cannot change registry content
 ```
 
 ## Verification state
 
 ```text
-JavaScript syntax: 285 / 285 PASS
-Node unit/contract/data-I/O: 303 / 303 PASS with sequential Node test execution
+JavaScript syntax: 307 / 307 PASS
+Node unit/contract/data-I/O: 355 / 355 PASS with sequential Node test execution
 browser E2E: not executed in release workspace
 missing local entrypoint assets: 0
 Market SVG assets: 25 / 25 PRESENT
 ```
 
 Browser verification remains required for Market artwork/fallback loading, Housing Unit/Storage split behavior, module cold entry, Subscriptions confirmations and feedback, Admin record lifecycle confirmations/dependency previews, Citizen editor focus/dirty state, Bodymap identity/scroll preservation, selected-instance returns, Admin lazy renderers, Equipment tooltips, Services viewport drift and drag/drop behavior.
+## Installed in 15.13x
+
+```text
+Housing Rent Standards Catalog 3.0x
+World Time Event Windows 2.2x
+```
+
+Housing Rent now uses one canonical semantic catalog for standards H–A and eight separate Rent subscription products. Subscriptions owns contracts, weekly Billing, tier selection and entitlement state; Housing owns assigned units, concrete layouts, fixtures, storage and furnishing runtime. Legacy Habitat Ledger tier identifiers remain read-only aliases only.
+
+World Time Event Windows is eager, stateless infrastructure over committed Campaign Time advances. It deterministically resolves an interior minute, recurring operating window, exact due time or next available open window without mutating Campaign Time or creating domain records. Terminal, Market, Services and provider integrations remain future consumers and must persist their own resolved timestamps.
+## Installed in 15.14x
+
+```text
+Knowledge Relation Sidecar UI 1.2x — adapted presentation-only delta
+Terminal Inbox Datetime 1.0x
+Housing Layout Pools 3.1x
+Cyberware Standalone Module Extraction 15.13x
+```
+
+Knowledge relation sidecars move visible same-registry relations outside the reading panel on wide desktop layouts. Current Knowledge Pack schema v3, registry isolation and existing seed content remain authoritative; no source-patch lore or outdated Encyclopedia/System/System Index records were imported.
+
+Terminal Inbox persists canonical Campaign Time timestamps for creation, sending, receipt and read lifecycle. Skipped-interval emission uses the stateless World Time Event Windows resolver and stores the resolved timestamp on the notification record; future deferred windows remain owned by the source domain.
+
+Housing Layout Pools adds deterministic exact-area irregular templates, stable `layoutSeed`/`layoutTemplateId` assignment and explicit active-cell masks. Rent and Subscription ownership remain unchanged, while Household Store owns concrete room/floor projection and furnishing validation.
+
+Cyberware is extracted from Equipment into a dedicated module and lazy bundle. Equipment retains Cybergrid and the navigation bridge only. Existing ItemInstance, Runtime, Planner, Maintenance, Authorization, Diagnostics and World Bridge ownership remain unchanged.
+
+## Installed after 15.14x
+
+```text
+Equipment Bodymap AVIF Paths 1.0x
+```
+
+Equipment → CyberGrid Bodymap now loads the canonical `949 x 1658` AVIF masters from `assets/bodymap/bodymap_front.avif` and `assets/bodymap/bodymap_back.avif`. The dual-mounted Front/Back fast path, calibrated region geometry, selection synchronization and decode warmup remain unchanged. Retired root-level JPG paths are no longer referenced by Equipment.
+
+Validation for the current canonical state, including this follow-up:
+
+```text
+JavaScript syntax: 307 / 307 PASS
+Node unit/contract/data-I/O: 355 / 355 PASS
+```
+
+The retired consumable-effect runtime and its obsolete contract are physically absent from the canonical target state.
+
+## Installed in 15.15x
+
+```text
+Housing Rent Subscription Bridge 3.2x
+Knowledge Relation Sidecar Layering 1.3x — adapted presentation-only delta
+```
+
+Housing Rent reconciliation consumes canonical `SubscriptionAPI` contracts and persists one linked physical Housing record. A new contract allocates a deterministic unit; a same-area tier change modernizes the existing unit; a standard or area change prepares relocation and a read-only ItemInstance transfer manifest. Cancellation releases an empty unit or leaves it pending until canonical Housing locations are empty.
+
+The Knowledge update changes only desktop stacking and occlusion. The sidecar rail remains below the opaque reading panel and no longer draws connector lines. No source-patch records, prose, lore or outdated Encyclopedia/System/System Index assumptions were imported.
+
+Validation:
+
+```text
+JavaScript syntax: 307 / 307 PASS
+unit: 77 / 77 PASS
+contracts: 276 / 276 PASS
+data-I/O: 2 / 2 PASS
+total: 355 / 355 PASS
+```

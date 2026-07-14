@@ -4,7 +4,7 @@
 
 ```text
 patch: Knowledge Relation Tabs and Registry Separation 1.1x
-runtime baseline: Parallel Scope Merge 15.12x
+runtime baseline: Parallel Scope Merge 15.13x
 campaign transport: Campaign Snapshot schema v6
 knowledge transport: future-noir.knowledge-pack v3
 ```

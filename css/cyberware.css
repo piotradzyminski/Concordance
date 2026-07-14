@@ -1,0 +1,52 @@
+/* Standalone Cyberware module shell. Domain workspace styles remain in equipment.css
+   until the Cyberware UI stylesheet is split in a later dedicated cleanup. */
+
+.cyberware-module-view {
+  width: 100%;
+  min-width: 0;
+  min-height: 520px;
+}
+
+.cyberware-module-target {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(143, 189, 180, 0.24);
+  background: rgba(5, 8, 9, 0.72);
+  color: var(--muted, #8fa5a1);
+  font-family: var(--mono, "IBM Plex Mono", monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cyberware-module-target select {
+  min-width: 220px;
+}
+
+.cyberware-module-workspace-host {
+  min-width: 0;
+}
+
+.cyberware-module-view .equipment-cyberware-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cyberware-module-view [data-cyberware-workspace] {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .cyberware-module-target {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cyberware-module-target select {
+    width: 100%;
+    min-width: 0;
+  }
+}

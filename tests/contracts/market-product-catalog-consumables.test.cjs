@@ -54,5 +54,5 @@ test("Housing and Market section tabs use the shared Terminal tile contract", ()
   assert.doesNotMatch(css, /housing-module-tab\.terminal-panel-card\.system-segment-tile/);
   assert.doesNotMatch(css, /housing-market-subtab\.terminal-panel-card\.system-segment-tile/);
   assert.match(index, /css\/system-tabs\.css\?v=8/);
-  assert.match(modules, /styles: \["css\/housing\.css\?v=32"\]/);
+  assert.match(modules, /styles: \["css\/housing\.css\?v=34"\]/);
 });

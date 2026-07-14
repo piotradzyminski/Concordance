@@ -4,6 +4,7 @@ const { test, expect, USERS, login } = require("./fixtures.cjs");
 
 const COLD_ENTRY_MODULES = [
   "citizen-card",
+  "cyberware",
   "service",
   "system-index",
   "system",

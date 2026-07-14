@@ -7632,7 +7632,7 @@ window.APP_DATA.itemInstances = [
   "location": {
     "type": "HOUSING_ROOM",
     "housingRecordId": "housing-citizen-b-secured-test",
-    "roomId": "housing-citizen-b-secured-test-living",
+    "roomId": "housing-citizen-b-secured-test-main",
     "gridX": 2,
     "gridY": 3,
     "rotation": 0

@@ -27,6 +27,22 @@ test("Bodymap mounts Front and Back once and switches hidden/inert state", () =>
   assert.match(source, /loading="eager" decoding="async"/);
 });
 
+test("Equipment Bodymap uses canonical AVIF assets from assets/bodymap", () => {
+  const source = read("js/equipment-bodymap-panel.js");
+  assert.match(source, /front: "assets\/bodymap\/bodymap_front\.avif"/);
+  assert.match(source, /back: "assets\/bodymap\/bodymap_back\.avif"/);
+  assert.doesNotMatch(source, /assets\/bodymap_(?:front|back)\.jpg/);
+
+  for (const asset of [
+    "assets/bodymap/bodymap_front.avif",
+    "assets/bodymap/bodymap_back.avif"
+  ]) {
+    const assetPath = path.join(PROJECT_ROOT, asset);
+    assert.ok(fs.existsSync(assetPath), `${asset} must exist`);
+    assert.ok(fs.statSync(assetPath).size > 0, `${asset} must not be empty`);
+  }
+});
+
 test("Equipment bodymap fast path updates cached selection and never reconstructs EquipmentState", () => {
   const source = read("js/equipment.js");
   const fastPath = source.match(/function switchEquipmentBodymapView[\s\S]*?\n\s*function getEquipmentModuleRoot/);

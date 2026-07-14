@@ -91,13 +91,13 @@ test("Cyberware Index keeps per-Citizen filters, selection and read-only definit
   assert.doesNotMatch(markup, /data-cyberware-planner-action|data-cyberware-maintenance-action|data-item-instance/);
 });
 
-test("Equipment bundle and Cyberware workspace expose the Index through the shared drawer contract", () => {
+test("Standalone Cyberware bundle and workspace expose the Index through the shared drawer contract", () => {
   const modules = fs.readFileSync(path.join(PROJECT_ROOT, "js/modules.js"), "utf8");
-  const link = fs.readFileSync(path.join(PROJECT_ROOT, "js/equipment-cyberware-link.js"), "utf8");
-  const actions = fs.readFileSync(path.join(PROJECT_ROOT, "js/equipment-actions.js"), "utf8");
+  const link = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-workspace.js"), "utf8");
+  const actions = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-module.js"), "utf8");
   const css = fs.readFileSync(path.join(PROJECT_ROOT, "css/equipment.css"), "utf8");
 
-  assert.match(modules, /js\/cyberware-index\.js\?v=1/);
+  assert.match(modules, /js\/cyberware-index\.js\?v=2/);
   assert.match(link, /data-cyberware-index-toggle/);
   assert.match(link, /renderCyberwareIndex\?\.\(citizenId\)/);
   assert.match(actions, /data-cyberware-index-select/);
@@ -108,15 +108,15 @@ test("Equipment bundle and Cyberware workspace expose the Index through the shar
 });
 
 test("Cyberware shell uses shared card and compact tab families and hides the duplicate hero", () => {
-  const link = fs.readFileSync(path.join(PROJECT_ROOT, "js/equipment-cyberware-link.js"), "utf8");
-  const equipment = fs.readFileSync(path.join(PROJECT_ROOT, "js/equipment.js"), "utf8");
+  const link = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-workspace.js"), "utf8");
+  const module = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-module.js"), "utf8");
   const css = fs.readFileSync(path.join(PROJECT_ROOT, "css/equipment.css"), "utf8");
 
   assert.match(link, /cyberware-ui-section system-segment-tile system-segment-tile--card/);
   assert.match(link, /cyberware-ui-tabs system-inline-tabs/);
   assert.match(link, /cyberware-ui-tab system-inline-tab/);
-  assert.match(equipment, /data-equipment-shell-hero/);
-  assert.match(equipment, /heroVisible = activeView === "CYBERGRID"/);
-  assert.match(css, /\.equipment-shell-hero\[hidden\]/);
+  assert.match(module, /data-cyberware-module-shell/);
+  assert.match(module, /renderCyberwareWorkspace/);
+  assert.match(css, /\.cyberware-ui-tabs/);
   assert.doesNotMatch(link, /\$\{section\.views\.length\} VIEWS/);
 });

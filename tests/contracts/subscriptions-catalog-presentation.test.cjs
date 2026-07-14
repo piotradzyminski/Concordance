@@ -14,7 +14,7 @@ test("Subscriptions Catalog Presentation 4.4 provides structured presentation fo
   const app = runtime.window.WS_APP;
   const definitions = app.initSubscriptionCatalogStore();
 
-  assert.equal(definitions.subscriptions.length, 20);
+  assert.equal(definitions.subscriptions.length, 27);
   definitions.subscriptions.forEach((product) => {
     assert.ok(product.presentation.overview, `${product.subscriptionCatalogId} overview`);
     assert.ok(product.presentation.benefits.length >= 1, `${product.subscriptionCatalogId} benefits`);
@@ -87,9 +87,9 @@ test("Player profiles render benefit, limitation, usage and presentation-first t
   assert.match(css, /\.subscription-tier-priority-v44/);
   assert.match(css, /\.subscription-tier-technical-v44/);
 
-  assert.match(modules, /data\/subscription-catalog\.js\?v=12/);
-  assert.match(modules, /js\/subscription-catalog-store\.js\?v=7/);
+  assert.match(modules, /data\/subscription-catalog\.js\?v=13/);
+  assert.match(modules, /js\/subscription-catalog-store\.js\?v=8/);
   assert.match(modules, /css\/subscriptions\.css\?v=21/);
   assert.match(modules, /js\/subscriptions\.js\?v=34/);
-  assert.match(index, /js\/modules\.js\?v=297/);
+  assert.match(index, /js\/modules\.js\?v=302/);
 });

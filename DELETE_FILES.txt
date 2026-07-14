@@ -1,4 +1,4 @@
-# Canonical cleanup manifest — Parallel Scope Merge 15.12x.
+# Canonical cleanup manifest — Parallel Scope Merge 15.14x.
 docs/patchnotes/patch_notes_item_instance_view_cache_1.0x.md
 data/item-effect-catalog.js
 js/citizen-status-store.js
@@ -6,3 +6,4 @@ js/item-effect-resolver.js
 tests/contracts/item-type-effect-resolution.test.cjs
 docs/contracts/equipment/item_effect_resolution_contract.md
 docs/patchnotes/patch_notes_item_type_effect_removal_1.3.1x.md
+docs/patchnotes/patch_notes_equipment_bodymap_avif_paths_1.0x.md

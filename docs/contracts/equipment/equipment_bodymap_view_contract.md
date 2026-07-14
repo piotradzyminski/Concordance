@@ -51,6 +51,17 @@ renderEquipmentCybergridPanel()
 syncEquipmentWorkspaceShell()
 ```
 
+## Canonical assets
+
+Equipment Bodymap loads the prepared AVIF masters from the dedicated asset directory:
+
+```text
+FRONT -> assets/bodymap/bodymap_front.avif
+BACK  -> assets/bodymap/bodymap_back.avif
+```
+
+The renderer must not fall back to retired root-level JPG paths or duplicate the files under compatibility names. Both assets retain the canonical `949 x 1658` geometry used by the calibrated Equipment anchor layout.
+
 ## Asset warmup
 
 Both Bodymap images are present in the mounted panel with:

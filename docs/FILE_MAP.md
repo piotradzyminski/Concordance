@@ -5,21 +5,24 @@
 ```text
 index.html
   shared tabs: css/system-tabs.css?v=8
-  Terminal Entry/Reminder stores: v1 / v1 before Citizen Store
-  Citizen integration store: v141
-  Household Store: v2
-  Notification event/templates/resolver/policy/API/Market producer: v5 / v2 / v2 / v2 / v3 / v1
+  Terminal Entry/Reminder stores: v2 / v1 before Citizen Store
+  Citizen integration store: v144
+  Household Store: v3
+  Housing Rent standards data/store: v1 / v1
+  Housing Layout pools data/store: v1 / v1
+  Subscription catalog data/store: v13 / v8
+  Notification event/templates/resolver/policy/API/Market producer: v5 / v2 / v2 / v2 / v4 / v1
   Market offers/store: v4 / v12
   ItemInstance Store: v15
-  shared bundle map: js/modules.js?v=297
+  shared bundle map: js/modules.js?v=302
   player Subscriptions scripts: lazy-only, not eager
 
 js/modules.js
   canonical lazy bundle registry
-  Terminal Inbox: css v4 / runtime v10
+  Terminal Inbox: css v4 / runtime v11
   Subscriptions: css v21, runtime/profile v34, workspace v6, action feedback v1
-  Equipment: css v127, store v34, actions v55, items v30, containers v39, Cyberware link v19, shell v117, Cyberware Index v1
-  Housing: css v32, Storage runtime v3, Household runtime v1, shell v49
+  Equipment: css v129, store v35, actions v57, Bodymap panel v25, items v30, containers v39, Cyberware bridge v20, shell v118
+  Housing: css v34, Storage runtime v3, Household runtime v2, shell v50
   Global Market: Market offers/store v4/v12, runtime v4, module v1
   Admin Subscriptions: css v3 / controller v4
 ```
@@ -29,7 +32,7 @@ js/modules.js
 | Responsibility | Files |
 |---|---|
 | global store helpers and Citizen integration adapter | `js/store-utils.js`, `js/store.js` |
-| Terminal Inbox/reminder persistence | `js/terminal-entry-store.js`, `js/terminal-reminder-store.js`, `js/store.js` delegation |
+| Terminal Inbox/reminder persistence and Campaign Time datetime lifecycle | `js/terminal-entry-store.js`, `js/terminal-reminder-store.js`, `js/store.js`, `docs/contracts/core/terminal_inbox_datetime_contract.md` |
 | shared Citizen finance/date helpers | `js/citizen-finance.js` |
 | Citizen identity derivation and commands | `js/citizen-identity.js`, `js/citizen-command-api.js`, `js/citizen-records.js` |
 | Citizen Files persistence | `js/citizen-file-store.js`, `docs/contracts/citizen/citizen_files_contract.md` |
@@ -43,6 +46,7 @@ js/modules.js
 | Equipment/Cyberware catalog identity, consumable package metadata and canonical product visualProfile | `js/equipment-catalog-store.js`, `data/equipment-catalog.js`, `data/body-cyberware-catalog.js`, `assets/market/products/**` |
 | Campaign snapshot and Billing transfer adapter | `js/campaign-data-io-registry.js`, `js/campaign-data-io-adapters.js`, `js/campaign-data-io-v6.js` |
 | Campaign Time timestamp/revision and date compatibility | `js/main.js`, `js/world-time-service-scheduler.js`, `docs/contracts/core/campaign_time_datetime_contract.md` |
+| stateless deterministic event timing and operating windows | `js/world-time-event-windows.js`, `docs/contracts/core/world_time_event_windows_contract.md` |
 | Organizations and transfer account identity | `js/organization-store.js`, `data/organizations.js`, `data/organization-locations.js` |
 | Notifications, content projection, operation-card policy and Market producer | `js/notification-registry.js`, `data/notification-event-catalog.js`, `data/notification-content-templates.js`, `js/notification-content-resolver.js`, `js/notification-projection-policy.js`, `js/market-notification-producer.js`, `js/notification-api.js` |
 
@@ -65,7 +69,8 @@ js/modules.js
 
 | Responsibility | Files |
 |---|---|
-| subscription catalog/API | `js/subscription-catalog-store.js`, `js/subscription-api.js`, `js/subscription-entitlement.js` |
+| subscription catalog/API | `data/subscription-catalog.js`, `js/subscription-catalog-store.js`, `js/subscription-api.js`, `js/subscription-entitlement.js` |
+| Housing Rent standards H–A, tier capabilities and storage projection | `data/housing-rent-standards.js`, `js/housing-rent-standards-store.js`, `docs/contracts/commerce/housing_rent_standards_catalog_contract.md` |
 | four-view Subscriptions player workspace, selectors and terminal navigation cards | `js/subscriptions-workspace.js`, `css/subscriptions.css`, `css/system-tabs.css` |
 | shared player/Admin subscription action result mapping, processing lock and feedback presentation | `js/subscription-action-feedback.js`, `css/subscription-action-feedback.css` |
 | Subscription product/contract/provider profiles | `js/subscriptions.js` |
@@ -77,8 +82,9 @@ js/modules.js
 | Housing Unit/Storage runtime | `js/housing-storage-runtime.js`, `js/housing-grid-engine-adapter.js`, public Housing/Equipment APIs |
 | Global Market storefront, cart navigation, product visuals, fulfillment and returns | `js/market.js`, `js/housing-market-runtime.js`, `js/market-store.js`, `css/housing.css`, `data/equipment-catalog.js`, `js/equipment-catalog-store.js`, `assets/market/fallback/**` |
 | Household furnishing projection and placement workspace | `js/household-store.js`, `js/housing-household-runtime.js`, `docs/contracts/commerce/housing_household_furnishing_workspace_contract.md` |
-| Housing persistence and grid placement | `js/housing-bridge-store.js`, `js/housing-grid-engine-adapter.js` |
-| world time | `js/world-time-service-scheduler.js` |
+| Housing persistence, Rent contract projection and grid placement | `js/housing-rent-standards-store.js`, `js/housing-rent-subscription-bridge.js`, `js/housing-bridge-store.js`, `js/housing-grid-engine-adapter.js` |
+| world time scheduler | `js/world-time-service-scheduler.js` |
+| event window policy resolver | `js/world-time-event-windows.js` |
 
 ## Equipment and Cyberware
 
@@ -91,7 +97,7 @@ js/modules.js
 | grid pointer/placement | `js/grid-pointer-session.js`, `js/equipment-housing-grid.js` |
 | body-region slot projection, condition classes, contextual labels and single empty-slot ghost identity | `js/equipment-body-regions-panel.js` |
 | normalized container hierarchy/type labels, grids and local CyberGrid selection sync | `js/equipment-containers-panel.js` |
-| dual mounted Bodymap trees, view sync, selection sync and image decode warmup | `js/equipment-bodymap-panel.js` |
+| dual mounted Bodymap trees, canonical AVIF masters, view sync, selection sync and image decode warmup | `js/equipment-bodymap-panel.js`, `assets/bodymap/bodymap_front.avif`, `assets/bodymap/bodymap_back.avif` |
 | Equipment workspace cache, Bodymap view fast path and item-selection fast path | `js/equipment.js` |
 | Cyberware workspace composition, Neural Core, operations, Definition Index and rename controls | `js/equipment-cyberware-link.js`, `js/cyberware-items-panel.js`, `js/cyberware-index.js` |
 | Cyberware normalization and display-name projection | `js/cyberware-store.js`, `js/cyberware-actions.js` |
@@ -107,7 +113,7 @@ js/modules.js
 | records | `js/entries-store.js`, `data/entries.js` |
 | pack import/merge | `js/knowledge-pack-store.js` |
 | stable relations | `js/knowledge-relations.js` |
-| module rendering | `js/encyclopedia-module.js`, `js/system-registry.js` |
+| module rendering and layered desktop relation sidecar | `js/encyclopedia-module.js`, `js/system-registry.js`, `css/knowledge-sections.css` |
 
 ## Test infrastructure
 
@@ -236,4 +242,29 @@ tests/contracts/knowledge-relation-tabs.test.cjs
 tests/unit/knowledge-relations.test.cjs
 tests/unit/campaign-time.test.cjs
 tests/unit/world-time-scheduler.test.cjs
+```
+## Runtime 15.14x additions
+
+| Responsibility | Canonical files |
+|---|---|
+| Knowledge relation desktop sidecar presentation | `css/knowledge-sections.css`, `js/system-registry.js`, `js/encyclopedia-module.js` |
+| Terminal Inbox Campaign Time timestamps and skipped-interval emission | `js/terminal-entry-store.js`, `js/notification-api.js`, `js/terminal-module.js`, `docs/contracts/core/terminal_inbox_datetime_contract.md` |
+| Housing irregular layout pools and deterministic assignment | `data/housing-layout-pools.js`, `js/housing-layout-store.js`, `js/household-store.js`, `js/housing-household-runtime.js`, `docs/contracts/commerce/housing_layout_pools_contract.md` |
+| Standalone Cyberware player module | `data/modules.js`, `js/cyberware-module.js`, `js/cyberware-workspace.js`, `css/cyberware.css`, `docs/contracts/cyberware/cyberware_module_extraction_contract.md` |
+
+```text
+index.html: data/modules v58, citizens v79, item-instances v7, Terminal Entry v2, Citizen integration store v144, Housing Layout store v1, Housing Bridge v4, Household Store v3, Notification API v4, Campaign Data I/O adapters v8, modules v301
+js/modules.js: Terminal runtime v11; Equipment css/store/actions/bodymap/bridge/shell v129/35/57/25/20/118; Cyberware css/index/planner/workspace/module v1/2/8/1/1; Housing css/Household runtime v33/2
+```
+
+## Runtime 15.15x additions
+
+| Responsibility | Canonical files |
+|---|---|
+| Rent subscription → physical Housing Unit projection, modernization and relocation/release preparation | `js/housing-rent-subscription-bridge.js`, `js/housing-bridge-store.js`, `js/housing.js`, `docs/contracts/commerce/housing_rent_subscription_bridge_contract.md` |
+| Knowledge sidecar stacking and opaque article-edge occlusion | `css/knowledge-sections.css`, existing `js/system-registry.js`, existing `js/encyclopedia-module.js`, `docs/contracts/knowledge/knowledge_relations_contract.md` |
+
+```text
+index.html: knowledge CSS v12, Housing Bridge v5, Rent Subscription Bridge v1, modules v302
+js/modules.js: Housing css/shell v34/50; Equipment Bodymap remains v25 with canonical AVIF paths
 ```

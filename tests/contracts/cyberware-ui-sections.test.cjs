@@ -6,7 +6,7 @@ const { createBrowserRuntime } = require("../helpers/browser-runtime.cjs");
 
 function createRuntime() {
   const runtime = createBrowserRuntime();
-  runtime.load("js/equipment-cyberware-link.js");
+  runtime.load("js/cyberware-workspace.js");
   return runtime;
 }
 

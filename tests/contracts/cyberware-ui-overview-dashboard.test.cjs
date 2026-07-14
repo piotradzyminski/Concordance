@@ -6,7 +6,7 @@ const { createBrowserRuntime } = require("../helpers/browser-runtime.cjs");
 
 function createRuntime(summaryFactory) {
   const runtime = createBrowserRuntime();
-  runtime.load("js/equipment-cyberware-link.js");
+  runtime.load("js/cyberware-workspace.js");
   runtime.window.WS_APP.cyberwareAuthorization = {
     getCyberwareAuthorizationSummary: summaryFactory
   };

@@ -1,8 +1,8 @@
 window.WS_APP = window.WS_APP || {};
 
 (function initEquipmentDesignShell() {
-  const EQUIPMENT_SHELL_VERSION = "1.0";
-    const WORKSPACE_VIEWS = ["CYBERGRID", "CYBERWARE"];
+  const EQUIPMENT_SHELL_VERSION = "1.1x";
+  const WORKSPACE_VIEWS = ["CYBERGRID"];
   const escapeHtml = window.WS_APP.escapeEquipmentHtml || ((value = "") => String(value ?? ""));
 
   function normalizeWorkspaceView(value = "CYBERGRID") {
@@ -244,49 +244,21 @@ window.WS_APP = window.WS_APP || {};
     `;
   }
 
-  function renderEquipmentWorkspaceTabs(state = {}) {
-    const activeView = getActiveWorkspaceView(state);
-    const definitions = [
-      { key: "CYBERGRID", label: "Cybergrid", meta: "Body, grids and containers" },
-      { key: "CYBERWARE", label: "Cyberware", meta: "Installed systems and service" }
-    ];
-    return `
-      <nav class="system-segment-tabs equipment-workspace-tabs" role="tablist" aria-label="Equipment workspace screens">
-        ${definitions.map((entry) => `
-          <button class="system-segment-tile system-segment-tile--card equipment-workspace-tab ${activeView === entry.key ? "is-active" : ""}" type="button" role="tab" aria-selected="${activeView === entry.key ? "true" : "false"}"
-            data-equipment-workspace-view="${escapeHtml(entry.key)}">
-            <span class="system-segment-tile__body">
-              <b class="system-segment-tile__title">${escapeHtml(entry.label)}</b>
-              <small class="system-segment-tile__description">${escapeHtml(entry.meta)}</small>
-            </span>
-          </button>
-        `).join("")}
-      </nav>
-    `;
+  function renderEquipmentWorkspaceTabs() {
+    return "";
   }
 
   function renderEquipmentShellHeader(state = {}) {
-    const activeView = getActiveWorkspaceView(state);
-    const headings = {
-      CYBERGRID: "Equipment Workspace",
-      CYBERWARE: "Cyberware Workspace"
-    };
-    const descriptions = {
-      CYBERGRID: "Manage carried items, visible grids and mount storage.",
-      CYBERWARE: "Review installed systems, core stack and service context."
-    };
-    const heroVisible = activeView === "CYBERGRID";
-    const itemIndexAction = heroVisible
-      ? `<button class="secondary-action equipment-shell-item-index-action" type="button" data-equipment-item-index-toggle aria-expanded="${state?.selections?.itemIndexOpen === true ? "true" : "false"}">Item Index</button>`
-      : "";
     return `
-      <section class="equipment-shell-hero equipment-shell-hero--compact" data-equipment-shell-hero ${heroVisible ? 'aria-hidden="false"' : 'hidden aria-hidden="true" inert'}>
+      <section class="equipment-shell-hero equipment-shell-hero--compact" data-equipment-shell-hero aria-hidden="false">
         <div class="equipment-shell-hero__copy">
-          <p class="kicker" data-equipment-shell-kicker>EQUIPMENT / ${escapeHtml(activeView)}</p>
-          <h5 data-equipment-shell-title>${escapeHtml(headings[activeView] || "Equipment Workspace")}</h5>
-          <p data-equipment-shell-description>${escapeHtml(descriptions[activeView])}</p>
+          <p class="kicker" data-equipment-shell-kicker>EQUIPMENT / CYBERGRID</p>
+          <h5 data-equipment-shell-title>Equipment Workspace</h5>
+          <p data-equipment-shell-description>Manage carried items, visible grids and mount storage.</p>
         </div>
-        <div class="equipment-shell-hero__side" data-equipment-shell-actions>${itemIndexAction}</div>
+        <div class="equipment-shell-hero__side" data-equipment-shell-actions>
+          <button class="secondary-action equipment-shell-item-index-action" type="button" data-equipment-item-index-toggle aria-expanded="${state?.selections?.itemIndexOpen === true ? "true" : "false"}">Item Index</button>
+        </div>
       </section>
     `;
   }
@@ -440,40 +412,19 @@ window.WS_APP = window.WS_APP || {};
     `;
   }
 
-  function renderCyberwareScreen(state = {}, citizen = {}, options = {}) {
-    const workspace = typeof window.WS_APP.renderEquipmentCyberwareWorkspace === "function"
-      ? window.WS_APP.renderEquipmentCyberwareWorkspace(state, citizen, { lazyPlanner: true })
-      : typeof window.WS_APP.renderEquipmentCyberwareLinkPanel === "function"
-        ? window.WS_APP.renderEquipmentCyberwareLinkPanel(state)
-        : `<p class="file-empty">Cyberware workspace unavailable.</p>`;
-    return `
-      <section class="equipment-screen equipment-screen--cyberware" data-equipment-screen="CYBERWARE" ${getEquipmentScreenStateAttributes(options.active === true, true)}>
-        ${workspace}
-      </section>
-    `;
-  }
 
   function renderEquipmentDesignShell(citizen = {}, preparedState = null) {
     const state = preparedState || (typeof window.WS_APP.getEquipmentState === "function"
       ? window.WS_APP.getEquipmentState(citizen)
       : null);
     if (!state) return `<p class="file-empty">Equipment state model unavailable.</p>`;
+    applyEquipmentWorkspaceViewToState(state, "CYBERGRID");
     cacheEquipmentRuntimeState(citizen, state);
 
-    const activeView = getActiveWorkspaceView(state);
-    const cybergridScreen = activeView === "CYBERGRID"
-      ? renderCybergridScreen(state, { active: true })
-      : renderEquipmentScreenPlaceholder("CYBERGRID");
-    const cyberwareScreen = activeView === "CYBERWARE"
-      ? renderCyberwareScreen(state, citizen, { active: true })
-      : renderEquipmentScreenPlaceholder("CYBERWARE");
-
     return `
-      ${renderEquipmentWorkspaceTabs(state)}
       ${renderEquipmentShellHeader(state)}
       <div class="equipment-shell-layout equipment-shell-layout--screen-split" data-equipment-workspace-host>
-        ${cybergridScreen}
-        ${cyberwareScreen}
+        ${renderCybergridScreen(state, { active: true })}
       </div>
       <div class="equipment-hover-tooltip" data-equipment-hover-tooltip role="tooltip" hidden></div>
     `;
@@ -503,44 +454,21 @@ window.WS_APP = window.WS_APP || {};
     screen.classList.toggle("is-active", active);
   }
 
-  function syncEquipmentWorkspaceTabs(root = null, activeView = "CYBERGRID") {
-    const normalizedView = normalizeWorkspaceView(activeView);
-    root?.querySelectorAll?.("[data-equipment-workspace-view]").forEach((button) => {
-      const selected = normalizeWorkspaceView(button.dataset.equipmentWorkspaceView || "CYBERGRID") === normalizedView;
-      button.classList.toggle("is-active", selected);
-      button.setAttribute("aria-pressed", selected ? "true" : "false");
-    });
+  function syncEquipmentWorkspaceTabs() {
+    return true;
   }
 
   function syncEquipmentShellHeader(root = null, state = {}) {
     if (!root) return;
-    const activeView = getActiveWorkspaceView(state);
-    const heroVisible = true;
-    const headings = {
-      CYBERGRID: "Equipment Workspace",
-      CYBERWARE: "Cyberware Workspace"
-    };
-    const descriptions = {
-      CYBERGRID: "Manage carried items, visible grids and mount storage.",
-      CYBERWARE: "Review installed systems, core stack and service context."
-    };
     const hero = root.querySelector("[data-equipment-shell-hero]");
-    const kicker = root.querySelector("[data-equipment-shell-kicker]");
-    const title = root.querySelector("[data-equipment-shell-title]");
-    const description = root.querySelector("[data-equipment-shell-description]");
     const actions = root.querySelector("[data-equipment-shell-actions]");
     if (hero) {
       hero.hidden = false;
       hero.setAttribute("aria-hidden", "false");
       hero.removeAttribute("inert");
     }
-    if (kicker) kicker.textContent = `EQUIPMENT / ${activeView}`;
-    if (title) title.textContent = headings[activeView] || "Equipment Workspace";
-    if (description) description.textContent = descriptions[activeView] || "";
     if (actions) {
-      actions.innerHTML = heroVisible
-        ? `<button class="secondary-action equipment-shell-item-index-action" type="button" data-equipment-item-index-toggle aria-expanded="${state?.selections?.itemIndexOpen === true ? "true" : "false"}">Item Index</button>`
-        : "";
+      actions.innerHTML = `<button class="secondary-action equipment-shell-item-index-action" type="button" data-equipment-item-index-toggle aria-expanded="${state?.selections?.itemIndexOpen === true ? "true" : "false"}">Item Index</button>`;
     }
   }
 
@@ -552,9 +480,7 @@ window.WS_APP = window.WS_APP || {};
     const dirty = screen?.dataset?.equipmentScreenDirty === "true";
     if (mounted && !dirty && options.force !== true) return screen;
 
-    const markup = normalizedView === "CYBERWARE"
-      ? renderCyberwareScreen(state, citizen, { active: false })
-      : renderCybergridScreen(state, { active: false });
+    const markup = renderCybergridScreen(state, { active: false });
     const next = createEquipmentMarkupNode(markup);
     if (!next) return screen;
     if (screen) screen.replaceWith(next);
@@ -653,7 +579,7 @@ window.WS_APP = window.WS_APP || {};
     const wasMounted = activeScreen?.dataset?.equipmentScreenMounted === "true";
     if (!wasMounted) activeScreen = ensureEquipmentWorkspaceScreen(root, activeView, citizen, state);
 
-    if (activeView === "CYBERGRID" && wasMounted) {
+    if (wasMounted) {
       if (options.bodymap !== false && typeof window.WS_APP.renderEquipmentBodymapPanel === "function") {
         replaceEquipmentPanel(root, '[data-equipment-panel="bodymap"]', window.WS_APP.renderEquipmentBodymapPanel(state));
         window.WS_APP.preloadEquipmentBodymapAssets?.(root);
@@ -669,12 +595,6 @@ window.WS_APP = window.WS_APP || {};
         replaceEquipmentPanel(root, '[data-equipment-panel="command-rail"]', renderEquipmentCommandRail(state, { variant: "compact" }));
       }
       if (options.index !== false) syncEquipmentItemIndex(root, state);
-      if (activeScreen) activeScreen.dataset.equipmentScreenDirty = "false";
-    } else if (wasMounted && typeof window.WS_APP.refreshEquipmentCyberwareWorkspace === "function") {
-      window.WS_APP.refreshEquipmentCyberwareWorkspace(citizen.id, {
-        forceRuntime: options.forceCyberwareRuntime !== false,
-        refreshPlanner: options.refreshPlanner === true
-      });
       if (activeScreen) activeScreen.dataset.equipmentScreenDirty = "false";
     }
 
@@ -692,8 +612,8 @@ window.WS_APP = window.WS_APP || {};
       : null);
     const preparedState = prepared?.state || (prepared?.citizenId && prepared?.items ? prepared : null);
     const state = preparedState || (citizen && typeof window.WS_APP.getEquipmentState === "function" ? window.WS_APP.getEquipmentState(citizen) : null);
-    const activeView = getActiveWorkspaceView(state || {});
-    if (status) status.textContent = `EQUIPMENT / ${activeView}`;
+    const activeView = "CYBERGRID";
+    if (status) status.textContent = "EQUIPMENT / CYBERGRID";
 
     container.innerHTML = `
       <section class="module-detail equipment-module-view equipment-module-view--design" data-equipment-module-shell data-equipment-citizen-id="${escapeHtml(citizen?.id || "")}">

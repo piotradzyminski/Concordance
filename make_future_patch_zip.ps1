@@ -22,9 +22,20 @@ if ([string]::IsNullOrWhiteSpace($rootName)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($Output)) {
-    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
     $parent = Split-Path -Parent $sourcePath
-    $Output = Join-Path $parent ("{0}_patch_input_{1}.zip" -f $rootName, $stamp)
+    $time = Get-Date -Format "HHmm"
+
+    $lastVersion = Get-ChildItem -LiteralPath $parent -File -Filter "future_*.zip" -ErrorAction SilentlyContinue |
+        ForEach-Object {
+            if ($_.BaseName -match '^future_(\d+)_\d{4}$') {
+                [int]$Matches[1]
+            }
+        } |
+        Measure-Object -Maximum |
+        Select-Object -ExpandProperty Maximum
+
+    $version = if ($null -eq $lastVersion) { 1 } else { [int]$lastVersion + 1 }
+    $Output = Join-Path $parent ("future_{0}_{1}.zip" -f $version, $time)
 }
 
 $outputPath = [System.IO.Path]::GetFullPath($Output)

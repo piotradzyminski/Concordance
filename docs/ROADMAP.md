@@ -3,7 +3,7 @@
 ## Baseline
 
 ```text
-runtime: Parallel Scope Merge 15.12x
+runtime: Parallel Scope Merge 15.13x
 phase: pre-alpha
 ```
 
@@ -212,6 +212,18 @@ Campaign Time Datetime Foundation 2.0x
   canonical time is a revisioned UTC timestamp
   date-only APIs remain compatibility projections
   schedulers compare full timestamps without taking ownership of domain records
+
+Housing Rent Standards Catalog 3.0x
+  standards H–A and area/layout policies are canonical catalog data
+  eight Rent products replace new uses of generic Habitat Ledger tiers
+  tier capabilities cover fixtures, storage, logistics, furnishing and maintenance
+  weekly furnishing wear rates are data only; no wear mutation runtime exists yet
+
+World Time Event Windows 2.2x
+  deterministic event minutes may be resolved inside a skipped Campaign Time interval
+  daily, weekly and overnight operating calendars share one stateless policy resolver
+  NEXT_AVAILABLE may defer to the next open window
+  consuming domains persist their own timestamps and idempotency
 ```
 
 A corrective patch is appropriate only for a reproduced browser, import/migration, time-scheduler or authoring failure.
@@ -380,3 +392,52 @@ Services Cold Entry Performance 3.3x
   invalidation follows Citizen, ItemInstance and catalog changes
   warm Service tab behavior and viewport restoration remain unchanged
 ```
+## Recommended Housing continuation after 15.13x validation
+
+```text
+Housing Layout Pools 3.1x
+```
+
+Recommended scope: concrete non-rectangular floor masks, stable layout variants for H–D where applicable, choice pools for C–B and persistent `layoutTemplateId` / `layoutSeed`. Do not add relocation runtime or furnishing wear execution until the catalog and unit assignment flow are verified in browser.
+
+## Installed scope verification — 15.14x
+
+```text
+Knowledge Relation Sidecar UI 1.2x
+  wide desktop rail preserves reading-panel position and registry isolation
+  no seed content, lore or relation ownership changes
+
+Terminal Inbox Datetime 1.0x
+  legacy date-only records migrate once to midnight
+  readAt uses current Campaign Time
+  skipped-interval emission persists one deterministic received timestamp
+
+Housing Layout Pools 3.1x
+  exact active-cell area and room ownership remain valid
+  deterministic assignment does not reroll on refresh
+  inactive cut-outs reject furnishing footprints
+
+Cyberware Module Extraction 15.13x
+  cold direct entry loads the Cyberware bundle without Equipment workspace
+  Equipment → Cyberware and notification deep links preserve Citizen/instance context
+  no duplicate delegated actions or ItemInstance ownership path
+```
+
+A corrective follow-up is appropriate only for a reproduced browser navigation, layout, migration or timestamp failure.
+
+## Installed scope verification — 15.15x
+
+```text
+Housing Rent Subscription Bridge 3.2x
+  one active Rent contract maps to at most one linked physical Housing record
+  same-area modernization preserves unit ID, layoutTemplateId and layoutSeed
+  area/standard changes prepare relocation without moving ItemInstance
+  cancellation releases only an empty unit
+
+Knowledge Relation Sidecar Layering 1.3x
+  wide desktop tabs protrude from beneath the opaque reading panel
+  connector lines are absent
+  no Knowledge seeds, registry relations or canonical content are changed
+```
+
+A corrective follow-up is appropriate only for a reproduced browser failure in allocation, transition presentation or sidecar occlusion.

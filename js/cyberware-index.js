@@ -319,8 +319,13 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function syncCyberwareIndexOverlay(citizenId = "", options = {}) {
-    const root = options.root || document.querySelector?.("[data-equipment-module-shell]") || null;
-    const workspace = root?.querySelector?.('[data-equipment-panel="cyberware-workspace"]') || null;
+    const root = options.root
+      || document.querySelector?.("[data-cyberware-module-shell]")
+      || document.querySelector?.("[data-equipment-module-shell]")
+      || null;
+    const workspace = root?.querySelector?.("[data-cyberware-workspace]")
+      || root?.querySelector?.('[data-equipment-panel="cyberware-workspace"]')
+      || null;
     if (!workspace) return false;
     workspace.querySelector("[data-cyberware-index-overlay]")?.remove();
     const markup = renderCyberwareIndex(citizenId);

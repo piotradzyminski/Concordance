@@ -23,7 +23,7 @@ test("Admin Service UI separates Citizen Service Log from Service Bridge Orders"
 test("Service Log lifecycle registry loads before Citizen Store", () => {
   const index = read("index.html");
   const lifecycleIndex = index.indexOf("js/service-log-lifecycle.js?v=1");
-  const storeIndex = index.indexOf("js/store.js?v=141");
+  const storeIndex = index.indexOf("js/store.js?v=144");
   assert.ok(lifecycleIndex >= 0);
   assert.ok(storeIndex > lifecycleIndex);
 });

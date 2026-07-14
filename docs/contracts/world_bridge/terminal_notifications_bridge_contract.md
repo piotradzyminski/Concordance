@@ -1,4 +1,4 @@
-# Terminal Notifications Bridge 2.5x — Contract
+# Terminal Notifications Bridge 2.6x — Contract
 
 ## 0. Status
 
@@ -20,6 +20,9 @@ patch_terminal_inbox_content_ui_2.4x.zip
 
 CURRENT MARKET PRODUCER PATCH:
 patch_market_notification_producer_2.5x.zip
+
+CURRENT DATETIME PATCH:
+patch_terminal_inbox_datetime_1.0x.zip
 
 BASE USED FOR 2.1x:
 World Bridge Prerequisites Merge 9.0x
@@ -86,6 +89,7 @@ TerminalNotifications.registerPackage(packageDefinition);
 
 TerminalNotifications.emit(input);
 TerminalNotifications.updateByEvent(input);
+TerminalNotifications.emitDuringCampaignAdvance(campaignEvent, input);
 TerminalNotifications.acknowledge(input);
 TerminalNotifications.resolve(input);
 TerminalNotifications.expire(input);
@@ -193,7 +197,7 @@ SUPPRESSED_BY_POLICY
 
 ---
 
-# 5. Notification record v2
+# 5. Notification record v3
 
 The store preserves the following bridge fields:
 
@@ -218,12 +222,23 @@ body
 templateId
 templateData
 occurredAt
+createdAt
+sentAt
+receivedAt
+readAt
 effectiveAt
 dueAt
 expiresAt
 actions
 retentionPolicy
 aggregationPolicy
+```
+
+
+Datetime semantics and skipped-interval emission are defined by:
+
+```text
+docs/contracts/core/terminal_inbox_datetime_contract.md
 ```
 
 Legacy fields remain available for the current Terminal UI:

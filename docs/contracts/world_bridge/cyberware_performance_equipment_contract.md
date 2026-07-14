@@ -1320,7 +1320,7 @@ js/item-instance-store.js
 js/equipment-store.js
 js/equipment-inventory.js
 js/equipment-actions.js
-js/equipment-cyberware-link.js
+js/cyberware-workspace.js
 js/cyberware-runtime.js
 js/cyberware-planner.js
 js/cyberware-maintenance.js

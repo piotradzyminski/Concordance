@@ -965,11 +965,11 @@ window.APP_DATA = window.APP_DATA || {};
     "revision": 2
   },
   {
-    "subscriptionCatalogId": "sub-habitat-ledger",
+    "subscriptionCatalogId": "sub-housing-standard-h",
     "providerId": "provider-habitat-ledger",
     "organizationId": "habitat-market",
-    "productCode": "HAB-LEDGER",
-    "title": "Habitat Ledger",
+    "productCode": "HAB-H",
+    "title": "Housing Standard H",
     "provider": "Habitat Ledger",
     "category": "RENT",
     "market": "SYSTEM",
@@ -977,7 +977,7 @@ window.APP_DATA = window.APP_DATA || {};
     "billingCycle": "WEEKLY",
     "currency": "CREDIT",
     "entitlementCodes": [
-      "HABITAT_LEDGER_ACCESS"
+      "HOUSING_STANDARD_H_ACCESS"
     ],
     "targetPolicy": {
       "allowedTargetTypes": [
@@ -988,52 +988,621 @@ window.APP_DATA = window.APP_DATA || {};
     },
     "coverageRules": [],
     "tags": [
-      "SYSTEM"
+      "SYSTEM",
+      "RENT",
+      "STANDARD_H"
     ],
     "logo": "HAB",
-    "summary": "Najem komórki, media, odpady i utrzymanie adresu.",
-    "description": "System najmu komórek mieszkalnych, rachunków za prąd i wodę, wywozu śmieci oraz administracyjnego utrzymania adresu. Brak nieruchomości prywatnych.",
+    "summary": "Najem lokalu standardu H: Shared Quarters.",
+    "description": "Oddzielny produkt Rent dla standardu H. Szczegółowe możliwości tierów, storage, logistyka, wyposażenie i polityka meblowania należą do Housing Rent Standards Catalog.",
     "tiers": [
       {
-        "tierId": "hab-cell",
+        "tierId": "housing-h-t1",
         "tierLevel": 1,
-        "label": "Cell Access",
+        "label": "T1 Shared Bed",
+        "amount": 450,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "Shared Sleep; Personal Storage; Food Delivery Pickup; Communal Hygiene.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_H_T1"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-h-t2",
+        "tierLevel": 2,
+        "label": "T2 Shared Wet Room",
+        "amount": 700,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "Shared Sleep; Personal Storage; Food Delivery Pickup; Room Shared Hygiene.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_H_T2"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      }
+    ],
+    "active": true,
+    "revision": 1
+  },
+  {
+    "subscriptionCatalogId": "sub-housing-standard-g",
+    "providerId": "provider-habitat-ledger",
+    "organizationId": "habitat-market",
+    "productCode": "HAB-G",
+    "title": "Housing Standard G",
+    "provider": "Habitat Ledger",
+    "category": "RENT",
+    "market": "SYSTEM",
+    "domain": "HOUSING",
+    "billingCycle": "WEEKLY",
+    "currency": "CREDIT",
+    "entitlementCodes": [
+      "HOUSING_STANDARD_G_ACCESS"
+    ],
+    "targetPolicy": {
+      "allowedTargetTypes": [
+        "CITIZEN"
+      ],
+      "defaultTargetType": "CITIZEN",
+      "maximumTargets": 1
+    },
+    "coverageRules": [],
+    "tags": [
+      "SYSTEM",
+      "RENT",
+      "STANDARD_G"
+    ],
+    "logo": "HAB",
+    "summary": "Najem lokalu standardu G: Micro Unit.",
+    "description": "Oddzielny produkt Rent dla standardu G. Szczegółowe możliwości tierów, storage, logistyka, wyposażenie i polityka meblowania należą do Housing Rent Standards Catalog.",
+    "tiers": [
+      {
+        "tierId": "housing-g-t1",
+        "tierLevel": 1,
+        "label": "T1 Private Microcell",
         "amount": 900,
         "billingCycle": "WEEKLY",
         "durationDays": 7,
-        "description": "Minimalna komórka mieszkalna i wpis adresowy.",
+        "description": "15 m²; Private Sleep; Private Toilet; Basic Hygiene; Food Delivery.",
         "entitlementCodes": [
-          "HABITAT_LEDGER_ACCESS_T1"
+          "HOUSING_STANDARD_G_T1"
         ],
         "coverageRuleIds": [],
         "active": true,
         "revision": 1
       },
       {
-        "tierId": "hab-standard",
+        "tierId": "housing-g-t2",
         "tierLevel": 2,
-        "label": "Standard Unit",
+        "label": "T2 Service Wall",
+        "amount": 1200,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "15 m²; Private Sleep; Private Toilet; Basic Hygiene; Food Delivery.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_G_T2"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-g-t3",
+        "tierLevel": 3,
+        "label": "T3 Extended Microcell",
+        "amount": 1500,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "18 m²; Private Sleep; Private Toilet; Basic Hygiene; Food Delivery.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_G_T3"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-g-t4",
+        "tierLevel": 4,
+        "label": "T4 Complete Microcell",
         "amount": 1800,
         "billingCycle": "WEEKLY",
         "durationDays": 7,
-        "description": "Standardowa jednostka mieszkalna z dostępem do podstawowej infrastruktury.",
+        "description": "18 m²; Private Sleep; Private Shower; Private Toilet; Food Delivery.",
         "entitlementCodes": [
-          "HABITAT_LEDGER_ACCESS_T2"
+          "HOUSING_STANDARD_G_T4"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      }
+    ],
+    "active": true,
+    "revision": 1
+  },
+  {
+    "subscriptionCatalogId": "sub-housing-standard-f",
+    "providerId": "provider-habitat-ledger",
+    "organizationId": "habitat-market",
+    "productCode": "HAB-F",
+    "title": "Housing Standard F",
+    "provider": "Habitat Ledger",
+    "category": "RENT",
+    "market": "SYSTEM",
+    "domain": "HOUSING",
+    "billingCycle": "WEEKLY",
+    "currency": "CREDIT",
+    "entitlementCodes": [
+      "HOUSING_STANDARD_F_ACCESS"
+    ],
+    "targetPolicy": {
+      "allowedTargetTypes": [
+        "CITIZEN"
+      ],
+      "defaultTargetType": "CITIZEN",
+      "maximumTargets": 1
+    },
+    "coverageRules": [],
+    "tags": [
+      "SYSTEM",
+      "RENT",
+      "STANDARD_F"
+    ],
+    "logo": "HAB",
+    "summary": "Najem lokalu standardu F: Compact Unit.",
+    "description": "Oddzielny produkt Rent dla standardu F. Szczegółowe możliwości tierów, storage, logistyka, wyposażenie i polityka meblowania należą do Housing Rent Standards Catalog.",
+    "tiers": [
+      {
+        "tierId": "housing-f-t1",
+        "tierLevel": 1,
+        "label": "T1 Compact Basic",
+        "amount": 2200,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "20 m²; Private Sleep; Private Wet Module; Food Delivery; Food Reheat.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_F_T1"
         ],
         "coverageRuleIds": [],
         "active": true,
         "revision": 1
       },
       {
-        "tierId": "hab-secured",
-        "tierLevel": 3,
-        "label": "Secured Unit",
-        "amount": 3600,
+        "tierId": "housing-f-t2",
+        "tierLevel": 2,
+        "label": "T2 Compact Family",
+        "amount": 2600,
         "billingCycle": "WEEKLY",
         "durationDays": 7,
-        "description": "Jednostka z lepszym nadzorem, stabilniejszym dostępem i niższym ryzykiem eksmisji.",
+        "description": "21 m²; Private Sleep; Child Sleep Space; Private Wet Module; Food Delivery.",
         "entitlementCodes": [
-          "HABITAT_LEDGER_ACCESS_T3"
+          "HOUSING_STANDARD_F_T2"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-f-t3",
+        "tierLevel": 3,
+        "label": "T3 Adaptive Compact",
+        "amount": 3000,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "22 m²; Private Sleep; Separable Sleep Zone; Child Or Guest Space; Private Wet Module.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_F_T3"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      }
+    ],
+    "active": true,
+    "revision": 1
+  },
+  {
+    "subscriptionCatalogId": "sub-housing-standard-e",
+    "providerId": "provider-habitat-ledger",
+    "organizationId": "habitat-market",
+    "productCode": "HAB-E",
+    "title": "Housing Standard E",
+    "provider": "Habitat Ledger",
+    "category": "RENT",
+    "market": "SYSTEM",
+    "domain": "HOUSING",
+    "billingCycle": "WEEKLY",
+    "currency": "CREDIT",
+    "entitlementCodes": [
+      "HOUSING_STANDARD_E_ACCESS"
+    ],
+    "targetPolicy": {
+      "allowedTargetTypes": [
+        "CITIZEN"
+      ],
+      "defaultTargetType": "CITIZEN",
+      "maximumTargets": 1
+    },
+    "coverageRules": [],
+    "tags": [
+      "SYSTEM",
+      "RENT",
+      "STANDARD_E"
+    ],
+    "logo": "HAB",
+    "summary": "Najem lokalu standardu E: Private Compact.",
+    "description": "Oddzielny produkt Rent dla standardu E. Szczegółowe możliwości tierów, storage, logistyka, wyposażenie i polityka meblowania należą do Housing Rent Standards Catalog.",
+    "tiers": [
+      {
+        "tierId": "housing-e-t1",
+        "tierLevel": 1,
+        "label": "T1 Private Compact",
+        "amount": 3400,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "23 m²; Private Sleep; Sleeping Recess; Private Wet Module; Food Delivery.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_E_T1"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-e-t2",
+        "tierLevel": 2,
+        "label": "T2 Private Adaptive",
+        "amount": 3900,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "24 m²; Private Sleep; Flexible Guest Or Work Zone; Private Wet Module; Food Delivery.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_E_T2"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-e-t3",
+        "tierLevel": 3,
+        "label": "T3 Private Complete",
+        "amount": 4500,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "25 m²; Private Sleep; Closable Sleep Zone; Private Shower; Private Toilet.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_E_T3"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      }
+    ],
+    "active": true,
+    "revision": 1
+  },
+  {
+    "subscriptionCatalogId": "sub-housing-standard-d",
+    "providerId": "provider-habitat-ledger",
+    "organizationId": "habitat-market",
+    "productCode": "HAB-D",
+    "title": "Housing Standard D",
+    "provider": "Habitat Ledger",
+    "category": "RENT",
+    "market": "SYSTEM",
+    "domain": "HOUSING",
+    "billingCycle": "WEEKLY",
+    "currency": "CREDIT",
+    "entitlementCodes": [
+      "HOUSING_STANDARD_D_ACCESS"
+    ],
+    "targetPolicy": {
+      "allowedTargetTypes": [
+        "CITIZEN"
+      ],
+      "defaultTargetType": "CITIZEN",
+      "maximumTargets": 1
+    },
+    "coverageRules": [],
+    "tags": [
+      "SYSTEM",
+      "RENT",
+      "STANDARD_D"
+    ],
+    "logo": "HAB",
+    "summary": "Najem lokalu standardu D: Professional Unit.",
+    "description": "Oddzielny produkt Rent dla standardu D. Szczegółowe możliwości tierów, storage, logistyka, wyposażenie i polityka meblowania należą do Housing Rent Standards Catalog.",
+    "tiers": [
+      {
+        "tierId": "housing-d-t1",
+        "tierLevel": 1,
+        "label": "T1 Professional Compact",
+        "amount": 5200,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "27 m²; Separate Sleep Zone; Private Wet Module; Food Delivery; Simple Food Preparation.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_D_T1"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-d-t2",
+        "tierLevel": 2,
+        "label": "T2 Professional Flex",
+        "amount": 6000,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "29 m²; Separate Sleep Zone; Flexible Guest Child Or Work Zone; Private Wet Module; Food Delivery.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_D_T2"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-d-t3",
+        "tierLevel": 3,
+        "label": "T3 Professional Complete",
+        "amount": 7000,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "30 m²; Separate Bedroom; Guest Access; Private Wet Module; Food Delivery.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_D_T3"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      }
+    ],
+    "active": true,
+    "revision": 1
+  },
+  {
+    "subscriptionCatalogId": "sub-housing-standard-c",
+    "providerId": "provider-habitat-ledger",
+    "organizationId": "habitat-market",
+    "productCode": "HAB-C",
+    "title": "Housing Standard C",
+    "provider": "Habitat Ledger",
+    "category": "RENT",
+    "market": "SYSTEM",
+    "domain": "HOUSING",
+    "billingCycle": "WEEKLY",
+    "currency": "CREDIT",
+    "entitlementCodes": [
+      "HOUSING_STANDARD_C_ACCESS"
+    ],
+    "targetPolicy": {
+      "allowedTargetTypes": [
+        "CITIZEN"
+      ],
+      "defaultTargetType": "CITIZEN",
+      "maximumTargets": 1
+    },
+    "coverageRules": [],
+    "tags": [
+      "SYSTEM",
+      "RENT",
+      "STANDARD_C"
+    ],
+    "logo": "HAB",
+    "summary": "Najem lokalu standardu C: Premium Unit.",
+    "description": "Oddzielny produkt Rent dla standardu C. Szczegółowe możliwości tierów, storage, logistyka, wyposażenie i polityka meblowania należą do Housing Rent Standards Catalog.",
+    "tiers": [
+      {
+        "tierId": "housing-c-t1",
+        "tierLevel": 1,
+        "label": "T1 Premium Compact",
+        "amount": 8200,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "32 m²; Separate Bedroom; Guest Access; Full Bathroom; Full Food Preparation.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_C_T1"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-c-t2",
+        "tierLevel": 2,
+        "label": "T2 Premium Adaptive",
+        "amount": 9800,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "35 m²; Separate Bedroom; Flexible Guest Or Work Room; Full Bathroom; Full Food Preparation.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_C_T2"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-c-t3",
+        "tierLevel": 3,
+        "label": "T3 Premium Suite",
+        "amount": 11800,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "40 m²; Separate Bedroom; Flex Room; Guest Access; Full Bathroom.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_C_T3"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      }
+    ],
+    "active": true,
+    "revision": 1
+  },
+  {
+    "subscriptionCatalogId": "sub-housing-standard-b",
+    "providerId": "provider-habitat-ledger",
+    "organizationId": "habitat-market",
+    "productCode": "HAB-B",
+    "title": "Housing Standard B",
+    "provider": "Habitat Ledger",
+    "category": "RENT",
+    "market": "SYSTEM",
+    "domain": "HOUSING",
+    "billingCycle": "WEEKLY",
+    "currency": "CREDIT",
+    "entitlementCodes": [
+      "HOUSING_STANDARD_B_ACCESS"
+    ],
+    "targetPolicy": {
+      "allowedTargetTypes": [
+        "CITIZEN"
+      ],
+      "defaultTargetType": "CITIZEN",
+      "maximumTargets": 1
+    },
+    "coverageRules": [],
+    "tags": [
+      "SYSTEM",
+      "RENT",
+      "STANDARD_B"
+    ],
+    "logo": "HAB",
+    "summary": "Najem lokalu standardu B: High Status Unit.",
+    "description": "Oddzielny produkt Rent dla standardu B. Szczegółowe możliwości tierów, storage, logistyka, wyposażenie i polityka meblowania należą do Housing Rent Standards Catalog.",
+    "tiers": [
+      {
+        "tierId": "housing-b-t1",
+        "tierLevel": 1,
+        "label": "T1 High Status Residence",
+        "amount": 14000,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "42 m²; Separate Bedroom; Office Or Guest Space; Two Sanitary Points; Full Cooking.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_B_T1"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-b-t2",
+        "tierLevel": 2,
+        "label": "T2 Executive Residence",
+        "amount": 17000,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "46 m²; Separate Bedroom; Office Or Guest Room; Two Sanitary Points; Full Cooking.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_B_T2"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-b-t3",
+        "tierLevel": 3,
+        "label": "T3 Executive Suite",
+        "amount": 20500,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "50 m²; Separate Bedroom; Flex Room; Controlled Visitor Access; Two Sanitary Points.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_B_T3"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      }
+    ],
+    "active": true,
+    "revision": 1
+  },
+  {
+    "subscriptionCatalogId": "sub-housing-standard-a",
+    "providerId": "provider-habitat-ledger",
+    "organizationId": "habitat-market",
+    "productCode": "HAB-A",
+    "title": "Housing Standard A",
+    "provider": "Habitat Ledger",
+    "category": "RENT",
+    "market": "SYSTEM",
+    "domain": "HOUSING",
+    "billingCycle": "WEEKLY",
+    "currency": "CREDIT",
+    "entitlementCodes": [
+      "HOUSING_STANDARD_A_ACCESS"
+    ],
+    "targetPolicy": {
+      "allowedTargetTypes": [
+        "CITIZEN"
+      ],
+      "defaultTargetType": "CITIZEN",
+      "maximumTargets": 1
+    },
+    "coverageRules": [],
+    "tags": [
+      "SYSTEM",
+      "RENT",
+      "STANDARD_A"
+    ],
+    "logo": "HAB",
+    "summary": "Najem lokalu standardu A: System Residence.",
+    "description": "Oddzielny produkt Rent dla standardu A. Szczegółowe możliwości tierów, storage, logistyka, wyposażenie i polityka meblowania należą do Housing Rent Standards Catalog.",
+    "tiers": [
+      {
+        "tierId": "housing-a-t1",
+        "tierLevel": 1,
+        "label": "T1 System Residence",
+        "amount": 25000,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "60 m²; Selected Layout; Separate Bedroom; Guest Or Work Room; Two Wet Modules.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_A_T1"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-a-t2",
+        "tierLevel": 2,
+        "label": "T2 System Residence Prime",
+        "amount": 35000,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "75 m²; Individual Layout; Primary Bedroom; Guest Suite; Work Room.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_A_T2"
+        ],
+        "coverageRuleIds": [],
+        "active": true,
+        "revision": 1
+      },
+      {
+        "tierId": "housing-a-t3",
+        "tierLevel": 3,
+        "label": "T3 System Residence Sovereign",
+        "amount": 50000,
+        "billingCycle": "WEEKLY",
+        "durationDays": 7,
+        "description": "100 m²; Individual Layout; Primary Suite; Guest Suite; Multiple Work Rooms.",
+        "entitlementCodes": [
+          "HOUSING_STANDARD_A_T3"
         ],
         "coverageRuleIds": [],
         "active": true,
@@ -2833,14 +3402,14 @@ window.APP_DATA = window.APP_DATA || {};
   });
 
   window.APP_DATA.subscriptionCatalog = {
-    schemaVersion: "subscription_catalog_asset_targets_3_0x",
+    schemaVersion: "subscription_catalog_housing_rent_4_0x",
     categories,
     providers,
     subscriptions
   };
 
   window.APP_DATA.subscriptionCatalogDefinitions = {
-    schemaVersion: "subscription_catalog_asset_targets_3_0x",
+    schemaVersion: "subscription_catalog_housing_rent_4_0x",
     subscriptions
   };
 })();

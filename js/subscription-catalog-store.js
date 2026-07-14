@@ -2,14 +2,16 @@ window.WS_APP = window.WS_APP || {};
 
 (function initSubscriptionCatalogStoreModule() {
   const app = window.WS_APP;
-  const STORAGE_KEY = "ws_app_subscription_catalog_definitions_v3";
-  const STORAGE_SCHEMA_KEY = "ws_app_subscription_catalog_definitions_schema_v3";
-  const STORAGE_SCHEMA_VERSION = "subscription_catalog_asset_targets_3_0x";
+  const STORAGE_KEY = "ws_app_subscription_catalog_definitions_v4";
+  const STORAGE_SCHEMA_KEY = "ws_app_subscription_catalog_definitions_schema_v4";
+  const STORAGE_SCHEMA_VERSION = "subscription_catalog_housing_rent_4_0x";
   const LEGACY_STORAGE_KEYS = [
     "ws_app_subscription_catalog_definitions_v1",
     "ws_app_subscription_catalog_definitions_schema",
     "ws_app_subscription_catalog_definitions_v2",
-    "ws_app_subscription_catalog_definitions_schema_v2"
+    "ws_app_subscription_catalog_definitions_schema_v2",
+    "ws_app_subscription_catalog_definitions_v3",
+    "ws_app_subscription_catalog_definitions_schema_v3"
   ];
   const VALID_TARGET_TYPES = new Set(["CITIZEN", "ITEM_INSTANCE"]);
   const VALID_DOMAINS = new Set([
@@ -516,7 +518,7 @@ window.WS_APP = window.WS_APP || {};
   app.ensureSubscriptionCatalogLoaded = function ensureSubscriptionCatalogLoaded() {
     if (window.APP_DATA?.subscriptionCatalogDefinitions) return Promise.resolve(clone(subscriptionCatalogDefinitions));
     if (app.loadLazyScript) {
-      return app.loadLazyScript("data/subscription-catalog.js?v=12").then(() => {
+      return app.loadLazyScript("data/subscription-catalog.js?v=13").then(() => {
         subscriptionCatalogDefinitions = mergeSubscriptionCatalogDefinitions(readSeedDefinitions(), subscriptionCatalogDefinitions);
         return clone(subscriptionCatalogDefinitions);
       });

@@ -25,8 +25,8 @@ test("Housing and Market are separate lazy module bundles", () => {
   const housing = extractBlock(modules, "  housing: {", "  database: {");
 
   const storageIndex = housing.indexOf('"js/housing-storage-runtime.js?v=3"');
-  const householdIndex = housing.indexOf('"js/housing-household-runtime.js?v=1"');
-  const housingIndex = housing.indexOf('"js/housing.js?v=49"');
+  const householdIndex = housing.indexOf('"js/housing-household-runtime.js?v=2"');
+  const housingIndex = housing.indexOf('"js/housing.js?v=50"');
   assert.ok(storageIndex >= 0);
   assert.ok(householdIndex > storageIndex);
   assert.ok(housingIndex > householdIndex);

@@ -129,7 +129,7 @@ test("delegated Equipment actions own rename submit and clear commands", () => {
 });
 
 test("Cyberware Installed Systems and Core Stack expose the shared rename control", () => {
-  const linkSource = fs.readFileSync(path.join(PROJECT_ROOT, "js/equipment-cyberware-link.js"), "utf8");
+  const linkSource = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-workspace.js"), "utf8");
   const coreSource = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-core-stack.js"), "utf8");
   assert.match(linkSource, /renderItemInstanceRenameControl/);
   assert.match(linkSource, /renderItemInstanceRenameControl\(item/);

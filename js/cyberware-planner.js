@@ -649,8 +649,8 @@ window.WS_APP = window.WS_APP || {};
 
   function rerenderPlannerWorkspace(citizenId = "", options = {}) {
     const id = String(citizenId || "").trim();
-    if (options.refreshCyberware === true && typeof app.refreshEquipmentCyberwareWorkspace === "function") {
-      app.refreshEquipmentCyberwareWorkspace(id, {
+    if (options.refreshCyberware === true && typeof (app.refreshCyberwareWorkspace || app.refreshEquipmentCyberwareWorkspace) === "function") {
+      (app.refreshCyberwareWorkspace || app.refreshEquipmentCyberwareWorkspace)(id, {
         forceRuntime: options.forceRuntime === true,
         refreshPlanner: true,
         mountPlanner: true
@@ -669,8 +669,9 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function getPlannerCitizenId(target = null) {
-    const shell = target?.closest?.("[data-equipment-module-shell]") || document.querySelector?.("[data-equipment-module-shell]");
-    return String(shell?.dataset?.equipmentCitizenId || "").trim();
+    const shell = target?.closest?.("[data-cyberware-module-shell], [data-equipment-module-shell]")
+      || document.querySelector?.("[data-cyberware-module-shell], [data-equipment-module-shell]");
+    return String(shell?.dataset?.cyberwareCitizenId || shell?.dataset?.equipmentCitizenId || "").trim();
   }
 
   function handlePlannerClick(event) {

@@ -242,7 +242,8 @@ function renderEntryRecord(user, entryId) {
 
   const aliases = Array.isArray(entry.aliases) ? entry.aliases : [];
   const adminMeta = renderEntryAdminMeta(entry, user);
-  const layoutClass = "knowledge-record-layout knowledge-record-layout--single";
+  const relatedBlock = renderEntryRelated(entry, user);
+  const layoutClass = `knowledge-record-layout knowledge-record-layout--single${relatedBlock ? " knowledge-record-layout--with-sidecar" : ""}`;
 
   container.innerHTML = `
     <article class="module-detail knowledge-record-view knowledge-record-view--glossary" data-entry-record="${escapeHtml(entry.id)}">
@@ -261,13 +262,13 @@ function renderEntryRecord(user, entryId) {
       ${user.role === "admin" ? renderEntryAdminActions(entry) : ""}
 
       <section class="${layoutClass}">
+        ${relatedBlock ? `<aside class="knowledge-related-sidecar" aria-label="Related encyclopedia terms">${relatedBlock}</aside>` : ""}
         <section class="knowledge-reading-panel">
           ${getEntryDefinition(entry) ? `<p class="knowledge-lead">${escapeHtml(getEntryDefinition(entry))}</p>` : ""}
           <div class="knowledge-section-block knowledge-section-block--plain">
             <p>${escapeHtml(getEntryBody(entry) || "No readable definition has been entered.")}</p>
           </div>
           ${aliases.length ? renderEntryAliases(entry) : ""}
-          ${renderEntryRelated(entry, user)}
           ${adminMeta}
         </section>
       </section>

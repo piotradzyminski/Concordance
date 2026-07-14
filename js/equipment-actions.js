@@ -35,7 +35,7 @@ window.WS_APP = window.WS_APP || {};
     return true;
   }
 
-  const EQUIPMENT_ACTIONS_VERSION = "5.4.2x";
+  const EQUIPMENT_ACTIONS_VERSION = "5.4.3x";
   const GRID_DRAG_THRESHOLD = 6;
   const TOOLTIP_DELAY_MS = 300;
   let activeGridDrag = null;
@@ -784,36 +784,6 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
       const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-      const maintenanceField = event.target.closest?.("[data-cyberware-maintenance-field]");
-      if (maintenanceField && citizenId) {
-        event.stopPropagation();
-        const field = String(maintenanceField.dataset.cyberwareMaintenanceField || "").trim().toLowerCase();
-        const patch = field === "item"
-          ? { selectedItemId: maintenanceField.value || "", feedback: null }
-          : field === "operation"
-            ? { operation: maintenanceField.value || "DIAGNOSTIC", feedback: null }
-            : null;
-        if (patch) {
-          window.WS_APP.setCyberwareMaintenanceSelection?.(citizenId, patch);
-          if (field === "item" && patch.selectedItemId) {
-            window.WS_APP.setCyberwareSelectedInstance?.(citizenId, patch.selectedItemId, { root, syncView: false });
-          }
-          window.WS_APP.refreshCyberwareMaintenancePanel?.(citizenId, { mount: true });
-        }
-        return;
-      }
-      const cyberwareIndexCategory = event.target.closest?.("[data-cyberware-index-category]");
-      const cyberwareIndexManufacturer = event.target.closest?.("[data-cyberware-index-manufacturer]");
-      const cyberwareIndexGrade = event.target.closest?.("[data-cyberware-index-grade]");
-      if (cyberwareIndexCategory || cyberwareIndexManufacturer || cyberwareIndexGrade) {
-        window.WS_APP.setCyberwareIndexFilter?.(citizenId, {
-          ...(cyberwareIndexCategory ? { category: cyberwareIndexCategory.value || "ALL" } : {}),
-          ...(cyberwareIndexManufacturer ? { manufacturer: cyberwareIndexManufacturer.value || "ALL" } : {}),
-          ...(cyberwareIndexGrade ? { grade: cyberwareIndexGrade.value || "ALL" } : {})
-        });
-        window.WS_APP.applyCyberwareIndexFilters?.(root);
-        return;
-      }
       const itemIndexCategory = event.target.closest?.("[data-equipment-item-index-category]");
       if (!itemIndexCategory) return;
       window.WS_APP.setEquipmentItemIndexCategory?.(citizenId, itemIndexCategory.value || "ALL");
@@ -822,12 +792,6 @@ window.WS_APP = window.WS_APP || {};
 
     root.addEventListener("input", (event) => {
       const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-      const cyberwareSearchInput = event.target.closest?.("[data-cyberware-index-search]");
-      if (cyberwareSearchInput) {
-        window.WS_APP.setCyberwareIndexFilter?.(citizenId, { query: cyberwareSearchInput.value || "" });
-        window.WS_APP.applyCyberwareIndexFilters?.(root);
-        return;
-      }
       const searchInput = event.target.closest?.("[data-equipment-item-index-search]");
       if (!searchInput) return;
       window.WS_APP.setEquipmentItemIndexQuery?.(citizenId, searchInput.value || "");
@@ -974,30 +938,6 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
 
-      const cyberwareIndexToggle = event.target.closest("[data-cyberware-index-toggle]");
-      if (cyberwareIndexToggle && !cyberwareIndexToggle.disabled) {
-        event.preventDefault();
-        window.WS_APP.toggleCyberwareIndex?.(citizenId);
-        window.WS_APP.syncCyberwareIndexOverlay?.(citizenId, { root });
-        return;
-      }
-
-      const cyberwareIndexClose = event.target.closest("[data-cyberware-index-close]");
-      if (cyberwareIndexClose) {
-        event.preventDefault();
-        window.WS_APP.setCyberwareIndexOpen?.(citizenId, false);
-        window.WS_APP.syncCyberwareIndexOverlay?.(citizenId, { root });
-        return;
-      }
-
-      const cyberwareIndexSelect = event.target.closest("[data-cyberware-index-select]");
-      if (cyberwareIndexSelect && !cyberwareIndexSelect.disabled) {
-        event.preventDefault();
-        window.WS_APP.selectCyberwareIndexDefinition?.(citizenId, cyberwareIndexSelect.dataset.cyberwareIndexSelect || "");
-        window.WS_APP.syncCyberwareIndexOverlay?.(citizenId, { root });
-        return;
-      }
-
       const itemIndexToggle = event.target.closest("[data-equipment-item-index-toggle]");
       if (itemIndexToggle && !itemIndexToggle.disabled) {
         event.preventDefault();
@@ -1068,181 +1008,6 @@ window.WS_APP = window.WS_APP || {};
         } else {
           rerenderEquipmentShell(user);
         }
-        return;
-      }
-
-      const cyberwareBodymapViewButton = event.target.closest("[data-cyberware-bodymap-view]");
-      if (cyberwareBodymapViewButton && !cyberwareBodymapViewButton.disabled) {
-        event.preventDefault();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        window.WS_APP.setCyberwareBodymapView?.(citizenId, cyberwareBodymapViewButton.dataset.cyberwareBodymapView || "front", { root });
-        return;
-      }
-
-      const cyberwareSelectItemButton = event.target.closest("[data-cyberware-select-item]");
-      if (cyberwareSelectItemButton && !cyberwareSelectItemButton.disabled) {
-        event.preventDefault();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        window.WS_APP.setCyberwareSelectedInstance?.(citizenId, cyberwareSelectItemButton.dataset.cyberwareSelectItem || "", { root });
-        return;
-      }
-
-      const operationsRoleButton = event.target.closest("[data-cyberware-operations-inspector-role]");
-      if (operationsRoleButton && !operationsRoleButton.disabled) {
-        event.preventDefault();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        window.WS_APP.setCyberwareOperationsInspectorRole?.(citizenId, operationsRoleButton.dataset.cyberwareOperationsInspectorRole || "AUTO", { root });
-        return;
-      }
-
-      const historyFilterButton = event.target.closest("[data-cyberware-history-filter]");
-      if (historyFilterButton && !historyFilterButton.disabled) {
-        event.preventDefault();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        window.WS_APP.setCyberwareHistoryFilter?.(citizenId, historyFilterButton.dataset.cyberwareHistoryFilter || "ALL", { root });
-        return;
-      }
-
-      const historySelectButton = event.target.closest("[data-cyberware-history-select]");
-      if (historySelectButton && !historySelectButton.disabled) {
-        event.preventDefault();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        const instanceId = String(historySelectButton.dataset.cyberwareHistorySelect || "").trim();
-        window.WS_APP.setCyberwareSelectedInstance?.(citizenId, instanceId, { root, syncView: false });
-        window.WS_APP.setCyberwareHistoryFilter?.(citizenId, "SELECTED", { root });
-        return;
-      }
-
-      const cyberwareUiSectionButton = event.target.closest("[data-cyberware-ui-section]");
-      if (cyberwareUiSectionButton && !cyberwareUiSectionButton.disabled) {
-        event.preventDefault();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        window.WS_APP.setCyberwareUiSection?.(citizenId, cyberwareUiSectionButton.dataset.cyberwareUiSection || "SYSTEMS");
-        return;
-      }
-
-      const cyberwareUiViewButton = event.target.closest("[data-cyberware-ui-view]");
-      if (cyberwareUiViewButton && !cyberwareUiViewButton.disabled) {
-        event.preventDefault();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        window.WS_APP.setCyberwareUiView?.(citizenId, cyberwareUiViewButton.dataset.cyberwareUiView || "OVERVIEW");
-        return;
-      }
-
-      const maintenanceAction = event.target.closest("[data-cyberware-maintenance-action]");
-      if (maintenanceAction && !maintenanceAction.disabled) {
-        event.preventDefault();
-        const action = String(maintenanceAction.dataset.cyberwareMaintenanceAction || "").trim().toLowerCase();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        if (!citizenId) return;
-        if (action === "open") {
-          const itemId = String(maintenanceAction.dataset.itemId || "").trim();
-          if (itemId) {
-            window.WS_APP.setCyberwareMaintenanceSelection?.(citizenId, { selectedItemId: itemId, feedback: null });
-            window.WS_APP.setCyberwareSelectedInstance?.(citizenId, itemId, { root, syncView: false });
-          }
-          window.WS_APP.setCyberwareUiView?.(citizenId, "MAINTENANCE", { mount: false });
-          window.WS_APP.mountCyberwareMaintenancePanel?.(citizenId, { force: Boolean(itemId) });
-          return;
-        }
-        if (action === "close") {
-          window.WS_APP.closeCyberwareMaintenancePanel?.(citizenId);
-          return;
-        }
-        if (action === "execute") {
-          const state = window.WS_APP.getCyberwareMaintenancePanelState?.(citizenId) || {};
-          const citizen = getActiveEquipmentCitizen(root, user);
-          const runtime = citizen ? window.WS_APP.getCyberwareWorkspaceRuntime?.(citizen) : null;
-          const result = window.WS_APP.runCyberwareMaintenance?.(citizenId, {
-            itemId: state.selectedItemId || "",
-            operation: state.operation || "DIAGNOSTIC",
-            source: "CYBERWARE_MAINTENANCE_UI",
-            runtime,
-            deferPersistence: true
-          });
-          window.WS_APP.setCyberwareMaintenanceSelection?.(citizenId, {
-            feedback: { ok: result?.ok === true, reason: result?.reason || "MAINTENANCE_FAILED" }
-          });
-          const worldOperation = result?.operation?.operationId || result?.operationId;
-          if (worldOperation) {
-            // The terminal World Bridge event owns the single deferred workspace refresh.
-          } else if (result?.ok !== true) {
-            window.WS_APP.refreshCyberwareMaintenancePanel?.(citizenId, { mount: true });
-          } else {
-            window.WS_APP.invalidateCyberwareWorkspaceRuntime?.(citizenId, {
-              planner: true,
-              diagnostics: true,
-              maintenance: false
-            });
-            window.WS_APP.refreshEquipmentCyberwareWorkspace?.(citizenId, {
-              forceRuntime: true,
-              refreshPlanner: false,
-              refreshDiagnostics: false,
-              refreshMaintenance: true,
-              mountMaintenance: true
-            });
-          }
-          return;
-        }
-      }
-
-      const diagnosticsAction = event.target.closest("[data-cyberware-diagnostics-action]");
-      if (diagnosticsAction && !diagnosticsAction.disabled) {
-        event.preventDefault();
-        const action = String(diagnosticsAction.dataset.cyberwareDiagnosticsAction || "").trim().toLowerCase();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        if (!citizenId) return;
-        if (action === "open") {
-          window.WS_APP.mountCyberwareDiagnosticsPanel?.(citizenId);
-          return;
-        }
-        if (action === "close") {
-          window.WS_APP.closeCyberwareDiagnosticsPanel?.(citizenId);
-          return;
-        }
-        if (action === "scan") {
-          const citizen = getActiveEquipmentCitizen(root, user);
-          const runtime = citizen ? window.WS_APP.getCyberwareWorkspaceRuntime?.(citizen) : null;
-          const result = window.WS_APP.runCyberwareDiagnosticScan?.(citizenId, { runtime });
-          if (!result?.ok) diagnosticsAction.dataset.diagnosticsError = String(result?.reason || "DIAGNOSTIC_SCAN_FAILED");
-          return;
-        }
-        if (action === "clear-history") {
-          const result = window.WS_APP.clearCyberwareDiagnosticHistory?.(citizenId);
-          if (!result?.ok) diagnosticsAction.dataset.diagnosticsError = String(result?.reason || "DIAGNOSTIC_HISTORY_CLEAR_FAILED");
-          return;
-        }
-      }
-
-      const authorizationAction = event.target.closest("[data-cyberware-authorization-action]");
-      if (authorizationAction && !authorizationAction.disabled) {
-        event.preventDefault();
-        const action = String(authorizationAction.dataset.cyberwareAuthorizationAction || "").trim().toLowerCase();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        const itemId = String(authorizationAction.dataset.itemId || "").trim();
-        if (action === "update-firmware" && citizenId && itemId) {
-          const result = window.WS_APP.installCyberwareFirmware?.(citizenId, itemId, {
-            source: "CYBERWARE_WORKSPACE",
-            deferPersistence: true
-          });
-          const worldOperation = result?.operation?.operationId || result?.operationId;
-          if (!worldOperation && result?.ok === true) {
-            window.WS_APP.invalidateCyberwareWorkspaceRuntime?.(citizenId, { planner: true });
-            window.WS_APP.refreshEquipmentCyberwareWorkspace?.(citizenId, {
-              forceRuntime: true,
-              refreshPlanner: false
-            });
-          }
-          if (!result?.ok) authorizationAction.dataset.authorizationError = String(result?.reason || "FIRMWARE_UPDATE_FAILED");
-        }
-        return;
-      }
-
-      const plannerToggle = event.target.closest("[data-cyberware-planner-toggle]");
-      if (plannerToggle && !plannerToggle.disabled) {
-        event.preventDefault();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        window.WS_APP.mountCyberwarePlannerPanel?.(citizenId);
         return;
       }
 
@@ -1466,12 +1231,7 @@ window.WS_APP = window.WS_APP || {};
         event.preventDefault();
         const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
         if (!citizenId) return;
-        const nextView = window.WS_APP.setEquipmentWorkspaceView?.(citizenId, "CYBERWARE") || "CYBERWARE";
-        if (typeof window.WS_APP.syncEquipmentWorkspaceShell === "function") {
-          window.WS_APP.syncEquipmentWorkspaceShell(nextView, { root, citizenId });
-        } else {
-          rerenderEquipmentShell(user);
-        }
+        window.WS_APP.openCyberwareFromEquipment?.(citizenId);
         return;
       }
 

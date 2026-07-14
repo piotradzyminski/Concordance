@@ -2,6 +2,7 @@ window.WS_APP = window.WS_APP || {};
 
 (function initHouseholdStore() {
   const HOUSEHOLD_SCHEMA_VERSION = "household_foundation_2_0x";
+  const HOUSEHOLD_LAYOUT_SCHEMA_VERSION = "housing_layout_pools_3_1x";
   const HOUSEHOLD_LOCATION_TYPE = "HOUSING_ROOM";
   const HOUSEHOLD_OPERATION_TYPES = new Set([
     "REST",
@@ -21,6 +22,8 @@ window.WS_APP = window.WS_APP || {};
     HYGIENE: ["HYGIENE"],
     MEDICAL: ["REST", "RECOVERY", "MEDICAL_CONSUMABLE_USE", "SECURE_CONSUMABLE_STORAGE"],
     WORKSHOP: ["MAINTENANCE", "UTILITY"],
+    WORKSPACE: ["UTILITY", "WORKSPACE"],
+    FLEX: ["UTILITY", "SOCIAL"],
     STORAGE: ["STORAGE"],
     ENTRY: ["ACCESS"],
     SAFE_ROOM: ["REST", "SLEEP", "RECOVERY", "SECURE_CONSUMABLE_STORAGE"]
@@ -57,6 +60,30 @@ window.WS_APP = window.WS_APP || {};
     return [...new Set(value.map(normalizeToken).filter(Boolean))];
   }
 
+  function normalizeCellKey(value = "") {
+    const match = String(value || "").trim().match(/^(\d+):(\d+)$/);
+    if (!match) return "";
+    return `${Number(match[1])}:${Number(match[2])}`;
+  }
+
+  function normalizeCellKeys(value = []) {
+    if (!Array.isArray(value)) return [];
+    return [...new Set(value.map((entry) => {
+      if (entry && typeof entry === "object") return normalizeCellKey(`${entry.column ?? entry.gridX}:${entry.row ?? entry.gridY}`);
+      return normalizeCellKey(entry);
+    }).filter(Boolean))];
+  }
+
+  function rectangleCellKeys(bounds = {}) {
+    const cells = [];
+    const endColumn = Number(bounds.column || 0) + Number(bounds.width || 0) - 1;
+    const endRow = Number(bounds.row || 0) + Number(bounds.height || 0) - 1;
+    for (let row = Number(bounds.row || 1); row <= endRow; row += 1) {
+      for (let column = Number(bounds.column || 1); column <= endColumn; column += 1) cells.push(`${column}:${row}`);
+    }
+    return cells;
+  }
+
   function createRoom(id, label, type, column, row, width, height, capabilities = []) {
     const roomType = normalizeToken(type || "MULTIPURPOSE");
     return {
@@ -77,6 +104,35 @@ window.WS_APP = window.WS_APP || {};
   function getDefaultHouseholdTemplate(record = {}) {
     const type = normalizeToken(record.type || record.storageProfile || "UNIT");
     const recordId = normalizeId(record.id || "housing");
+    const assignedLayout = window.WS_APP.instantiateHousingLayout?.({
+      ...record,
+      housingRecordId: recordId,
+      layoutTemplateId: record.layoutTemplateId || record.household?.layoutTemplateId,
+      layoutSeed: record.layoutSeed || record.household?.layoutSeed
+    }) || null;
+    if (assignedLayout?.household) return clone(assignedLayout.household);
+    if (assignedLayout?.layoutPolicy === "ASSIGNED_BEDSPACE") {
+      return {
+        schemaVersion: HOUSEHOLD_SCHEMA_VERSION,
+        layoutSchemaVersion: HOUSEHOLD_LAYOUT_SCHEMA_VERSION,
+        layoutTemplateId: "",
+        layoutSeed: normalizeId(assignedLayout.layoutSeed || ""),
+        layoutPolicy: "ASSIGNED_BEDSPACE",
+        variantFamily: "BEDSPACE",
+        areaM2: null,
+        floorPlan: {
+          width: 1,
+          height: 1,
+          cellAreaM2: 0.25,
+          activeCells: [],
+          inactiveCells: ["1:1"]
+        },
+        rooms: [],
+        fixedFixtureAnchors: [],
+        residentIds: [],
+        notes: ""
+      };
+    }
     if (type.includes("WAREHOUSE")) {
       return {
         floorPlan: { width: 18, height: 12 },
@@ -159,11 +215,15 @@ window.WS_APP = window.WS_APP || {};
     const row = clampInteger(boundsSource.row ?? boundsSource.gridY ?? boundsSource.y ?? 1, 1, floorPlan.height || 999, 1);
     const width = clampInteger(boundsSource.width ?? boundsSource.w ?? 1, 1, Math.max(1, (floorPlan.width || 999) - column + 1), 1);
     const height = clampInteger(boundsSource.height ?? boundsSource.h ?? 1, 1, Math.max(1, (floorPlan.height || 999) - row + 1), 1);
+    const bounds = { column, row, width, height };
+    const activeCells = normalizeCellKeys(source.activeCells?.length ? source.activeCells : rectangleCellKeys(bounds));
     return {
       id: normalizeId(source.id || source.roomId || `${record.id || "housing"}-room-${index + 1}`),
+      layoutRoomKey: normalizeId(source.layoutRoomKey || source.key || ""),
       label: normalizeId(source.label || source.name || source.title || type.replace(/_/g, " ")),
       type,
-      bounds: { column, row, width, height },
+      bounds,
+      activeCells,
       capabilities: normalizeStringList(source.capabilities?.length ? source.capabilities : ROOM_CAPABILITIES[type] || []),
       restrictions: normalizeStringList(source.restrictions || []),
       notes: normalizeId(source.notes || source.note || "")
@@ -181,10 +241,35 @@ window.WS_APP = window.WS_APP || {};
     };
     const rawRooms = Array.isArray(source.rooms) && source.rooms.length ? source.rooms : template.rooms;
     const rooms = rawRooms.map((room, index) => normalizeHouseholdRoom(room, index, record, floorPlan));
+    const roomCellKeys = [...new Set(rooms.flatMap((room) => room.activeCells || []))];
+    const activeCells = normalizeCellKeys(floorSource.activeCells?.length ? floorSource.activeCells : source.activeCells?.length ? source.activeCells : roomCellKeys);
+    const activeCellSet = new Set(activeCells);
+    const inactiveCells = normalizeCellKeys(floorSource.inactiveCells?.length ? floorSource.inactiveCells : (() => {
+      const cells = [];
+      for (let row = 1; row <= floorPlan.height; row += 1) {
+        for (let column = 1; column <= floorPlan.width; column += 1) {
+          const key = `${column}:${row}`;
+          if (!activeCellSet.has(key)) cells.push(key);
+        }
+      }
+      return cells;
+    })());
     return {
       schemaVersion: HOUSEHOLD_SCHEMA_VERSION,
-      floorPlan,
+      layoutSchemaVersion: normalizeId(source.layoutSchemaVersion || template.layoutSchemaVersion || (activeCells.length ? HOUSEHOLD_LAYOUT_SCHEMA_VERSION : "")),
+      layoutTemplateId: normalizeId(source.layoutTemplateId || template.layoutTemplateId || record.layoutTemplateId || ""),
+      layoutSeed: normalizeId(source.layoutSeed || template.layoutSeed || record.layoutSeed || ""),
+      layoutPolicy: normalizeToken(source.layoutPolicy || template.layoutPolicy || record.layoutPolicy || ""),
+      variantFamily: normalizeToken(source.variantFamily || template.variantFamily || ""),
+      areaM2: source.areaM2 ?? template.areaM2 ?? record.areaM2 ?? (activeCells.length * 0.25),
+      floorPlan: {
+        ...floorPlan,
+        cellAreaM2: Number(floorSource.cellAreaM2 || template.floorPlan?.cellAreaM2 || 0.25),
+        activeCells,
+        inactiveCells
+      },
       rooms,
+      fixedFixtureAnchors: Array.isArray(source.fixedFixtureAnchors) ? clone(source.fixedFixtureAnchors) : Array.isArray(template.fixedFixtureAnchors) ? clone(template.fixedFixtureAnchors) : [],
       residentIds: [...new Set((Array.isArray(source.residentIds) ? source.residentIds : []).map(normalizeId).filter(Boolean))],
       notes: normalizeId(source.notes || "")
     };
@@ -197,6 +282,7 @@ window.WS_APP = window.WS_APP || {};
     const errors = [];
     const roomIds = new Set();
     const occupiedCells = new Map();
+    const floorCells = new Set(normalizeCellKeys(household.floorPlan?.activeCells || []));
     household.rooms.forEach((room, index) => {
       if (!room.id) errors.push({ code: "HOUSEHOLD_ROOM_ID_REQUIRED", index });
       else if (roomIds.has(room.id)) errors.push({ code: "HOUSEHOLD_ROOM_ID_DUPLICATE", roomId: room.id });
@@ -208,14 +294,16 @@ window.WS_APP = window.WS_APP || {};
         errors.push({ code: "HOUSEHOLD_ROOM_OUTSIDE_FLOOR_PLAN", roomId: room.id, bounds: clone(bounds) });
         return;
       }
-      for (let row = bounds.row; row <= endRow; row += 1) {
-        for (let column = bounds.column; column <= endColumn; column += 1) {
-          const cell = `${column}:${row}`;
-          const conflict = occupiedCells.get(cell);
-          if (conflict && conflict !== room.id) errors.push({ code: "HOUSEHOLD_ROOM_OVERLAP", roomId: room.id, conflictRoomId: conflict, cell });
-          else occupiedCells.set(cell, room.id);
-        }
-      }
+      const roomCells = normalizeCellKeys(room.activeCells?.length ? room.activeCells : rectangleCellKeys(bounds));
+      roomCells.forEach((cell) => {
+        if (floorCells.size && !floorCells.has(cell)) errors.push({ code: "HOUSEHOLD_ROOM_CELL_OUTSIDE_ACTIVE_MASK", roomId: room.id, cell });
+        const conflict = occupiedCells.get(cell);
+        if (conflict && conflict !== room.id) errors.push({ code: "HOUSEHOLD_ROOM_OVERLAP", roomId: room.id, conflictRoomId: conflict, cell });
+        else occupiedCells.set(cell, room.id);
+      });
+    });
+    floorCells.forEach((cell) => {
+      if (!occupiedCells.has(cell)) errors.push({ code: "HOUSEHOLD_ACTIVE_CELL_UNASSIGNED", cell });
     });
     return { valid: errors.length === 0, schemaVersion: HOUSEHOLD_SCHEMA_VERSION, errors };
   }
@@ -327,6 +415,8 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function isCellInsideRoom(room = {}, column = 1, row = 1) {
+    const activeCells = normalizeCellKeys(room.activeCells || []);
+    if (activeCells.length) return new Set(activeCells).has(`${Number(column)}:${Number(row)}`);
     const bounds = room.bounds || {};
     return column >= bounds.column
       && row >= bounds.row
@@ -398,8 +488,12 @@ window.WS_APP = window.WS_APP || {};
     };
     const endColumn = placement.column + footprint.width - 1;
     const endRow = placement.row + footprint.height - 1;
-    if (!isCellInsideRoom(room, placement.column, placement.row) || !isCellInsideRoom(room, endColumn, endRow)) {
-      return { ok: false, reason: "HOUSEHOLD_PLACEMENT_OUTSIDE_ROOM", room: clone(room), placement, footprint };
+    for (let row = placement.row; row <= endRow; row += 1) {
+      for (let column = placement.column; column <= endColumn; column += 1) {
+        if (!isCellInsideRoom(room, column, row)) {
+          return { ok: false, reason: "HOUSEHOLD_PLACEMENT_OUTSIDE_ROOM", room: clone(room), placement, footprint, blockedCell: `${column}:${row}` };
+        }
+      }
     }
     const occupancy = getHouseholdRoomOccupancy({ citizenId, housingRecordId, roomId, excludeInstanceId: instanceId });
     const occupied = new Map((occupancy.occupiedCells || []).map((entry) => [entry.cell, entry.instanceId]));
@@ -610,6 +704,7 @@ window.WS_APP = window.WS_APP || {};
 
   Object.assign(window.WS_APP, {
     HOUSEHOLD_SCHEMA_VERSION,
+    HOUSEHOLD_LAYOUT_SCHEMA_VERSION,
     HOUSEHOLD_LOCATION_TYPE,
     normalizeHouseholdProfile,
     normalizeHouseholdRoom,

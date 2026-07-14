@@ -78,3 +78,15 @@ tests/contracts/knowledge-relation-tabs.test.cjs
 ## Content preservation boundary
 
 This adapted installation does not copy `data/system-records.js`, Encyclopedia seed records or source-patch prose. Only relation ownership, migration, validation and the shared relation-tab presentation are installed. Current approved project documentation remains authoritative over webapp seed content.
+
+## Desktop relation sidecar presentation
+
+At viewport widths `>= 1280px`, visible same-registry relation blocks may render in a sibling `.knowledge-related-sidecar` rail. Below that breakpoint they remain in normal document flow. This is a presentation-only rule: it does not alter relation IDs, registry ownership, migration, visibility policy or Knowledge Pack content.
+
+The sidecar must never make Encyclopedia relations visible inside System Index, or System Index relations visible inside Encyclopedia. Source-patch content is not authoritative and must not be imported as part of the UI layout change.
+
+## Sidecar layering refinement
+
+At desktop width the `.knowledge-related-sidecar` remains in a lower stacking layer than the `.knowledge-reading-panel`. The reading panel owns an opaque background and clips the overlapping section, so only the tab portion protruding from behind the article is visible. Connector spine/line pseudo-elements are disabled in this layout.
+
+This is strictly presentational. It does not change stable relation IDs, registry ownership, migration, visibility policy, seed records or the canonical SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX split.

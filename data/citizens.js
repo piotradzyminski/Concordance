@@ -223,11 +223,11 @@ window.APP_DATA.citizens = [
       },
       {
         "subscriptionContractId": "sub-citizen-b-habitat-secured",
-        "subscriptionCatalogId": "sub-habitat-ledger",
+        "subscriptionCatalogId": "sub-housing-standard-c",
         "citizenId": "citizen-b",
         "providerId": "provider-habitat-ledger",
         "organizationId": "habitat-market",
-        "tierId": "hab-secured",
+        "tierId": "housing-c-t2",
         "contractStatus": "ACTIVE",
         "billingStatus": "PAID",
         "entitlementStatus": "ACTIVE",
@@ -243,7 +243,7 @@ window.APP_DATA.citizens = [
         "suspendedAt": null,
         "billingAccountId": "billing-account-citizen-b",
         "lastBillingTransactionId": null,
-        "amount": 3600,
+        "amount": 9800,
         "currency": "CREDIT",
         "billingCycle": "WEEKLY",
         "lastPaidAt": "2109-02-13",
@@ -253,13 +253,13 @@ window.APP_DATA.citizens = [
         "lastDebtIncrease": 0,
         "billingHistory": [],
         "displaySnapshot": {
-          "title": "Habitat Ledger",
-          "tierLabel": "Secured Unit",
+          "title": "Housing Standard C",
+          "tierLabel": "T2 Premium Adaptive",
           "category": "RENT",
           "provider": "Habitat Ledger",
           "market": "SYSTEM",
           "logo": "HAB",
-          "description": "Highest currently catalogued Habitat Ledger tier, seeded for Housing and cyberware tests."
+          "description": "Premium adaptive Housing tier seeded for Rent catalog and Household integration tests."
         },
         "revision": 1,
         "metadata": {
@@ -365,11 +365,23 @@ window.APP_DATA.citizens = [
       {
         "id": "housing-citizen-b-secured-test",
         "title": "Secured Unit / Authorization Test",
-        "type": "SECURED_UNIT",
+        "type": "HOUSING_STANDARD_C",
         "status": "ACTIVE",
         "isPrimary": true,
         "provider": "Habitat Ledger",
         "linkedSubscriptionId": "sub-citizen-b-habitat-secured",
+        "standardCode": "C",
+        "standardTierId": "housing-c-t2",
+        "areaM2": 35,
+        "furnishingPolicy": "EXTENDED",
+        "parcelMaxFootprint": "4x4",
+        "disposalAccess": "PRIVATE_RETURN_LOCKER",
+        "defaultFurnishingGrade": "QUALITY",
+        "maintenanceCoverage": "OPERATOR_PRIORITY",
+        "layoutPolicy": "CHOICE_POOL",
+        "layoutTemplateId": "housing-c-t2-layout-alcove-02",
+        "layoutSeed": "LAYOUT-CITIZEN-B-C2",
+        "layoutVariantFamily": "ALCOVE",
         "visibleAddress": "03.51N00E.060.HAB2.209::B12.044.018",
         "traceAddress": "03.51N3410.00E2131.21090213.1200.HAB2B2.A10X",
         "zone": "ZONE_2",
@@ -379,48 +391,12 @@ window.APP_DATA.citizens = [
         "comfortLevel": 8,
         "household": {
           "schemaVersion": "household_foundation_2_0x",
-          "floorPlan": {
-            "width": 12,
-            "height": 10,
-            "cellScale": "ABSTRACT"
-          },
-          "rooms": [
-            {
-              "id": "housing-citizen-b-secured-test-living",
-              "label": "Living Area",
-              "type": "LIVING",
-              "bounds": { "column": 1, "row": 1, "width": 7, "height": 6 },
-              "capabilities": ["REST", "CONSUMABLE_USE", "SOCIAL"]
-            },
-            {
-              "id": "housing-citizen-b-secured-test-safe",
-              "label": "Safe Room",
-              "type": "SAFE_ROOM",
-              "bounds": { "column": 9, "row": 1, "width": 4, "height": 6 },
-              "capabilities": ["REST", "SLEEP", "RECOVERY", "SECURE_CONSUMABLE_STORAGE"]
-            },
-            {
-              "id": "housing-citizen-b-secured-test-kitchen",
-              "label": "Kitchen",
-              "type": "KITCHEN",
-              "bounds": { "column": 1, "row": 8, "width": 4, "height": 3 },
-              "capabilities": ["FOOD_PREP", "CONSUMABLE_USE", "FOOD_STORAGE"]
-            },
-            {
-              "id": "housing-citizen-b-secured-test-hygiene",
-              "label": "Hygiene",
-              "type": "HYGIENE",
-              "bounds": { "column": 5, "row": 8, "width": 4, "height": 3 },
-              "capabilities": ["HYGIENE"]
-            },
-            {
-              "id": "housing-citizen-b-secured-test-entry",
-              "label": "Entry",
-              "type": "ENTRY",
-              "bounds": { "column": 9, "row": 8, "width": 4, "height": 3 },
-              "capabilities": ["ACCESS"]
-            }
-          ]
+          "layoutSchemaVersion": "housing_layout_pools_3_1x",
+          "layoutTemplateId": "housing-c-t2-layout-alcove-02",
+          "layoutSeed": "LAYOUT-CITIZEN-B-C2",
+          "layoutPolicy": "CHOICE_POOL",
+          "variantFamily": "ALCOVE",
+          "residentIds": ["citizen-b"]
         },
         "storageUnits": [
           {

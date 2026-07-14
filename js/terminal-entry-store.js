@@ -14,7 +14,8 @@ window.WS_APP = window.WS_APP || {};
       resolveSortIndex,
       compareStoreRecordsByNewest,
       normalizeEntry,
-      normalizeToken
+      normalizeToken,
+      getCampaignTimeIso
     } = dependencies;
 
     const required = {
@@ -36,6 +37,58 @@ window.WS_APP = window.WS_APP || {};
 
     let normalizedCache = null;
 
+    function normalizeTimestamp(value = "") {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      const expanded = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00.000Z` : raw;
+      const parsed = Date.parse(expanded);
+      return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+    }
+
+    function getCampaignTimestamp() {
+      const campaignTime = typeof getCampaignTimeIso === "function" ? normalizeTimestamp(getCampaignTimeIso()) : "";
+      return campaignTime || normalizeTimestamp(window.WS_APP.getCampaignTimeIso?.() || window.WS_APP.CAMPAIGN_TIME_ISO) || getLocalCreatedAt();
+    }
+
+    function resolveEntryTimestamps(entry = {}) {
+      const fallback = getCampaignTimestamp();
+      const occurredAt = normalizeTimestamp(entry.occurredAt || entry.date);
+      const createdAt = normalizeTimestamp(entry.createdAt) || occurredAt || fallback;
+      const sentAt = normalizeTimestamp(entry.sentAt) || occurredAt || createdAt;
+      const receivedAt = normalizeTimestamp(entry.receivedAt) || sentAt || createdAt;
+      const readAt = entry.read === true || String(entry?.lifecycle?.status || "").trim().toUpperCase() !== "NEW"
+        ? normalizeTimestamp(entry.readAt || entry?.lifecycle?.readAt)
+        : "";
+      return {
+        occurredAt,
+        createdAt,
+        sentAt,
+        receivedAt,
+        readAt
+      };
+    }
+
+    function getEntryOrderingTimestamp(entry = {}) {
+      const timestamps = resolveEntryTimestamps(entry);
+      return Date.parse(timestamps.receivedAt || timestamps.sentAt || timestamps.createdAt || "") || 0;
+    }
+
+    function makeReadStatePatch(entry = {}, read = true) {
+      const shouldRead = read === true;
+      const readAt = shouldRead
+        ? normalizeTimestamp(entry.readAt || entry?.lifecycle?.readAt) || getCampaignTimestamp()
+        : "";
+      return {
+        read: shouldRead,
+        readAt,
+        lifecycle: {
+          ...(entry.lifecycle || {}),
+          status: shouldRead ? "READ" : "NEW",
+          readAt
+        }
+      };
+    }
+
     function readEntries() {
       const raw = readStoredArray(STORAGE_KEY);
       if (normalizedCache?.raw === raw) return normalizedCache.value;
@@ -46,7 +99,9 @@ window.WS_APP = window.WS_APP || {};
           sortIndex: entry?.sortIndex || stableSortIndex
         });
       });
-      normalizedCache = { raw, value: normalized };
+      const migrated = JSON.stringify(raw) !== JSON.stringify(normalized);
+      if (migrated) writeStoredArray(STORAGE_KEY, normalized);
+      normalizedCache = { raw: migrated ? normalized : raw, value: normalized };
       return normalized;
     }
 
@@ -97,6 +152,8 @@ window.WS_APP = window.WS_APP || {};
 
       return clone(entries.sort((a, b) => {
         if (a.important !== b.important) return a.important ? -1 : 1;
+        const timestampCompare = getEntryOrderingTimestamp(b) - getEntryOrderingTimestamp(a);
+        if (timestampCompare) return timestampCompare;
         return compareStoreRecordsByNewest(a, b);
       }));
     }
@@ -110,12 +167,14 @@ window.WS_APP = window.WS_APP || {};
       if (!id) return null;
 
       const entries = readEntries();
+      const timestamps = resolveEntryTimestamps(entry);
       const normalized = normalizeEntry({
         ...clone(entry),
+        ...timestamps,
         citizenId: id,
         id: entry.id || makeStoreId("entry"),
-        createdAt: entry.createdAt || getLocalCreatedAt(),
-        sortIndex: entry.sortIndex || getNextSortIndex(),
+        date: entry.date || timestamps.receivedAt.slice(0, 10),
+        sortIndex: entry.sortIndex || Date.parse(timestamps.receivedAt) || getNextSortIndex(),
         read: entry.read === true
       });
 
@@ -177,6 +236,9 @@ window.WS_APP = window.WS_APP || {};
         id: existing.id,
         citizenId: id,
         createdAt: existing.createdAt,
+        sentAt: existing.sentAt,
+        receivedAt: existing.receivedAt,
+        readAt: markUnreadOnUpdate ? "" : existing.readAt,
         sortIndex: existing.sortIndex,
         folder: existing.folder,
         read: markUnreadOnUpdate ? false : existing.read,
@@ -250,7 +312,7 @@ window.WS_APP = window.WS_APP || {};
     }
 
     function markEntryRead(citizenId, entryId, read = true) {
-      return mapEntry(citizenId, entryId, (entry) => ({ ...entry, read: read === true }));
+      return mapEntry(citizenId, entryId, (entry) => ({ ...entry, ...makeReadStatePatch(entry, read) }));
     }
 
     function markAllRead(citizenId) {
@@ -260,7 +322,7 @@ window.WS_APP = window.WS_APP || {};
       const entries = readEntries().map((entry) => {
         if (entry.citizenId === id && entry.folder === "INBOX" && entry.read !== true) {
           changed += 1;
-          return normalizeEntry({ ...entry, read: true });
+          return normalizeEntry({ ...entry, ...makeReadStatePatch(entry, true) });
         }
         return entry;
       });
@@ -273,7 +335,7 @@ window.WS_APP = window.WS_APP || {};
     }
 
     function moveToTrash(citizenId, entryId) {
-      return mapEntry(citizenId, entryId, (entry) => ({ ...entry, folder: "TRASH", read: true }));
+      return mapEntry(citizenId, entryId, (entry) => ({ ...entry, folder: "TRASH", ...makeReadStatePatch(entry, true) }));
     }
 
     function restoreFromTrash(citizenId, entryId) {
@@ -308,7 +370,7 @@ window.WS_APP = window.WS_APP || {};
       const entries = readEntries().map((entry) => {
         if (entry.citizenId === id && entry.folder === "INBOX" && entry.read === true) {
           moved += 1;
-          return normalizeEntry({ ...entry, folder: "TRASH", read: true });
+          return normalizeEntry({ ...entry, folder: "TRASH", ...makeReadStatePatch(entry, true) });
         }
         return entry;
       });
@@ -358,11 +420,11 @@ window.WS_APP = window.WS_APP || {};
         if (normalizedAction === "TRASH" && entry.folder !== "INBOX") return entry;
 
         let nextEntry = entry;
-        if (normalizedAction === "MARK_READ") nextEntry = { ...entry, read: true };
-        else if (normalizedAction === "MARK_UNREAD") nextEntry = { ...entry, read: false };
+        if (normalizedAction === "MARK_READ") nextEntry = { ...entry, ...makeReadStatePatch(entry, true) };
+        else if (normalizedAction === "MARK_UNREAD") nextEntry = { ...entry, ...makeReadStatePatch(entry, false) };
         else if (normalizedAction === "MARK_IMPORTANT") nextEntry = { ...entry, important: true };
         else if (normalizedAction === "UNMARK_IMPORTANT") nextEntry = { ...entry, important: false };
-        else if (normalizedAction === "TRASH") nextEntry = { ...entry, folder: "TRASH", read: true };
+        else if (normalizedAction === "TRASH") nextEntry = { ...entry, folder: "TRASH", ...makeReadStatePatch(entry, true) };
         else if (normalizedAction === "RESTORE") nextEntry = { ...entry, folder: "INBOX" };
         else return entry;
 

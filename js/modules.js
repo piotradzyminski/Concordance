@@ -70,8 +70,8 @@ const CYBERWARE_MARKET_PROJECTION_SCRIPTS = [
   "js/cyberware-market-projection.js?v=1"
 ];
 
-// Full Cyberware domain and UI runtime. Equipment and Citizen record views use
-// this bundle; Housing must never depend on it.
+// Full Cyberware domain and UI runtime. The standalone Cyberware module and
+// Citizen record views use this bundle; Equipment loads only a navigation bridge.
 const CYBERWARE_UI_RUNTIME_SCRIPTS = [
   ...CYBERWARE_CATALOG_DATA_SCRIPTS,
   "data/firmware-registry.js?v=1",
@@ -101,7 +101,7 @@ const MODULE_BUNDLES = {
     ],
     scripts: [
       "js/billing.js?v=15",
-      "js/terminal-module.js?v=10"
+      "js/terminal-module.js?v=11"
     ]
   },
   subscriptions: {
@@ -110,10 +110,10 @@ const MODULE_BUNDLES = {
       "css/subscriptions.css?v=21"
     ],
     scripts: [
-      "data/subscription-catalog.js?v=12",
+      "data/subscription-catalog.js?v=13",
       "data/subscription-bridge-fixtures.js?v=1",
       "js/subscription-entitlement.js?v=7",
-      "js/subscription-catalog-store.js?v=7",
+      "js/subscription-catalog-store.js?v=8",
       "js/subscription-api.js?v=5",
       "js/coverage-resolver.js?v=2",
       "js/subscription-notification-producer.js?v=1",
@@ -141,33 +141,44 @@ const MODULE_BUNDLES = {
   },
   equipment: {
     styles: [
-
-      "css/equipment.css?v=128"
+      "css/equipment.css?v=129"
     ],
     scripts: [
-      ...CYBERWARE_UI_RUNTIME_SCRIPTS,
-      "js/cyberware-index.js?v=1",
-      "js/cyberware-planner.js?v=7",
       "data/item-type-catalog.js?v=4",
       "js/item-type-registry.js?v=2",
       "js/item-type-operations-ui.js?v=3",
       "js/equipment-render-utils.js?v=1",
-      "js/equipment-store.js?v=34",
+      "js/equipment-store.js?v=35",
       "js/equipment-loadout-rules.js?v=6",
       "js/equipment-assignment.js?v=10",
       "js/equipment-inventory.js?v=20",
       "js/equipment-housing-grid.js?v=5",
-      "js/equipment-actions.js?v=56",
+      "js/equipment-actions.js?v=57",
       "js/equipment-items-panel.js?v=30",
       "js/equipment-body-regions-panel.js?v=11",
-      "js/equipment-bodymap-panel.js?v=24",
+      "js/equipment-bodymap-panel.js?v=25",
       "js/equipment-containers-panel.js?v=39",
-      "js/equipment-cyberware-link.js?v=19",
-      "js/equipment.js?v=117"
+      "js/equipment-cyberware-link.js?v=20",
+      "js/equipment.js?v=118"
+    ]
+  },
+  cyberware: {
+    styles: [
+      "css/equipment.css?v=129",
+      "css/cyberware.css?v=1"
+    ],
+    scripts: [
+      ...CYBERWARE_UI_RUNTIME_SCRIPTS,
+      "js/equipment-render-utils.js?v=1",
+      "js/equipment-items-panel.js?v=30",
+      "js/cyberware-index.js?v=2",
+      "js/cyberware-planner.js?v=8",
+      "js/cyberware-workspace.js?v=1",
+      "js/cyberware-module.js?v=1"
     ]
   },
   market: {
-    styles: ["css/housing.css?v=32"],
+    styles: ["css/housing.css?v=34"],
     scripts: [
       ...CYBERWARE_MARKET_PROJECTION_SCRIPTS,
       "data/market-offers.js?v=4",
@@ -177,7 +188,7 @@ const MODULE_BUNDLES = {
     ]
   },
   housing: {
-    styles: ["css/housing.css?v=32"],
+    styles: ["css/housing.css?v=34"],
     scripts: [
       "data/item-type-catalog.js?v=4",
       "data/equipment-catalog.js?v=25",
@@ -190,8 +201,8 @@ const MODULE_BUNDLES = {
       "js/grid-pointer-session.js?v=3",
       "js/housing-grid-engine-adapter.js?v=4",
       "js/housing-storage-runtime.js?v=3",
-      "js/housing-household-runtime.js?v=1",
-      "js/housing.js?v=49"
+      "js/housing-household-runtime.js?v=2",
+      "js/housing.js?v=50"
     ]
   },
   database: {
@@ -461,7 +472,7 @@ function getModuleSections(user, modules) {
   const sections = user?.role === "admin"
     ? [
         makeSection("Citizen Record", "Karty postaci i kontrola usĹ‚ug przypisanych do obywateli.", ["citizen-cards", "subscriptions"], { variant: "citizen-record" }),
-        makeSection("Terminal", "Local terminal, billing, requests and assigned service registry.", ["terminal-hub", "service", "equipment", "housing"], { variant: "terminal" }),
+        makeSection("Terminal", "Local terminal, billing, requests and assigned service registry.", ["terminal-hub", "service", "equipment", "cyberware", "market", "housing"], { variant: "terminal" }),
         makeSection("SYSTEM KNOWLEDGE", "Autoryzowany indeks Systemu oraz hub lokalnych rekordĂłw.", ["system-index", "database"], { variant: "database" }),
         makeSection("SYSTEM MECHANICS", "Mechanika gry oraz sĹ‚owniczek pojÄ™Ä‡ gracza.", ["system", "encyclopedia"], { variant: "mechanics" }),
         makeSection("ADMIN CONTROL", "NarzÄ™dzia prowadzÄ…cego: dostÄ™p, tagi, adresy, ukryta warstwa i eksport danych.", ["access-control", "tag-registry", "address-core", "gm-layer"], { variant: "admin" })
@@ -469,7 +480,7 @@ function getModuleSections(user, modules) {
     : [
         makeSection("Character Registration", "Tworzenie postaci oraz status akceptacji rekordu.", ["character-creator", "application-status"], { variant: "citizen-record" }),
         makeSection("Citizen Record", "ZarzÄ…dzanie postaciÄ… jako jednostkÄ… systemowÄ….", ["citizen-card", "subscriptions"], { variant: "citizen-record" }),
-        makeSection("Terminal", "Local terminal, billing, requests and assigned service registry.", ["terminal-hub", "service", "equipment", "housing"], { variant: "terminal" }),
+        makeSection("Terminal", "Local terminal, billing, requests and assigned service registry.", ["terminal-hub", "service", "equipment", "cyberware", "market", "housing"], { variant: "terminal" }),
         makeSection("SYSTEM KNOWLEDGE", "Autoryzowany indeks Systemu oraz hub lokalnych rekordĂłw.", ["system-index", "database"], { variant: "database" }),
         makeSection("SYSTEM MECHANICS", "Mechanika gry oraz sĹ‚owniczek pojÄ™Ä‡ gracza.", ["system", "encyclopedia"], { variant: "mechanics" })
       ];
@@ -655,6 +666,7 @@ function getModuleCardMetric(module = {}, user = {}) {
     if (id === "subscriptions") return getSubscriptionsModuleMetric(user);
     if (id === "service") return getServiceModuleMetric(user);
     if (id === "equipment") return getEquipmentModuleMetric(user);
+    if (id === "cyberware") return getCyberwareModuleMetric(user);
     if (id === "market") return window.WS_APP.getMarketModuleMetric?.(user) || getMarketModuleMetric(user);
     if (id === "housing") return window.WS_APP.getHousingModuleMetric?.(user) || getHousingModuleMetric(user);
     if (id === "citizen-card") return { label: "", empty: !user?.citizenId };
@@ -777,6 +789,28 @@ function getEquipmentModuleMetric(user = {}) {
   return { label: `${itemCount} ITEM${itemCount === 1 ? "" : "S"} / ${equippedCount} EQUIPPED`, empty: itemCount === 0 };
 }
 
+function getCyberwareModuleMetric(user = {}) {
+  const citizens = getVisibleCitizensForMetrics(user);
+  let installed = 0;
+  let operational = 0;
+  citizens.forEach((citizen) => {
+    const instances = typeof window.WS_APP.getInstalledCyberwareInstances === "function"
+      ? window.WS_APP.getInstalledCyberwareInstances(citizen.id)
+      : [];
+    installed += instances.length;
+    operational += instances.filter((instance) => {
+      const state = String(instance?.cyberwareState?.operationalState || instance?.operationalState || "").trim().toUpperCase();
+      return !["DISABLED", "FAULT", "LOCKED", "BROKEN", "OFFLINE"].includes(state);
+    }).length;
+  });
+  return {
+    label: `${installed} SYSTEM${installed === 1 ? "" : "S"} / ${operational} ONLINE`,
+    empty: installed === 0,
+    statusLabel: installed > 0 ? "BODY" : "EMPTY",
+    statusClass: installed > 0 ? "ready" : "empty"
+  };
+}
+
 function getMarketModuleMetric(user = {}) {
   const citizens = getVisibleCitizensForMetrics(user);
   let orders = 0;
@@ -839,6 +873,7 @@ function getCurrentModuleViewRenderer(user, moduleId) {
   if (moduleId === "subscriptions") return () => window.WS_APP.renderSubscriptionsModule?.(user);
   if (moduleId === "service") return () => window.WS_APP.renderServiceModule?.(user);
   if (moduleId === "equipment") return () => window.WS_APP.renderEquipmentModule?.(user);
+  if (moduleId === "cyberware") return () => window.WS_APP.renderCyberwareModule?.(user);
   if (moduleId === "housing") return () => window.WS_APP.renderHousingModule?.(user);
   if (moduleId === "citizen-files") return () => window.WS_APP.renderCitizenFilesModule?.(user);
   if (moduleId === "citizen-database") return () => window.WS_APP.renderCitizenDatabaseModule?.(user);
@@ -1025,25 +1060,32 @@ async function renderModuleDirect(moduleId, user, module = getModuleDefinition(m
 
     if (moduleId === "equipment") {
       const targetCitizenId = String(options.citizenId || "").trim();
+      if (targetCitizenId) window.WS_APP.equipmentTargetCitizenId = targetCitizenId;
+      if (window.WS_APP.renderEquipmentModule) window.WS_APP.renderEquipmentModule(user);
+      else renderModulePlaceholder(user, module);
+      return;
+    }
+
+    if (moduleId === "cyberware") {
+      const targetCitizenId = String(options.citizenId || "").trim();
       const routeId = String(options.routeId || "").trim().toUpperCase();
       const entityRef = options.entityRef && typeof options.entityRef === "object" ? options.entityRef : null;
       const params = options.params && typeof options.params === "object" ? options.params : {};
-      if (targetCitizenId) window.WS_APP.equipmentTargetCitizenId = targetCitizenId;
+      if (targetCitizenId) window.WS_APP.cyberwareTargetCitizenId = targetCitizenId;
+      const selectedInstanceId = entityRef?.type === "ITEM_INSTANCE"
+        ? String(entityRef.id || "").trim()
+        : String(params.instanceId || params.instanceIds?.[0] || "").trim();
+      if (targetCitizenId && selectedInstanceId) {
+        window.WS_APP.setCyberwareSelectedInstance?.(targetCitizenId, selectedInstanceId, { syncView: false });
+      }
+      const cyberwareView = String(params.cyberwareView || options.section || (routeId === "CYBERWARE_WORLD_OPERATION" ? "OVERVIEW" : "OVERVIEW")).trim().toUpperCase();
+      if (targetCitizenId) window.WS_APP.setCyberwareUiView?.(targetCitizenId, cyberwareView, { mount: false });
       if (routeId === "CYBERWARE_WORLD_OPERATION") {
-        const selectedInstanceId = entityRef?.type === "ITEM_INSTANCE"
-          ? String(entityRef.id || "").trim()
-          : String(params.instanceId || params.instanceIds?.[0] || "").trim();
-        if (selectedInstanceId) window.WS_APP.setEquipmentSelectedItem?.(selectedInstanceId);
-        const cyberwareView = String(params.cyberwareView || options.section || "OVERVIEW").trim().toUpperCase();
-        if (targetCitizenId) window.WS_APP.setCyberwareUiView?.(targetCitizenId, cyberwareView, { mount: false });
         window.WS_APP.worldBridgeTargetOperationId = String(params.operationId || "").trim();
       }
-      if (window.WS_APP.renderEquipmentModule) window.WS_APP.renderEquipmentModule(user);
+      if (window.WS_APP.renderCyberwareModule) window.WS_APP.renderCyberwareModule(user, { activeView: cyberwareView });
       else renderModulePlaceholder(user, module);
-      if (routeId === "CYBERWARE_WORLD_OPERATION" && targetCitizenId) {
-        const cyberwareView = String(params.cyberwareView || options.section || "OVERVIEW").trim().toUpperCase();
-        window.WS_APP.setCyberwareUiView?.(targetCitizenId, cyberwareView, { mount: true });
-      }
+      if (targetCitizenId) window.WS_APP.setCyberwareUiView?.(targetCitizenId, cyberwareView, { mount: true });
       return;
     }
 

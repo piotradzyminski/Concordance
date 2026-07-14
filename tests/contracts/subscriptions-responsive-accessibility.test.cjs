@@ -58,5 +58,5 @@ test("responsive CSS owns 980, 720 and 520 layouts, visible focus and reduced mo
   assert.match(modules, /js\/subscriptions-workspace\.js\?v=6/);
   assert.match(modules, /css\/admin-subscriptions\.css\?v=3/);
   assert.match(modules, /js\/admin-subscriptions-control\.js\?v=4/);
-  assert.match(index, /js\/modules\.js\?v=297/);
+  assert.match(index, /js\/modules\.js\?v=302/);
 });

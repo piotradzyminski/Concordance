@@ -1,12 +1,12 @@
 window.WS_APP = window.WS_APP || {};
 
 (function initEquipmentBodymapPanel() {
-  const EQUIPMENT_BODYMAP_PANEL_VERSION = "6.4.0x";
+  const EQUIPMENT_BODYMAP_PANEL_VERSION = "6.4.1x";
   const escapeHtml = window.WS_APP.escapeEquipmentHtml || ((value = "") => String(value ?? ""));
 
   const BODYMAP_ASSETS = {
-    front: "assets/bodymap_front.jpg",
-    back: "assets/bodymap_back.jpg"
+    front: "assets/bodymap/bodymap_front.avif",
+    back: "assets/bodymap/bodymap_back.avif"
   };
 
   const REGION_PARENT = {

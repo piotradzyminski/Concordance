@@ -51,6 +51,9 @@ docs/contracts/core/item_instance_transaction_contract.md
 docs/contracts/core/billing_bridge_contract.md
 docs/contracts/core/coverage_contract.md
 docs/contracts/core/campaign_data_io_v6_contract.md
+docs/contracts/core/campaign_time_datetime_contract.md
+docs/contracts/core/world_time_event_windows_contract.md
+docs/contracts/core/terminal_inbox_datetime_contract.md
 ```
 
 ### Citizen
@@ -95,6 +98,8 @@ docs/contracts/commerce/market_partial_return_refund_contract.md
 docs/contracts/commerce/market_product_visual_assets_contract.md
 docs/contracts/commerce/housing_bridge_contract.md
 docs/contracts/commerce/housing_grid_engine_unification_contract.md
+docs/contracts/commerce/housing_rent_standards_catalog_contract.md
+docs/contracts/commerce/housing_layout_pools_contract.md
 ```
 
 ### Equipment
@@ -121,6 +126,7 @@ docs/contracts/cyberware/cyberware_contract_stability_contract.md
 docs/contracts/cyberware/cyberware_planner_performance_contract.md
 docs/contracts/cyberware/cyberware_interaction_performance_contract.md
 docs/contracts/cyberware/cyberware_ui_contract.md
+docs/contracts/cyberware/cyberware_module_extraction_contract.md
 ```
 
 ### World Bridge
@@ -211,3 +217,28 @@ docs/contracts/knowledge/knowledge_relations_contract.md
 ```
 
 Knowledge relation separation updates the existing Knowledge Pack schema contract. The source patch's Encyclopedia/System/System Index content was not imported; only current-compatible data boundaries and UI relation tabs were retained.
+## Active additions in 15.13x
+
+```text
+docs/contracts/commerce/housing_rent_standards_catalog_contract.md
+docs/contracts/core/world_time_event_windows_contract.md
+```
+
+Housing Rent extends the existing Subscription and Housing boundaries without creating another contract or unit store. World Time Event Windows extends Campaign Time with stateless scheduling policy; consuming domains remain responsible for persistence and idempotency.
+## Active additions in 15.14x
+
+```text
+docs/contracts/core/terminal_inbox_datetime_contract.md
+docs/contracts/commerce/housing_layout_pools_contract.md
+docs/contracts/cyberware/cyberware_module_extraction_contract.md
+```
+
+Knowledge Relation Sidecar UI extends the current Knowledge relation presentation only. It does not replace `knowledge_pack_schema.md`, `knowledge_relations_contract.md`, current seed records or the canonical SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX split.
+
+## Active additions in 15.15x
+
+```text
+docs/contracts/commerce/housing_rent_subscription_bridge_contract.md
+```
+
+Knowledge Relation Sidecar Layering extends the existing Knowledge Relations contract. It does not introduce a new content source or replace current Knowledge records.

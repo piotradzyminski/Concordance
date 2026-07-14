@@ -4,7 +4,7 @@
 
 ```text
 phase: pre-alpha
-runtime baseline: Parallel Scope Merge 15.12x
+runtime baseline: Parallel Scope Merge 15.15x
 documentation baseline: Canonical Documentation 4.0x
 target: desktop browser
 persistence: client-side campaign data
@@ -44,10 +44,10 @@ Panel MG jest osobnym workspace operatorskim. Używa stałego Command Band, Navi
 | Firmware releases | Firmware Registry |
 | Notifications | Notification Registry/API i producenci domenowi |
 | Campaign import/export | Campaign Data I/O v6 adapter registry |
-| Campaign Time | `js/main.js` timestamp/revision store + domain schedulers |
+| Campaign Time | `js/main.js` timestamp/revision store + stateless Event Windows + domain schedulers |
 | Knowledge | Knowledge Pack Store v3 + registry-isolated stable relation IDs |
 
-## Runtime 15.12x — aktywne rozszerzenia
+## Runtime 15.13x — aktywne rozszerzenia
 
 - Citizen Files są utrzymywane w niezależnym `Citizen File Store`; relacje z Case Files są projekcją stabilnych identyfikatorów obsługiwaną przez `Database Relations`.
 - Item Type Operations wykonują atomowe komendy magazynka, komory, bezpiecznika, trybu ognia, granatu i zużycia ilościowego przez ItemInstance Transaction Store. Inspector jest wyłącznie warstwą poleceń i projekcji.
@@ -76,7 +76,17 @@ Panel MG jest osobnym workspace operatorskim. Używa stałego Command Band, Navi
 - Global Market jest osobnym modułem i lazy bundle. Housing zachowuje Unit, Household, Storage i delivery intake, ale nie jest właścicielem storefrontu, koszyka ani zamówień.
 - Admin Catalog Management udostępnia kanoniczne authoring Equipment definitions: draft, preview, publish, archive/restore i export data pack bez tworzenia ItemInstance.
 - Campaign Time jest pełnym timestampem UTC z revision, idempotency i kompatybilną projekcją daty; domenowe schedulery obserwują czas, ale nie oddają mu własności swoich rekordów.
+- Campaign Time Event Windows rozwiązuje deterministyczne minuty zdarzeń wewnątrz skoku czasu, respektuje dzienne/tygodniowe godziny działania oraz może odroczyć zdarzenie do następnego otwartego okna. Resolver jest bezstanowy; timestamp utrwala domena będąca właścicielem zdarzenia.
+- Housing Rent Standards Catalog definiuje standardy H–A, konkretne możliwości tierów, area limits, fixtures, storage, logistykę, furnishing grade i politykę maintenance. Subscriptions pozostaje właścicielem kontraktu i Billing, a Housing właścicielem przypisanej jednostki i jej runtime.
 - Knowledge Pack schema v3 rozdziela relacje rejestrów: Encyclopedia pozostaje glossary, System rulebookiem, a System Index zatwierdzoną narracją. Aktualne rekordy bazowe nie zostały zastąpione treścią z patcha źródłowego.
+
+
+## Runtime 15.14x — merged extensions
+
+- Cyberware is now a standalone player module and lazy bundle. Equipment owns Cybergrid and physical equipment placement; Cyberware owns installed body systems, Neural Core, planner, maintenance, diagnostics, history and the definition index. Equipment loads only the navigation bridge and no longer hosts a `CYBERWARE` workspace.
+- Terminal Inbox records use schema v3 timestamps (`createdAt`, `sentAt`, `receivedAt`, `readAt`) sourced from Campaign Time. `emitDuringCampaignAdvance()` resolves deterministic delivery time through World Time Event Windows and persists it on the Terminal Entry record.
+- Housing Layout Pools provide deterministic non-rectangular floor templates for Rent standards G–A, with Standard H remaining assigned bedspace without a private furnishing grid. Household placement validates explicit active-cell masks rather than rectangular bounds.
+- Knowledge detail relations render in a desktop sidecar rail while preserving current schema v3 registry separation. The merge does not import source-patch records, lore or outdated Encyclopedia/System/System Index content.
 
 ## Nienaruszalne inwarianty
 
@@ -144,16 +154,18 @@ Cyberware korzysta z sekcji Systems, Neural Core i Operations. Overview jest pro
 
 Operacje instalacji, demontażu, wymiany, firmware i maintenance przechodzą przez istniejące API domenowe. Market nie zapisuje itemu bezpośrednio do `BODY`, a Services nie przejmuje własności ItemInstance.
 
+Housing Rent używa ośmiu osobnych produktów subskrypcyjnych dla standardów H–A. `data/housing-rent-standards.js` i `js/housing-rent-standards-store.js` są źródłem semantyki tierów, storage, dostaw, wyposażenia, disposal i maintenance. `SubscriptionAPI` zarządza kontraktem oraz opłatą tygodniową. Eager `js/housing-rent-subscription-bridge.js` projektuje aktywny kontrakt do jednego konkretnego rekordu `citizen.housing`, zachowuje identyfikator jednostki oraz layout przy modernizacji o tym samym metrażu i przygotowuje trwały manifest relokacji albo zwolnienia bez mutowania lokalizacji ItemInstance. Legacy `sub-habitat-ledger` pozostaje wyłącznie read-only aliasem migracyjnym.
+
 ## Market storefront
 
-Global Market jest playerowym storefrontem nad kanonicznym Market Store. Udostępnia sekcje Catalog, Orders i Delivered, filtruje oferty według działów i generowanych podkategorii oraz renderuje maksymalnie sześć produktów na stronę w układzie dwukolumnowym. Katalog startowy obejmuje wyposażenie, cyberware oraz dziewiętnaście produktów zużywalnych w działach Medical, Food i Household; ich package/dose/duration/shelf-life metadata oraz opcjonalny `visualProfile` pozostają częścią kanonicznych definicji Equipment Catalog. Dziewiętnaście produktów zużywalnych posiada dedykowane lokalne SVG, a produkty bez własnego artworku korzystają z prezentacyjnego fallbacku działu. Ten sam resolver zasila miniaturę karty i pełny widok Product Inspector; Market Offer nie przechowuje konkurencyjnego pola grafiki ani osobnego rejestru assetów. Nawigacja Unit / Storage / Market oraz Catalog / Orders / Delivered korzysta ze wspólnego kontraktu terminalowych kart `system-segment-tile`. Szczegóły zamówienia pozwalają wskazać konkretne, nadal nieużywane ItemInstance do zwrotu; Market zapisuje line receipts, wykonuje jedną transakcję fizyczną, częściowo przywraca stock i zleca Billingowi proporcjonalny refund. UI nie posiada własnego store’a ofert, koszyka, zamówień, zwrotów ani artworku; wszystkie mutacje przechodzą przez publiczne API Market, Billing, Housing, Services i ItemInstance.
+Global Market jest osobnym, widocznym modułem Terminala i playerowym storefrontem nad kanonicznym Market Store. Udostępnia sekcje Catalog, Orders i Delivered, filtruje oferty według działów i generowanych podkategorii oraz renderuje maksymalnie sześć produktów na stronę w układzie dwukolumnowym. Katalog startowy obejmuje wyposażenie, cyberware oraz dziewiętnaście produktów zużywalnych w działach Medical, Food i Household; ich package/dose/duration/shelf-life metadata oraz opcjonalny `visualProfile` pozostają częścią kanonicznych definicji Equipment Catalog. Dziewiętnaście produktów zużywalnych posiada dedykowane lokalne SVG, a produkty bez własnego artworku korzystają z prezentacyjnego fallbacku działu. Ten sam resolver zasila miniaturę karty i pełny widok Product Inspector; Market Offer nie przechowuje konkurencyjnego pola grafiki ani osobnego rejestru assetów. Nawigacja Unit / Storage / Market oraz Catalog / Orders / Delivered korzysta ze wspólnego kontraktu terminalowych kart `system-segment-tile`. Szczegóły zamówienia pozwalają wskazać konkretne, nadal nieużywane ItemInstance do zwrotu; Market zapisuje line receipts, wykonuje jedną transakcję fizyczną, częściowo przywraca stock i zleca Billingowi proporcjonalny refund. UI nie posiada własnego store’a ofert, koszyka, zamówień, zwrotów ani artworku; wszystkie mutacje przechodzą przez publiczne API Market, Billing, Housing, Services i ItemInstance.
 
-Housing Unit i Storage posiadają osobny runtime `js/housing-storage-runtime.js`. Runtime odpowiada za filtry i wybór Storage, projekcje Equipment/ItemInstance, transfery między kontenerami i jednostkami, renderery Unit/Storage oraz pointer-grid fast path. `js/housing.js` pozostaje właścicielem powłoki Housing, Household, Storage i delivery intake. `js/market.js` oraz `js/housing-market-runtime.js` posiadają globalny storefront, koszyk, zamówienia, zwroty i shipment scheduling. Rozdzielenie nie tworzy drugiego store’a Housing, Market ani ItemInstance.
+Housing Unit i Storage posiadają osobny runtime `js/housing-storage-runtime.js`. Runtime odpowiada za filtry i wybór Storage, projekcje Equipment/ItemInstance, transfery między kontenerami i jednostkami, renderery Unit/Storage oraz pointer-grid fast path. `js/housing.js` pozostaje właścicielem powłoki Housing, Household, Storage i delivery intake oraz read-only prezentacji przygotowanej relokacji lub zwolnienia jednostki. `js/market.js` oraz `js/housing-market-runtime.js` posiadają globalny storefront, koszyk, zamówienia, zwroty i shipment scheduling. Rozdzielenie nie tworzy drugiego store’a Housing, Market ani ItemInstance.
 
 ## Stabilność UI i wydajność
 
 - pointer move oraz preview grida nie wykonują pełnego rerenderu modułu;
-- Front/Back Bodymap przełącza dwa już zamontowane drzewa przez lokalny fast path, bez rekonstrukcji EquipmentState i bez refreshu workspace;
+- Front/Back Bodymap używa kanonicznych masterów `assets/bodymap/bodymap_front.avif` i `assets/bodymap/bodymap_back.avif` oraz przełącza dwa już zamontowane drzewa przez lokalny fast path, bez rekonstrukcji EquipmentState i bez refreshu workspace;
 - zaznaczenie itemu w CyberGridzie, Bodymapie lub Item Indexie używa cache EquipmentState i aktualizuje lokalnie klasy selekcji, summary Bodymapu, action bar grida oraz body command raila; pełny refresh pozostaje wyłącznie fallbackiem;
 - listowe projekcje ItemInstance dla Equipment i Cyberware filtrują kanoniczne rekordy wewnątrz store, wykorzystują revision-aware cache view i przygotowują go w małych idle slices; publiczne gettery rekordów nadal zwracają defensywne klony;
 - Housing i Equipment korzystają ze wspólnej sesji pointera i lokalnych aktualizacji DOM;
@@ -222,3 +234,10 @@ Repozytorium nie przechowuje wykonanych patch notes, zakończonych audytów ani 
 ## Poufność i publikacja
 
 Projekt nie zawiera danych wymagających prywatnego repozytorium. Kod, dokumentacja i dane testowe mogą być rozwijane publicznie. Nie należy wprowadzać sztucznych ograniczeń migracyjnych ani zachowywać przestarzałego modelu wyłącznie ze względu na kompatybilność zapisów pre-alpha.
+
+## Runtime 15.15x — merged extensions
+
+- Housing Rent Subscription Bridge 3.2x wiąże aktywny kontrakt Rent z maksymalnie jednym fizycznym rekordem Housing. Modernizacja o tym samym metrażu zachowuje unit ID, `layoutTemplateId` i `layoutSeed`; zmiana standardu lub metrażu przygotowuje relokację oraz manifest ItemInstance, ale nie wykonuje transferu.
+- Anulowanie kontraktu zwalnia pustą jednostkę albo pozostawia ją w `RELEASE_PENDING` do czasu opróżnienia kanonicznych lokacji Housing.
+- Global Market pozostaje osobnym modułem i jest jawnie widoczny w sekcji Terminal dla Admina oraz Citizena.
+- Knowledge Relation Sidecar Layering 1.3x jest wyłącznie korektą warstwy prezentacyjnej: rail znajduje się pod nieprzezroczystym panelem artykułu, bez connector lines. Dane, relacje stable-ID, rejestry i podział SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX pozostają niezmienione.

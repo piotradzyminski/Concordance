@@ -201,5 +201,5 @@ test("Housing UI exposes Household as a distinct section without owning another 
   assert.match(household, /commitItemInstanceTransaction/);
   assert.doesNotMatch(household, /localStorage|sessionStorage/);
   assert.doesNotMatch(householdRuntime, /localStorage|sessionStorage/);
-  assert.match(index, /js\/household-store\.js\?v=2/);
+  assert.match(index, /js\/household-store\.js\?v=3/);
 });

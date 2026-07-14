@@ -51,5 +51,5 @@ test("existing notification lifecycle API is exposed through Inbox actions", () 
 
 test("Terminal lazy bundle versions include Inbox Content UI assets", () => {
   assert.match(MODULE_BUNDLES, /css\/terminal-module\.css\?v=4/);
-  assert.match(MODULE_BUNDLES, /js\/terminal-module\.js\?v=10/);
+  assert.match(MODULE_BUNDLES, /js\/terminal-module\.js\?v=11/);
 });

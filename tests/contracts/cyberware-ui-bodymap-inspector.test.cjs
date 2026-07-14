@@ -7,7 +7,7 @@ const { readProjectFile } = require("../helpers/source-contract.cjs");
 
 function createRuntime() {
   const runtime = createBrowserRuntime();
-  runtime.load("js/equipment-cyberware-link.js");
+  runtime.load("js/cyberware-workspace.js");
   return runtime;
 }
 
@@ -151,7 +151,7 @@ test("Installed Systems cards use the same local selection and Inspector contrac
   app.setCyberwareSelectedInstance(citizen.id, frontItem.instanceId, { citizen, runtime: runtimeState });
 
   const bodymap = app.renderCyberwareBodymapPanel(runtimeState, citizen);
-  const fullWorkspace = app.renderEquipmentCyberwareWorkspace({ citizenId: citizen.id }, citizen, { activeView: "SYSTEMS" });
+  const fullWorkspace = app.renderCyberwareWorkspace(citizen, { activeView: "SYSTEMS" });
 
   assert.match(bodymap, /Bodymap Index/);
   assert.match(fullWorkspace, /data-cyberware-system-card="implant-front-1"/);
@@ -159,8 +159,8 @@ test("Installed Systems cards use the same local selection and Inspector contrac
   assert.match(fullWorkspace, /data-cyberware-inspector-item="implant-front-1"/);
 });
 
-test("delegated Equipment actions expose local Bodymap view and selection fast paths", () => {
-  const source = readProjectFile("js/equipment-actions.js");
+test("standalone Cyberware actions expose local Bodymap view and selection fast paths", () => {
+  const source = readProjectFile("js/cyberware-module.js");
 
   assert.match(source, /data-cyberware-bodymap-view/);
   assert.match(source, /setCyberwareBodymapView/);

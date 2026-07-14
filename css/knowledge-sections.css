@@ -351,11 +351,21 @@
 }
 
 .knowledge-reading-panel {
+  position: relative;
+  z-index: 2;
+  order: 1;
   border: 1px solid var(--badge-neutral-border);
   background: var(--panel);
   padding: 12px;
   display: grid;
   gap: 10px;
+}
+
+.knowledge-related-sidecar {
+  order: 2;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
 }
 
 .knowledge-lead {
@@ -615,6 +625,87 @@
 .knowledge-form-view .entry-form {
   display: grid;
   gap: 14px;
+}
+
+/* Desktop relation sidecar. Tabs sit below the article stacking layer and
+   overlap its left edge; the opaque reading surface occludes the overlap so
+   only the part protruding from behind the article remains visible. */
+@media (min-width: 1280px) {
+  .knowledge-record-layout--with-sidecar {
+    position: relative;
+    isolation: isolate;
+    grid-template-columns: 212px minmax(0, 1fr);
+    gap: 0;
+    width: calc(100% + 212px);
+    margin-left: -212px;
+    overflow: visible;
+  }
+
+  .knowledge-record-layout--with-sidecar .knowledge-related-sidecar {
+    position: relative;
+    z-index: 0;
+    order: 1;
+    align-self: start;
+    padding: 48px 0 0 18px;
+  }
+
+  .knowledge-record-layout--with-sidecar .knowledge-reading-panel {
+    position: relative;
+    z-index: 2;
+    order: 2;
+    overflow: clip;
+    background: #0b1011;
+  }
+
+  .knowledge-related-sidecar .knowledge-related-box {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    gap: 10px;
+  }
+
+  .knowledge-related-sidecar .knowledge-related-box > b {
+    padding-left: 0;
+    color: rgba(143, 189, 180, 0.46);
+  }
+
+  .knowledge-related-sidecar .knowledge-related-list {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .knowledge-related-sidecar .knowledge-related-list::before,
+  .knowledge-related-sidecar .knowledge-related-link::before,
+  .knowledge-related-sidecar .knowledge-related-missing::before {
+    content: none;
+  }
+
+  .knowledge-related-sidecar .knowledge-related-link,
+  .knowledge-related-sidecar .knowledge-related-missing {
+    right: -24px;
+    width: calc(100% + 24px);
+    min-height: 44px;
+    border-right-color: transparent;
+    background: rgba(4, 8, 8, 0.96);
+    padding: 8px 42px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  .knowledge-related-sidecar .knowledge-related-link::after,
+  .knowledge-related-sidecar .knowledge-related-missing::after {
+    left: 16px;
+  }
+
+  .knowledge-related-sidecar .knowledge-related-link:hover,
+  .knowledge-related-sidecar .knowledge-related-link:focus-visible {
+    border-right-color: transparent;
+    transform: translateX(-3px);
+  }
 }
 
 @media (max-width: 980px) {

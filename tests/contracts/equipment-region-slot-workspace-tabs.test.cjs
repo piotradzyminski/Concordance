@@ -38,28 +38,23 @@ test("empty region slots render one centered ghost label without a duplicate cor
   assert.doesNotMatch(html, /<small>PORT<\/small>/);
 });
 
-test("Equipment workspace tabs use Terminal panel-card proportions", () => {
-  const css = read("css/equipment.css");
-  const sharedTabs = read("css/system-tabs.css");
+test("Equipment is a Cybergrid-only workspace without embedded module tabs", () => {
   const source = read("js/equipment.js");
 
-  assert.match(source, /system-segment-tile system-segment-tile--card equipment-workspace-tab/);
-  assert.match(sharedTabs, /--system-tab-card-height:\s*106px/);
-  assert.match(sharedTabs, /\.system-segment-tile--card\s*\{[\s\S]*?min-height:\s*var\(--system-tab-card-height\);[\s\S]*?align-items:\s*stretch;/);
-  assert.doesNotMatch(css, /(?:^|\n)\.equipment-workspace-tab\s*\{/);
-  assert.doesNotMatch(css, /\.equipment-workspace-tab \.system-segment-tile__title/);
-  assert.match(source, /class="system-segment-tabs equipment-workspace-tabs"/);
-  assert.match(source, /role="tab" aria-selected=/);
+  assert.match(source, /WORKSPACE_VIEWS = \["CYBERGRID"\]/);
+  assert.match(source, /function renderEquipmentWorkspaceTabs\(\) \{\s*return "";/);
+  assert.doesNotMatch(source, /system-segment-tile system-segment-tile--card equipment-workspace-tab/);
+  assert.doesNotMatch(source, /role="tab" aria-selected=/);
 });
 
 
-test("equipment shell header omits citizen name and patch version in favor of static workspace copy", () => {
+test("equipment shell header is static, Citizen-neutral and Cybergrid-specific", () => {
   const source = read("js/equipment.js");
 
-  assert.match(source, /data-equipment-shell-kicker>EQUIPMENT \/ \$\{escapeHtml\(activeView\)\}/);
+  assert.match(source, /data-equipment-shell-kicker>EQUIPMENT \/ CYBERGRID/);
+  assert.match(source, /data-equipment-shell-title>Equipment Workspace/);
+  assert.match(source, /Manage carried items, visible grids and mount storage/);
   assert.doesNotMatch(source, /EQUIPMENT_DESIGN_VERSION/);
   assert.doesNotMatch(source, /state\?\.citizenName \|\| "Equipment"/);
-  assert.match(source, /data-equipment-shell-title>\$\{escapeHtml\(headings\[activeView\] \|\| "Equipment Workspace"\)\}/);
-  assert.match(source, /Body, grids and containers/);
-  assert.match(source, /Installed systems and service/);
+  assert.doesNotMatch(source, /Installed systems and service/);
 });

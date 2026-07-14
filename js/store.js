@@ -58,7 +58,8 @@ window.WS_APP = window.WS_APP || {};
     resolveSortIndex,
     compareStoreRecordsByNewest,
     normalizeEntry: normalizeTerminalEntry,
-    normalizeToken: normalizeNotificationToken
+    normalizeToken: normalizeNotificationToken,
+    getCampaignTimeIso: getTerminalCampaignTimeIso
   });
 
   const terminalReminderStore = createTerminalReminderStore({
@@ -1394,6 +1395,18 @@ window.WS_APP = window.WS_APP || {};
       isPrimary: source.isPrimary === true || index === 0,
       provider: String(source.provider || "Habitat Ledger").trim(),
       linkedSubscriptionId: String(source.linkedSubscriptionId || source.subscriptionId || "").trim(),
+      standardCode: String(source.standardCode || source.housingStandard || "").trim().toUpperCase(),
+      standardTierId: String(source.standardTierId || source.housingTierId || "").trim(),
+      areaM2: source.areaM2 == null ? null : Number(source.areaM2),
+      furnishingPolicy: String(source.furnishingPolicy || "").trim().toUpperCase(),
+      parcelMaxFootprint: String(source.parcelMaxFootprint || "").trim(),
+      disposalAccess: String(source.disposalAccess || "").trim().toUpperCase(),
+      defaultFurnishingGrade: String(source.defaultFurnishingGrade || "").trim().toUpperCase(),
+      maintenanceCoverage: String(source.maintenanceCoverage || "").trim().toUpperCase(),
+      layoutPolicy: String(source.layoutPolicy || "").trim().toUpperCase(),
+      layoutTemplateId: String(source.layoutTemplateId || source.household?.layoutTemplateId || "").trim(),
+      layoutSeed: String(source.layoutSeed || source.household?.layoutSeed || "").trim(),
+      layoutVariantFamily: String(source.layoutVariantFamily || source.household?.variantFamily || "").trim().toUpperCase(),
       visibleAddress: String(source.visibleAddress || source.address || "").trim(),
       traceAddress: String(source.traceAddress || source.trace || "").trim(),
       zone: String(source.zone || "").trim(),
@@ -3495,6 +3508,12 @@ window.WS_APP = window.WS_APP || {};
     return window.WS_APP.getCampaignDateIso?.() || window.WS_APP.CAMPAIGN_DATE_ISO || "2109-02-13";
   }
 
+  function getTerminalCampaignTimeIso() {
+    const explicit = String(window.WS_APP.getCampaignTimeIso?.() || window.WS_APP.CAMPAIGN_TIME_ISO || "").trim();
+    if (explicit && Number.isFinite(Date.parse(explicit))) return new Date(explicit).toISOString();
+    return `${getTerminalDateIso()}T00:00:00.000Z`;
+  }
+
   function isIsoDate(value) {
     const iso = String(value || "").trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
@@ -3639,7 +3658,15 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
-  function normalizeTerminalLifecycle(lifecycle = {}, read = false, createdAt = "") {
+  function normalizeTerminalTimestamp(value = "", fallback = "") {
+    const raw = String(value || fallback || "").trim();
+    if (!raw) return "";
+    const expanded = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00.000Z` : raw;
+    const parsed = Date.parse(expanded);
+    return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+  }
+
+  function normalizeTerminalLifecycle(lifecycle = {}, read = false, createdAt = "", readAt = "") {
     const source = lifecycle && typeof lifecycle === "object" && !Array.isArray(lifecycle) ? lifecycle : {};
     const explicitStatus = normalizeNotificationToken(source.status, "");
     const terminalStatuses = ["NEW", "READ", "ACKNOWLEDGED", "RESOLVED", "EXPIRED", "ARCHIVED"];
@@ -3651,12 +3678,12 @@ window.WS_APP = window.WS_APP || {};
 
     return {
       status,
-      createdAt: String(source.createdAt || createdAt || "").trim(),
-      readAt: String(source.readAt || "").trim(),
-      acknowledgedAt: String(source.acknowledgedAt || "").trim(),
-      resolvedAt: String(source.resolvedAt || "").trim(),
-      expiredAt: String(source.expiredAt || "").trim(),
-      archivedAt: String(source.archivedAt || "").trim()
+      createdAt: normalizeTerminalTimestamp(source.createdAt || createdAt),
+      readAt: normalizedRead ? normalizeTerminalTimestamp(source.readAt || readAt || createdAt) : "",
+      acknowledgedAt: normalizeTerminalTimestamp(source.acknowledgedAt),
+      resolvedAt: normalizeTerminalTimestamp(source.resolvedAt),
+      expiredAt: normalizeTerminalTimestamp(source.expiredAt),
+      archivedAt: normalizeTerminalTimestamp(source.archivedAt)
     };
   }
 
@@ -4014,15 +4041,22 @@ window.WS_APP = window.WS_APP || {};
       : { layout: "", panels: [], finalRows: [] };
 
     const id = String(entry?.id || makeStoreId("entry")).trim();
-    const createdAt = entry?.createdAt
-      ? getLocalCreatedAt(entry.createdAt)
-      : (extractTimestampFromStoreId(entry?.id || "") ? getLocalCreatedAt(extractTimestampFromStoreId(entry?.id || "")) : "");
+    const legacyIdTimestamp = extractTimestampFromStoreId(entry?.id || "");
+    const occurredAt = normalizeTerminalTimestamp(entry?.occurredAt || entry?.date);
+    const createdAt = normalizeTerminalTimestamp(
+      entry?.createdAt,
+      legacyIdTimestamp ? getLocalCreatedAt(legacyIdTimestamp) : (occurredAt || getTerminalCampaignTimeIso())
+    );
+    const sentAt = normalizeTerminalTimestamp(entry?.sentAt, occurredAt || createdAt);
+    const receivedAt = normalizeTerminalTimestamp(entry?.receivedAt, sentAt || createdAt);
     const hasExplicitImportant = Object.prototype.hasOwnProperty.call(entry || {}, "important");
     const important = hasExplicitImportant
       ? entry.important === true
       : entry?.userFlags?.important === true;
-    const lifecycle = normalizeTerminalLifecycle(entry?.lifecycle, entry?.read === true, createdAt);
+    const requestedReadAt = normalizeTerminalTimestamp(entry?.readAt || entry?.lifecycle?.readAt);
+    const lifecycle = normalizeTerminalLifecycle(entry?.lifecycle, entry?.read === true, createdAt, requestedReadAt || receivedAt);
     const read = ["READ", "ACKNOWLEDGED", "RESOLVED", "EXPIRED", "ARCHIVED"].includes(lifecycle.status);
+    const readAt = read ? lifecycle.readAt : "";
     const audience = normalizeTerminalAudience(entry?.audience || "PLAYER");
     const domain = normalizeNotificationToken(entry?.domain || type, type);
     const eventCode = normalizeTerminalEventCode(entry?.eventCode || subtype);
@@ -4048,7 +4082,7 @@ window.WS_APP = window.WS_APP || {};
       .filter(Boolean);
 
     return {
-      schemaVersion: Math.max(1, Number(entry?.schemaVersion || (entry?.eventCode || entry?.subjectRef || entry?.source ? 2 : 1)) || 1),
+      schemaVersion: Math.max(3, Number(entry?.schemaVersion || 3) || 3),
       id,
       eventId: String(entry?.eventId || "").trim(),
       citizenId: String(entry?.citizenId || "").trim(),
@@ -4075,10 +4109,14 @@ window.WS_APP = window.WS_APP || {};
       templateData: entry?.templateData && typeof entry.templateData === "object" && !Array.isArray(entry.templateData)
         ? clone(entry.templateData)
         : {},
-      occurredAt: String(entry?.occurredAt || entry?.date || "").trim(),
-      effectiveAt: String(entry?.effectiveAt || "").trim(),
-      dueAt: String(entry?.dueAt || "").trim(),
-      expiresAt: String(entry?.expiresAt || "").trim(),
+      occurredAt,
+      createdAt,
+      sentAt,
+      receivedAt,
+      readAt,
+      effectiveAt: normalizeTerminalTimestamp(entry?.effectiveAt),
+      dueAt: normalizeTerminalTimestamp(entry?.dueAt),
+      expiresAt: normalizeTerminalTimestamp(entry?.expiresAt),
       actions,
       retentionPolicy: entry?.retentionPolicy && typeof entry.retentionPolicy === "object" && !Array.isArray(entry.retentionPolicy)
         ? clone(entry.retentionPolicy)
@@ -4090,9 +4128,8 @@ window.WS_APP = window.WS_APP || {};
       panels: normalizeTerminalFinancePanels(structuredPayload.panels),
       finalRows: normalizeTerminalFinanceRows(structuredPayload.finalRows),
       tags: normalizeTerminalTagList(entry?.tags, type, severity),
-      date: String(entry?.date || entry?.occurredAt || getTerminalDateIso()).trim(),
-      createdAt,
-      sortIndex: resolveSortIndex(entry, entry?.id || ""),
+      date: String(entry?.date || receivedAt.slice(0, 10) || occurredAt.slice(0, 10) || getTerminalDateIso()).slice(0, 10),
+      sortIndex: resolveSortIndex(entry, entry?.id || "") || Date.parse(receivedAt || createdAt || "") || 0,
       read,
       important,
       folder,

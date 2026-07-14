@@ -1,10 +1,10 @@
-# Subscription Contracts Contract — Asset Targets 3.0x / Public API 3.1x / Events 2.3x / Workspace UI 4.0 + Terminal Cards 4.0x / Profiles UI 4.1 / UI Stability 4.2.1 / Actions & Feedback 4.3 / Catalog Presentation 4.4 / Responsive & Accessibility 4.5
+# Subscription Contracts Contract — Housing Rent Catalog 4.0x / Public API 3.1x / Events 2.3x / Workspace UI 4.0 + Terminal Cards 4.0x / Profiles UI 4.1 / UI Stability 4.2.1 / Actions & Feedback 4.3 / Catalog Presentation 4.4 / Responsive & Accessibility 4.5
 
 ## Status
 
 ```text
 SCHEMA: subscription_contracts_bridge_schema_2_0x
-CATALOG: subscription_catalog_asset_targets_3_0x
+CATALOG: subscription_catalog_housing_rent_4_0x
 WORLD BRIDGE PHASE: SUBSCRIPTIONS / BRIDGE READY 3.1x
 ```
 
@@ -17,7 +17,7 @@ data/subscription-catalog.js
   seed catalog with machine-readable ItemInstance target eligibility
 
 js/subscription-catalog-store.js
-  catalog normalization, target-policy runtime views and canonical v3 persistence
+  catalog normalization, target-policy runtime views and canonical v4 persistence
 
 js/subscription-entitlement.js
   contract normalization, validation, strict citizen sanitization and canonical persistence projection
@@ -47,6 +47,10 @@ Forbidden citizen scalar fields:
 citizen.subscription
 citizen.trauma
 ```
+
+## Housing Rent catalog extension
+
+Rent products are split by Housing standard. `data/housing-rent-standards.js` and `js/housing-rent-standards-store.js` own tier capabilities, area, fixtures, storage, delivery, disposal, furnishing grade and maintenance policy. Subscription definitions own only the billable product/tier and entitlement identity.
 
 ## Catalog entry
 

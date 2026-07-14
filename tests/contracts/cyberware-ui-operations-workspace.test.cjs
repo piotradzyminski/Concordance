@@ -7,7 +7,7 @@ const { readProjectFile } = require("../helpers/source-contract.cjs");
 
 function createRuntime() {
   const runtime = createBrowserRuntime();
-  runtime.load("js/equipment-cyberware-link.js");
+  runtime.load("js/cyberware-workspace.js");
   return runtime;
 }
 
@@ -157,8 +157,8 @@ test("History exposes ALL and SELECTED filters and keeps ItemInstance references
   assert.match(markup, /data-cyberware-inspector-item="target-implant"/);
 });
 
-test("Equipment delegation wires Bodymap prerequisite and Operations selection controls", () => {
-  const source = readProjectFile("js/equipment-actions.js");
+test("Cyberware module delegation wires Bodymap prerequisite and Operations selection controls", () => {
+  const source = readProjectFile("js/cyberware-module.js");
 
   assert.match(source, /data-cyberware-bodymap-view/);
   assert.match(source, /data-cyberware-select-item/);

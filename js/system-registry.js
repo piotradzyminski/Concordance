@@ -362,7 +362,8 @@ function renderSystemArticle(user, articleId) {
   const isCivicIndex = registry === "system-index";
   const showLocalTitle = shouldShowKnowledgeLocalTitle(article, summary);
   const adminMeta = renderSystemRecordAdminMeta(article, user, registry);
-  const layoutClass = "knowledge-record-layout knowledge-record-layout--single";
+  const relatedBlocks = renderSystemRelatedBlocks(article, user, registry);
+  const layoutClass = `knowledge-record-layout knowledge-record-layout--single${relatedBlocks ? " knowledge-record-layout--with-sidecar" : ""}`;
 
   terminalGrid?.classList.add("is-card-open");
   if (status) status.textContent = `${config.statusLabel} / ${String(article.title || article.id).toUpperCase()}`;
@@ -384,11 +385,11 @@ function renderSystemArticle(user, articleId) {
       ${user.role === "admin" ? renderSystemAdminActions(article) : ""}
 
       <section class="${layoutClass}">
+        ${relatedBlocks ? `<aside class="knowledge-related-sidecar" aria-label="Related knowledge entries">${relatedBlocks}</aside>` : ""}
         <section class="knowledge-reading-panel">
           ${summary ? `<p class="knowledge-lead">${escapeHtml(summary)}</p>` : ""}
           ${(article.sections || []).map((section) => renderSystemSectionBlock(section, registry)).join("")}
           ${!isCivicIndex ? renderSystemDefinitionCatalog(article, user) : ""}
-          ${renderSystemRelatedBlocks(article, user, registry)}
           ${adminMeta}
         </section>
       </section>

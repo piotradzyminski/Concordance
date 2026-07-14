@@ -1,16 +1,23 @@
-# Cyberware UI Contract 13.4x
+# Cyberware UI Contract 15.13x
 
 ## Ownership
 
-`js/equipment-cyberware-link.js` owns the player-facing Cyberware workspace composition and navigation state. Domain resolvers remain in Runtime, Core Stack, Authorization, Planner, Diagnostics, Maintenance and World Bridge modules.
-
-The Equipment top-level workspace boundary remains:
+Cyberware is a standalone player module registered as `cyberware`.
 
 ```text
-CYBERGRID | CYBERWARE
+js/cyberware-module.js
+  module shell, target Citizen, delegated actions and public navigation
+
+js/cyberware-workspace.js
+  player-facing workspace composition, navigation state and Instance Inspector
+
+js/equipment-cyberware-link.js
+  Equipment-to-Cyberware navigation bridge only
 ```
 
-Cyberware internal navigation must not create additional Equipment-level workspace tabs.
+Domain resolvers remain in Runtime, Core Stack, Authorization, Planner, Diagnostics, Maintenance and World Bridge modules. Equipment owns only Cybergrid and physical equipment placement; it does not own a Cyberware workspace tab.
+
+Cyberware internal navigation remains contained inside the standalone module.
 
 ## Internal section hierarchy
 

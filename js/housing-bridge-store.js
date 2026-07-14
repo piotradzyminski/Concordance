@@ -113,7 +113,8 @@ window.WS_APP = window.WS_APP || {};
       profileLabel: normalizeId(source.profileLabel || profile.label),
       width,
       height,
-      slotCapacity: requestedCapacity || height * width
+      slotCapacity: requestedCapacity || height * width,
+      retiring: source.retiring === true
     };
   }
 
@@ -131,6 +132,27 @@ window.WS_APP = window.WS_APP || {};
       visibleAddress: normalizeId(source.visibleAddress || source.address || ""),
       traceAddress: normalizeId(source.traceAddress || source.trace || ""),
       linkedSubscriptionId: normalizeId(source.linkedSubscriptionId || source.subscriptionId || ""),
+      isPrimary: source.isPrimary === true,
+      occupancyStatus: normalizeToken(source.occupancyStatus || (source.status === "ACTIVE" ? "OCCUPIED" : "")),
+      standardCode: normalizeToken(source.standardCode || source.housingStandard || ""),
+      standardTierId: normalizeId(source.standardTierId || source.housingTierId || ""),
+      areaM2: source.areaM2 == null ? null : Number(source.areaM2),
+      occupancy: source.occupancy && typeof source.occupancy === "object" && !Array.isArray(source.occupancy) ? clone(source.occupancy) : {},
+      furnishingPolicy: normalizeToken(source.furnishingPolicy || ""),
+      fixedFixtures: Array.isArray(source.fixedFixtures) ? source.fixedFixtures.map(normalizeToken).filter(Boolean) : [],
+      rentalFurnishings: Array.isArray(source.rentalFurnishings) ? source.rentalFurnishings.map(normalizeToken).filter(Boolean) : [],
+      capabilities: Array.isArray(source.capabilities) ? source.capabilities.map(normalizeToken).filter(Boolean) : [],
+      parcelMaxFootprint: normalizeId(source.parcelMaxFootprint || ""),
+      logistics: source.logistics && typeof source.logistics === "object" && !Array.isArray(source.logistics) ? clone(source.logistics) : {},
+      disposalAccess: normalizeToken(source.disposalAccess || ""),
+      defaultFurnishingGrade: normalizeToken(source.defaultFurnishingGrade || ""),
+      fixtureReplacementPolicy: normalizeToken(source.fixtureReplacementPolicy || ""),
+      upgradeSlotPolicy: normalizeToken(source.upgradeSlotPolicy || ""),
+      maintenanceCoverage: normalizeToken(source.maintenanceCoverage || ""),
+      layoutPolicy: normalizeToken(source.layoutPolicy || ""),
+      layoutTemplateId: normalizeId(source.layoutTemplateId || source.household?.layoutTemplateId || ""),
+      layoutSeed: normalizeId(source.layoutSeed || source.household?.layoutSeed || ""),
+      layoutVariantFamily: normalizeToken(source.layoutVariantFamily || source.household?.variantFamily || ""),
       securityLevel: clampInteger(source.securityLevel ?? 0, 0, 99, 0),
       privacyLevel: clampInteger(source.privacyLevel ?? 0, 0, 99, 0),
       comfortLevel: clampInteger(source.comfortLevel ?? 0, 0, 99, 0),
@@ -138,6 +160,8 @@ window.WS_APP = window.WS_APP || {};
       utilityStatus: normalizeToken(source.utilityStatus || utilities.status || utilities.state || "UNKNOWN"),
       maintenanceStatus: normalizeToken(source.maintenanceStatus || maintenance.status || maintenance.state || "NOMINAL"),
       storageProfile: normalizeId(source.storageProfile || ""),
+      rentBridge: source.rentBridge && typeof source.rentBridge === "object" && !Array.isArray(source.rentBridge) ? clone(source.rentBridge) : null,
+      rentTransition: source.rentTransition && typeof source.rentTransition === "object" && !Array.isArray(source.rentTransition) ? clone(source.rentTransition) : null,
       restrictions: Array.isArray(source.restrictions) ? source.restrictions.map(normalizeId).filter(Boolean) : [],
       issues: Array.isArray(source.issues) ? source.issues.map(normalizeId).filter(Boolean) : [],
       linkedServices: Array.isArray(source.linkedServices) ? source.linkedServices.map(normalizeId).filter(Boolean) : [],
@@ -148,22 +172,53 @@ window.WS_APP = window.WS_APP || {};
     normalized.storageUnits = Array.isArray(source.storageUnits) && source.storageUnits.length
       ? source.storageUnits.map((unit, unitIndex) => normalizeHousingStorageUnit(unit, unitIndex, normalized))
       : [normalizeHousingStorageUnit({}, 0, normalized)];
+    const assignment = window.WS_APP.resolveHousingLayoutAssignment?.({
+      ...normalized,
+      housingRecordId: normalized.id,
+      layoutTemplateId: normalized.layoutTemplateId,
+      layoutSeed: normalized.layoutSeed
+    }) || null;
+    if (assignment) {
+      normalized.layoutPolicy = normalized.layoutPolicy || normalizeToken(assignment.layoutPolicy);
+      normalized.layoutTemplateId = normalized.layoutTemplateId || normalizeId(assignment.layoutTemplateId);
+      normalized.layoutSeed = normalized.layoutSeed || normalizeId(assignment.layoutSeed);
+      normalized.layoutVariantFamily = normalized.layoutVariantFamily || normalizeToken(assignment.template?.variantFamily || "");
+    }
     return normalized;
   }
 
   function deriveHousingFromRent(citizen = {}) {
-    return getRentSubscriptions(citizen).map((subscription, index) => normalizeHousingRecord({
-      id: subscription.id || `housing-rent-${index + 1}`,
-      title: subscription.title || subscription.tierLabel || "Habitat Ledger Access",
-      type: subscription.tierId || subscription.tierLabel || "RENT_ACCESS",
-      status: subscription.active === false ? "SUSPENDED" : "ACTIVE",
-      provider: subscription.provider || "Habitat Ledger",
-      rentStatus: subscription.status || "UNKNOWN",
-      visibleAddress: citizen.address || citizen.visibleAddress || "",
-      traceAddress: citizen.trace || citizen.traceAddress || "",
-      linkedSubscriptionId: subscription.id || subscription.catalogId || subscription.tierId || "",
-      storageProfile: subscription.tierId || subscription.tierLabel || ""
-    }, index));
+    return getRentSubscriptions(citizen).map((subscription, index) => {
+      const resolution = window.WS_APP.resolveHousingRentTierFromSubscription?.(subscription) || null;
+      const standard = resolution?.standard || null;
+      const tier = resolution?.tier || null;
+      const housingRecordId = subscription.id || subscription.subscriptionContractId || `housing-rent-${index + 1}`;
+      const storageUnits = tier ? window.WS_APP.buildHousingRentStorageUnits?.(resolution, housingRecordId) || [] : [];
+      return normalizeHousingRecord({
+        id: housingRecordId,
+        title: tier ? `${standard.label} / ${tier.label}` : subscription.title || subscription.tierLabel || "Habitat Ledger Access",
+        type: standard ? `HOUSING_STANDARD_${standard.code}` : subscription.tierId || subscription.tierLabel || "RENT_ACCESS",
+        status: subscription.active === false ? "SUSPENDED" : "ACTIVE",
+        provider: subscription.provider || "Habitat Ledger",
+        rentStatus: subscription.status || subscription.billingStatus || "UNKNOWN",
+        visibleAddress: citizen.address || citizen.visibleAddress || "",
+        traceAddress: citizen.trace || citizen.traceAddress || "",
+        linkedSubscriptionId: housingRecordId,
+        storageProfile: subscription.tierId || subscription.tierLabel || "",
+        standardCode: standard?.code || "",
+        standardTierId: tier?.tierId || subscription.tierId || "",
+        areaM2: tier?.areaM2 ?? null,
+        furnishingPolicy: tier?.furnishingPolicy || "",
+        parcelMaxFootprint: tier?.logistics?.parcelMaxFootprint || "",
+        disposalAccess: tier?.disposalAccess || "",
+        defaultFurnishingGrade: tier?.defaultFurnishingGrade || "",
+        maintenanceCoverage: tier?.maintenanceCoverage || "",
+        layoutPolicy: standard?.layoutPolicy || "",
+        layoutTemplateId: subscription.layoutTemplateId || "",
+        layoutSeed: subscription.layoutSeed || "",
+        storageUnits
+      }, index);
+    });
   }
 
   function getCitizenHousingRecords(citizenOrId = {}) {

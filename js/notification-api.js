@@ -7,6 +7,33 @@ window.TerminalNotifications = window.TerminalNotifications || {};
 
   const clone = window.WS_APP.storeUtils?.clone || ((value) => JSON.parse(JSON.stringify(value)));
 
+  function normalizeTimestamp(value = "", fallback = "") {
+    const raw = String(value || fallback || "").trim();
+    if (!raw) return "";
+    const expanded = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00.000Z` : raw;
+    const parsed = Date.parse(expanded);
+    return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+  }
+
+  function getCampaignTimestamp() {
+    const campaignTime = normalizeTimestamp(window.WS_APP.getCampaignTimeIso?.() || window.WS_APP.CAMPAIGN_TIME_ISO);
+    if (campaignTime) return campaignTime;
+    const campaignDate = String(window.WS_APP.getCampaignDateIso?.() || window.WS_APP.CAMPAIGN_DATE_ISO || "").trim();
+    return normalizeTimestamp(campaignDate) || new Date().toISOString();
+  }
+
+  function resolveNotificationTimestamps(input = {}) {
+    const fallback = getCampaignTimestamp();
+    const occurredAt = normalizeTimestamp(input.occurredAt || input.date, fallback);
+    const createdAt = normalizeTimestamp(input.createdAt, occurredAt || fallback);
+    const sentAt = normalizeTimestamp(input.sentAt, occurredAt || createdAt);
+    const receivedAt = normalizeTimestamp(input.receivedAt, sentAt || createdAt);
+    const readAt = input.read === true
+      ? normalizeTimestamp(input.readAt || input.lifecycle?.readAt, receivedAt)
+      : normalizeTimestamp(input.readAt || input.lifecycle?.readAt);
+    return { occurredAt, createdAt, sentAt, receivedAt, readAt };
+  }
+
   function normalizeToken(value = "", fallback = "") {
     const normalized = String(value || fallback)
       .trim()
@@ -265,9 +292,10 @@ window.TerminalNotifications = window.TerminalNotifications || {};
     const layout = input.layout || projected.layout || (panels.length ? "notice-system" : "");
     const effectiveTemplateId = String(projected.templateId || requestedTemplateId).trim();
     const links = normalizeActionLinks(actions, input.links);
+    const timestamps = resolveNotificationTimestamps(input);
 
     const entry = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: input.id,
       eventId: String(input.eventId || "").trim(),
       citizenId,
@@ -290,10 +318,14 @@ window.TerminalNotifications = window.TerminalNotifications || {};
       body,
       templateId: effectiveTemplateId,
       templateData,
-      occurredAt: String(input.occurredAt || input.date || "").trim(),
-      effectiveAt: String(input.effectiveAt || "").trim(),
-      dueAt: String(input.dueAt || "").trim(),
-      expiresAt: String(input.expiresAt || "").trim(),
+      occurredAt: timestamps.occurredAt,
+      createdAt: timestamps.createdAt,
+      sentAt: timestamps.sentAt,
+      receivedAt: timestamps.receivedAt,
+      readAt: timestamps.readAt,
+      effectiveAt: normalizeTimestamp(input.effectiveAt),
+      dueAt: normalizeTimestamp(input.dueAt),
+      expiresAt: normalizeTimestamp(input.expiresAt),
       actions,
       retentionPolicy: clone(event.retentionPolicy),
       aggregationPolicy: clone(event.aggregationPolicy),
@@ -305,7 +337,7 @@ window.TerminalNotifications = window.TerminalNotifications || {};
       finalRows,
       tags,
       links,
-      date: input.date || input.occurredAt,
+      date: String(input.date || timestamps.receivedAt.slice(0, 10) || timestamps.occurredAt.slice(0, 10)).slice(0, 10),
       read: input.read === true,
       important: input.important === true,
       folder: input.folder,
@@ -378,6 +410,63 @@ window.TerminalNotifications = window.TerminalNotifications || {};
     return result;
   }
 
+  function emitDuringCampaignAdvance(eventOrDetail = {}, input = {}) {
+    if (typeof window.WS_APP.resolveEventTimeFromCampaignEvent !== "function") {
+      return { ok: false, error: { code: "WORLD_TIME_EVENT_WINDOWS_UNAVAILABLE" } };
+    }
+
+    const stableKey = String(
+      input.eventId
+      || input.idempotencyKey
+      || input.dedupeKey
+      || input.correlationId
+      || ""
+    ).trim();
+    if (!stableKey) {
+      return { ok: false, error: { code: "INBOX_EVENT_STABLE_KEY_REQUIRED" } };
+    }
+
+    const timeResolution = window.WS_APP.resolveEventTimeFromCampaignEvent(eventOrDetail, {
+      eventId: stableKey,
+      policy: input.timePolicy || input.policy || { type: "ANYTIME" }
+    });
+
+    if (!timeResolution?.ok) {
+      return {
+        ok: false,
+        error: {
+          code: timeResolution?.reason || "INBOX_EVENT_TIME_RESOLUTION_FAILED",
+          timeResolution: clone(timeResolution || null)
+        }
+      };
+    }
+
+    if (timeResolution.deferred === true || timeResolution.withinAdvance !== true) {
+      return {
+        ok: true,
+        operation: "DEFERRED",
+        emitted: false,
+        scheduledAt: timeResolution.scheduledAt || timeResolution.eventTimeIso || "",
+        timeResolution: clone(timeResolution)
+      };
+    }
+
+    const eventTimeIso = timeResolution.eventTimeIso;
+    const result = emit({
+      ...clone(input),
+      occurredAt: input.occurredAt || eventTimeIso,
+      createdAt: input.createdAt || eventTimeIso,
+      sentAt: input.sentAt || eventTimeIso,
+      receivedAt: input.receivedAt || eventTimeIso,
+      date: input.date || eventTimeIso.slice(0, 10)
+    });
+    return {
+      ...result,
+      emitted: result?.ok === true,
+      timeResolution: clone(timeResolution)
+    };
+  }
+
   function mutateLifecycle(input = {}, status = "READ") {
     const citizenId = String(input.citizenId || "").trim();
     const notificationId = String(input.notificationId || input.id || "").trim();
@@ -385,7 +474,7 @@ window.TerminalNotifications = window.TerminalNotifications || {};
       return { ok: false, error: { code: "NOTIFICATION_REFERENCE_REQUIRED" } };
     }
 
-    const now = new Date().toISOString();
+    const now = getCampaignTimestamp();
     const fieldByStatus = {
       READ: "readAt",
       ACKNOWLEDGED: "acknowledgedAt",
@@ -396,6 +485,7 @@ window.TerminalNotifications = window.TerminalNotifications || {};
     const dateField = fieldByStatus[status];
     const changes = {
       read: status !== "NEW",
+      readAt: status !== "NEW" ? now : "",
       lifecycle: {
         status,
         ...(dateField ? { [dateField]: now } : {})
@@ -422,10 +512,12 @@ window.TerminalNotifications = window.TerminalNotifications || {};
   window.TerminalNotifications.emit = emit;
   window.TerminalNotifications.emitLegacy = emitLegacy;
   window.TerminalNotifications.updateByEvent = updateByEvent;
+  window.TerminalNotifications.emitDuringCampaignAdvance = emitDuringCampaignAdvance;
   window.TerminalNotifications.acknowledge = (input) => mutateLifecycle(input, "ACKNOWLEDGED");
   window.TerminalNotifications.resolve = (input) => mutateLifecycle(input, "RESOLVED");
   window.TerminalNotifications.expire = (input) => mutateLifecycle(input, "EXPIRED");
   window.TerminalNotifications.archive = (input) => mutateLifecycle(input, "ARCHIVED");
 
   window.WS_APP.emitNotification = emit;
+  window.WS_APP.emitNotificationDuringCampaignAdvance = emitDuringCampaignAdvance;
 })();

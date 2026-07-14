@@ -182,7 +182,7 @@ window.WS_APP = window.WS_APP || {};
 
   registerStorage({
     domainId: "terminal-runtime",
-    schemaVersion: "world_bridge_notifications_2_1x",
+    schemaVersion: "terminal_inbox_datetime_1_0x",
     classification: C.CAMPAIGN_PERSISTENT,
     required: true,
     storageKeys: [

@@ -239,46 +239,66 @@ window.WS_APP = window.WS_APP || {};
       `;
     }
 
-    function renderRoomItem(entry = {}, room = {}, selectedInstanceId = "") {
+    function parseCellKey(value = "") {
+      const match = String(value || "").trim().match(/^(\d+):(\d+)$/);
+      return match ? { column: Number(match[1]), row: Number(match[2]) } : null;
+    }
+
+    function buildRoomCellIndex(household = {}) {
+      const index = new Map();
+      (household.rooms || []).forEach((room) => {
+        const activeCells = Array.isArray(room.activeCells) && room.activeCells.length
+          ? room.activeCells
+          : (() => {
+            const cells = [];
+            for (let row = room.bounds.row; row < room.bounds.row + room.bounds.height; row += 1) {
+              for (let column = room.bounds.column; column < room.bounds.column + room.bounds.width; column += 1) cells.push(`${column}:${row}`);
+            }
+            return cells;
+          })();
+        activeCells.forEach((cell) => index.set(String(cell), room));
+      });
+      return index;
+    }
+
+    function renderFloorItem(entry = {}, selectedInstanceId = "") {
       const instance = entry.instance || entry;
       const location = instance.location || {};
       const footprint = window.WS_APP.getHouseholdItemFootprint?.(instance, location.rotation) || { width: 1, height: 1 };
-      const relativeColumn = Number(location.gridX || room.bounds.column) - Number(room.bounds.column || 1) + 1;
-      const relativeRow = Number(location.gridY || room.bounds.row) - Number(room.bounds.row || 1) + 1;
       return `
         <button class="housing-household-room-item ${instance.instanceId === selectedInstanceId ? "is-selected" : ""}" type="button"
           data-household-select-item="${escapeHtml(instance.instanceId)}"
-          style="grid-column:${escapeHtml(relativeColumn)} / span ${escapeHtml(footprint.width)};grid-row:${escapeHtml(relativeRow)} / span ${escapeHtml(footprint.height)}">
+          style="grid-column:${escapeHtml(location.gridX || 1)} / span ${escapeHtml(footprint.width)};grid-row:${escapeHtml(location.gridY || 1)} / span ${escapeHtml(footprint.height)}">
           <b>${escapeHtml(getItemName(instance))}</b>
           <small>${escapeHtml(`${footprint.width}×${footprint.height} / ${Number(location.rotation) === 90 ? 90 : 0}°`)}</small>
         </button>
       `;
     }
 
-    function renderRoom(room = {}, placedEntries = [], selectedInstanceId = "") {
+    function renderFloorPlan(household = {}, placedEntries = [], selectedInstanceId = "") {
+      const roomByCell = buildRoomCellIndex(household);
+      const activeCells = new Set(household.floorPlan?.activeCells || [...roomByCell.keys()]);
       const cells = [];
-      for (let localRow = 1; localRow <= room.bounds.height; localRow += 1) {
-        for (let localColumn = 1; localColumn <= room.bounds.width; localColumn += 1) {
-          const column = room.bounds.column + localColumn - 1;
-          const row = room.bounds.row + localRow - 1;
-          cells.push(`<button class="housing-household-room-cell" type="button" aria-label="${escapeHtml(`${room.label}, column ${column}, row ${row}`)}" data-household-cell data-room-id="${escapeHtml(room.id)}" data-grid-x="${escapeHtml(column)}" data-grid-y="${escapeHtml(row)}" style="grid-column:${localColumn};grid-row:${localRow}"></button>`);
+      for (let row = 1; row <= household.floorPlan.height; row += 1) {
+        for (let column = 1; column <= household.floorPlan.width; column += 1) {
+          const key = `${column}:${row}`;
+          const room = roomByCell.get(key) || null;
+          if (!activeCells.has(key) || !room) {
+            cells.push(`<span class="housing-household-floor-cell is-inactive" aria-hidden="true" style="grid-column:${column};grid-row:${row}"></span>`);
+            continue;
+          }
+          const roomClass = String(room.type || "room").toLowerCase().replace(/_/g, "-");
+          cells.push(`<button class="housing-household-floor-cell is-active is-${escapeHtml(roomClass)}" type="button" aria-label="${escapeHtml(`${room.label}, column ${column}, row ${row}`)}" title="${escapeHtml(room.label)}" data-household-cell data-room-id="${escapeHtml(room.id)}" data-grid-x="${column}" data-grid-y="${row}" style="grid-column:${column};grid-row:${row}"></button>`);
         }
       }
+      const legend = (household.rooms || []).map((room) => `<span class="is-${escapeHtml(String(room.type || "room").toLowerCase().replace(/_/g, "-"))}"><b>${escapeHtml(room.label)}</b><small>${escapeHtml(room.type.replace(/_/g, " "))}</small></span>`).join("");
       return `
-        <article class="housing-household-room is-${escapeHtml(String(room.type || "room").toLowerCase().replace(/_/g, "-"))}"
-          data-household-room="${escapeHtml(room.id)}"
-          style="grid-column:${escapeHtml(room.bounds.column)} / span ${escapeHtml(room.bounds.width)};grid-row:${escapeHtml(room.bounds.row)} / span ${escapeHtml(room.bounds.height)}">
-          <header class="housing-household-room-head">
-            <b>${escapeHtml(room.label)}</b>
-            <small>${escapeHtml(`${room.type} · ${room.bounds.width}×${room.bounds.height}`)}</small>
-          </header>
-          <div class="housing-household-room-grid" style="--household-room-columns:${escapeHtml(room.bounds.width)};--household-room-rows:${escapeHtml(room.bounds.height)}">
-            ${cells.join("")}
-            ${placedEntries.map((entry) => renderRoomItem(entry, room, selectedInstanceId)).join("")}
-            <div class="housing-household-room-preview" data-household-preview hidden><b>PREVIEW</b><small></small></div>
-          </div>
-          <div class="housing-household-room-capabilities">${(room.capabilities || []).slice(0, 5).map((capability) => `<span>${escapeHtml(capability.replace(/_/g, " "))}</span>`).join("")}</div>
-        </article>
+        <div class="housing-household-room-legend">${legend}</div>
+        <div class="housing-household-floor" data-household-floor style="--household-floor-columns:${escapeHtml(household.floorPlan.width)};--household-floor-rows:${escapeHtml(household.floorPlan.height)}">
+          ${cells.join("")}
+          ${placedEntries.map((entry) => renderFloorItem(entry, selectedInstanceId)).join("")}
+          <div class="housing-household-room-preview" data-household-preview hidden><b>PREVIEW</b><small></small></div>
+        </div>
       `;
     }
 
@@ -317,6 +337,9 @@ window.WS_APP = window.WS_APP || {};
             </div>
             <div class="housing-household-stat-grid">
               ${renderHousingMetric("FLOOR PLAN", `${household.floorPlan.width} × ${household.floorPlan.height}`)}
+              ${renderHousingMetric("ACTIVE CELLS", household.floorPlan.activeCells?.length || 0)}
+              ${renderHousingMetric("AREA", `${household.areaM2 ?? activeRecord.areaM2 ?? "—"} m²`)}
+              ${renderHousingMetric("LAYOUT", household.variantFamily || "LEGACY")}
               ${renderHousingMetric("ROOMS", household.rooms.length)}
               ${renderHousingMetric("FURNISHINGS", workspace.entries.length)}
               ${renderHousingMetric("PLACED", placedEntries.length)}
@@ -334,9 +357,7 @@ window.WS_APP = window.WS_APP || {};
                   <div><p class="kicker">UNIT FLOOR PLAN</p><h5>Placement Grid</h5></div>
                   <span class="module-status-badge">${escapeHtml(selected ? "PLACEMENT ACTIVE" : "SELECT ITEM")}</span>
                 </header>
-                <div class="housing-household-floor" style="--household-floor-columns:${escapeHtml(household.floorPlan.width)};--household-floor-rows:${escapeHtml(household.floorPlan.height)}">
-                  ${household.rooms.map((room) => renderRoom(room, placedEntries.filter((entry) => normalizeId(entry.instance.location?.roomId) === room.id), state.selectedInstanceId)).join("")}
-                </div>
+                ${renderFloorPlan(household, placedEntries, state.selectedInstanceId)}
               </section>
             </main>
           </div>
@@ -390,8 +411,7 @@ window.WS_APP = window.WS_APP || {};
       const gridX = Number(cell.getAttribute("data-grid-x") || 1);
       const gridY = Number(cell.getAttribute("data-grid-y") || 1);
       const previewKey = `${state.selectedInstanceId}:${roomId}:${gridX}:${gridY}:${state.rotation}`;
-      const room = cell.closest?.("[data-household-room]");
-      const preview = room?.querySelector?.("[data-household-preview]");
+      const preview = context.root?.querySelector?.("[data-household-preview]") || null;
       if (cell.getAttribute("data-household-preview-key") === previewKey && preview && preview.hidden === false) return true;
       const result = window.WS_APP.validateHouseholdPlacement?.({
         citizenId,
@@ -405,13 +425,10 @@ window.WS_APP = window.WS_APP || {};
       clearPreview(context.root);
       cell.setAttribute("data-household-preview-key", previewKey);
       if (!preview) return true;
-      const roomBounds = result.room?.bounds || window.WS_APP.getHouseholdRoom?.(citizenId, housingRecordId, roomId)?.bounds || { column: gridX, row: gridY };
       const footprint = result.footprint || window.WS_APP.getHouseholdItemFootprint?.(window.WS_APP.getItemInstanceById?.(state.selectedInstanceId) || {}, state.rotation) || { width: 1, height: 1 };
-      const relativeColumn = gridX - Number(roomBounds.column || gridX) + 1;
-      const relativeRow = gridY - Number(roomBounds.row || gridY) + 1;
       preview.hidden = false;
-      preview.style.gridColumn = `${relativeColumn} / span ${footprint.width}`;
-      preview.style.gridRow = `${relativeRow} / span ${footprint.height}`;
+      preview.style.gridColumn = `${gridX} / span ${footprint.width}`;
+      preview.style.gridRow = `${gridY} / span ${footprint.height}`;
       preview.classList.toggle("is-valid", result.ok === true);
       preview.classList.toggle("is-invalid", result.ok !== true);
       preview.querySelector("b").textContent = result.ok ? "PLACE" : "BLOCKED";

@@ -165,7 +165,7 @@ DEINSTALL uses `CONTROLLED` when valid because the current removal rules are det
 
 ## UI ownership
 
-`js/equipment-cyberware-link.js` renders:
+`js/cyberware-workspace.js` renders:
 
 - installed Cyberware overview;
 - direct Plan Removal / Plan Replace actions;
@@ -175,7 +175,7 @@ DEINSTALL uses `CONTROLLED` when valid because the current removal rules are det
 
 `css/equipment.css` owns the component layout and visual state.
 
-`js/cyberware-planner.js` binds its own delegated click/change handlers. `js/equipment-actions.js` is not modified.
+`js/cyberware-planner.js` binds its own delegated click/change handlers. `js/cyberware-module.js` owns delegated Cyberware UI actions; Equipment actions are not the Cyberware event boundary.
 
 ## Explicit non-goals
 

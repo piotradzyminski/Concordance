@@ -168,6 +168,24 @@ ws:campaign-date-updated
 
 is emitted only when the calendar day changes. Hour changes inside the same day must not wake daily consumers.
 
+## Event-window resolution
+
+Shared synthetic event timing is delegated to:
+
+```text
+js/world-time-event-windows.js
+```
+
+The resolver consumes the canonical `previousTimeIso` and `currentTimeIso` fields from `ws:campaign-time-updated`. It may select a deterministic minute inside the skipped interval, intersect that interval with operating hours or return a deferred time in the next available window.
+
+Campaign Time does not persist the resolved event time. Terminal, Market, Services or another owning domain must save the returned timestamp on its own record and reuse it during reload/reconciliation. Terminal Inbox now persists resolved message timestamps through `TerminalNotifications.emitDuringCampaignAdvance()`; deferred future windows remain owned by the source domain.
+
+See:
+
+```text
+docs/contracts/core/world_time_event_windows_contract.md
+```
+
 ## Day phases
 
 ```text

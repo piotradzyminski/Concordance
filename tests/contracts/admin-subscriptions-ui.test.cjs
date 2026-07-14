@@ -150,5 +150,5 @@ test("Admin workspace registry, lazy bundle and cache versions are canonical", (
   assert.match(css, /Subscriptions Admin UI Stability 4\.2\.1/);
   assert.match(read("js/admin-subscriptions-control.js"), /captureScrollPosition[\s\S]*restoreScrollPosition/);
   assert.match(read("js/admin-subscriptions-control.js"), /getCommandPreview[\s\S]*confirmAction/);
-  assert.match(index, /js\/modules\.js\?v=297/);
+  assert.match(index, /js\/modules\.js\?v=302/);
 });

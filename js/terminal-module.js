@@ -11,7 +11,7 @@ window.WS_APP = window.WS_APP || {};
   ];
 
   const TERMINAL_REMINDER_COLORS = Array.from({ length: 6 }, (_, index) => index);
-  const TERMINAL_MODULE_VERSION = "5.2.0x";
+  const TERMINAL_MODULE_VERSION = "5.3.0x";
 
   function escapeHtml(value = "") {
     if (typeof window.WS_APP.escapeHtml === "function") return window.WS_APP.escapeHtml(value);
@@ -69,6 +69,24 @@ window.WS_APP = window.WS_APP || {};
     const source = String(value || "").trim();
     const match = source.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     return match ? `${match[3]}.${match[2]}.${match[1]}` : source;
+  }
+
+  function formatDateTimeDisplay(value = "", fallbackDate = "") {
+    const source = String(value || "").trim();
+    const expanded = /^\d{4}-\d{2}-\d{2}$/.test(source) ? `${source}T00:00:00.000Z` : source;
+    const parsed = Date.parse(expanded);
+    if (!Number.isFinite(parsed)) {
+      const fallback = String(fallbackDate || "").slice(0, 10);
+      return fallback ? `${formatDateDisplay(fallback)} / 00:00` : source;
+    }
+    const date = new Date(parsed);
+    const dateIso = date.toISOString().slice(0, 10);
+    const time = `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
+    return `${formatDateDisplay(dateIso)} / ${time}`;
+  }
+
+  function getTerminalEntryTimestamp(entry = {}) {
+    return String(entry.receivedAt || entry.sentAt || entry.createdAt || entry.occurredAt || entry.date || "").trim();
   }
 
   function getTerminalCalendarUiState(citizenId) {
@@ -722,8 +740,8 @@ window.WS_APP = window.WS_APP || {};
   function getTerminalEntrySortIndex(entry = {}) {
     const explicit = Number(entry.sortIndex ?? entry.entryOrder ?? entry.orderIndex);
     if (Number.isFinite(explicit)) return explicit;
-    const createdAt = Date.parse(entry.createdAt || "");
-    if (Number.isFinite(createdAt)) return createdAt;
+    const timestamp = Date.parse(getTerminalEntryTimestamp(entry));
+    if (Number.isFinite(timestamp)) return timestamp;
     const match = String(entry.id || "").match(/-(\d{10,})-/);
     return match ? Number(match[1]) || 0 : 0;
   }
@@ -1165,7 +1183,12 @@ window.WS_APP = window.WS_APP || {};
       ["Subject", formatTerminalTechnicalReference(entry.subjectRef)],
       ["Related", (Array.isArray(entry.relatedRefs) ? entry.relatedRefs : []).map(formatTerminalTechnicalReference).filter(Boolean).join(" / ")],
       ["Dedupe", entry.dedupeKey],
-      ["Template", entry.templateId]
+      ["Template", entry.templateId],
+      ["Occurred", entry.occurredAt],
+      ["Created", entry.createdAt],
+      ["Sent", entry.sentAt],
+      ["Received", entry.receivedAt],
+      ["Read", entry.readAt || entry.lifecycle?.readAt]
     ].filter(([, value]) => String(value ?? "").trim());
     if (!rows.length) return "";
     return `
@@ -1356,7 +1379,7 @@ window.WS_APP = window.WS_APP || {};
         ${renderTerminalEntryBody(entry)}
         ${renderTerminalEntryTechnicalDetails(entry, user)}
         <footer>
-          <small>${escapeHtml(formatDateDisplay(entry.date))} / ${escapeHtml(getTerminalEntryProviderLabel(entry))}</small>
+          <small><time datetime="${escapeHtml(getTerminalEntryTimestamp(entry))}">${escapeHtml(formatDateTimeDisplay(getTerminalEntryTimestamp(entry), entry.date))}</time> / ${escapeHtml(getTerminalEntryProviderLabel(entry))}</small>
           <span class="terminal-entry-actions">${actionButtons.join("")}</span>
         </footer>
       </article>

@@ -44,6 +44,14 @@ window.APP_DATA.modules = [
     roles: ["admin", "citizen"]
   },
   {
+    id: "cyberware",
+    title: "Cyberware",
+    description: "Installed body systems, neural core, diagnostics, maintenance and cyberware operations.",
+    status: "READY",
+    column: "left",
+    roles: ["admin", "citizen"]
+  },
+  {
     id: "market",
     title: "Market",
     description: "Global item storefront, carts, orders, fulfillment and delivery targeting.",
