@@ -1,0 +1,303 @@
+.address-core-view {
+  display: grid;
+  gap: 15px;
+}
+
+.address-toolbar {
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+}
+
+.address-generator-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.address-preview-card,
+.address-code-block,
+.address-note-block {
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(143, 189, 180, 0.035);
+  padding: 11px 12px;
+  min-width: 0;
+}
+
+.address-preview-card {
+  display: grid;
+  gap: 6px;
+}
+
+.address-preview-card span,
+.address-code-block span {
+  color: var(--dim);
+  font-size: var(--type-meta);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.address-preview-card b,
+.address-code-block b {
+  color: var(--text);
+  font-size: var(--type-body);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.address-record-list {
+  display: grid;
+  gap: 9px;
+}
+
+.address-empty-state {
+  min-height: 130px;
+  border: 1px dashed rgba(143, 189, 180, 0.2);
+  background: rgba(0, 0, 0, 0.14);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  color: var(--dim);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.address-empty-state b {
+  color: var(--muted);
+}
+
+.address-record-row {
+  width: 100%;
+  min-height: 86px;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(0, 0, 0, 0.16);
+  color: inherit;
+  padding: 11px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+
+.address-record-row:hover,
+.address-record-row:focus-visible {
+  border-color: rgba(143, 189, 180, 0.38);
+  background: rgba(143, 189, 180, 0.055);
+  outline: none;
+}
+
+.address-record-row.is-archived {
+  opacity: 0.58;
+}
+
+.address-record-row > span {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.address-record-row b {
+  color: var(--text);
+  font-size: var(--type-section-title);
+  text-transform: uppercase;
+}
+
+.address-record-row small {
+  color: var(--muted);
+  font-size: var(--type-body);
+  overflow-wrap: anywhere;
+}
+
+.address-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.address-tag-row i {
+  border: 1px solid var(--badge-neutral-border);
+  background: var(--badge-neutral-bg);
+  color: var(--badge-neutral-text);
+  min-height: 22px;
+  padding: 3px 7px;
+  font-size: var(--type-micro);
+  line-height: 1.15;
+  font-style: normal;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.address-record-headline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.address-record-title {
+  display: grid;
+  gap: 7px;
+}
+
+.address-record-title > span {
+  color: var(--muted);
+  font-size: var(--type-body-lg);
+  text-transform: uppercase;
+}
+
+.address-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.address-record-action,
+.address-generator-button,
+.address-form-cancel,
+.address-form-save {
+  border: 1px solid rgba(143, 189, 180, 0.24);
+  background: rgba(143, 189, 180, 0.055);
+  color: var(--muted);
+  min-height: 34px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: var(--type-body);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.address-record-action:hover,
+.address-generator-button:hover,
+.address-form-cancel:hover,
+.address-form-save:hover {
+  border-color: rgba(143, 189, 180, 0.44);
+  color: var(--text);
+}
+
+.address-record-action.danger {
+  border-color: rgba(184, 92, 102, 0.3);
+  color: var(--alert);
+}
+
+.address-code-blocks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.address-record-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.address-note-block {
+  display: grid;
+  gap: 8px;
+}
+
+.address-note-block h5 {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--type-body-lg);
+  text-transform: uppercase;
+}
+
+.address-note-block p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.address-form {
+  display: grid;
+  gap: 14px;
+}
+
+.address-form-generator,
+.address-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.address-form-actions {
+  justify-content: flex-end;
+  border-top: 1px solid rgba(143, 189, 180, 0.1);
+  padding-top: 12px;
+}
+
+.address-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.address-form-field {
+  display: grid;
+  gap: 6px;
+  color: var(--dim);
+  font-size: var(--type-control);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.address-form-field.is-wide {
+  grid-column: 1 / -1;
+}
+
+.address-form-field input,
+.address-form-field select,
+.address-form-field textarea {
+  width: 100%;
+  border: 1px solid rgba(143, 189, 180, 0.18);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text);
+  min-height: 36px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: var(--type-body-lg);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.address-form-field textarea {
+  resize: vertical;
+  min-height: 82px;
+}
+
+.address-form-message {
+  min-height: 20px;
+  color: var(--alert);
+  font-size: var(--type-body);
+  text-transform: uppercase;
+}
+
+.address-form-message.is-ok {
+  color: var(--ok);
+}
+
+@media (max-width: 980px) {
+  .address-toolbar,
+  .address-generator-strip,
+  .address-code-blocks,
+  .address-record-grid,
+  .address-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .address-record-headline {
+    display: grid;
+  }
+
+  .address-record-actions {
+    justify-content: flex-start;
+  }
+}

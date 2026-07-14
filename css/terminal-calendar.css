@@ -1,0 +1,589 @@
+
+
+/* Migrated from css/modules.css by patch_project_modules_css_cleanup_1.0x.
+   Keep this block before the canonical rules below so existing canonical overrides preserve cascade. */
+
+.terminal-local-session,
+.terminal-admin-target,
+.terminal-subpanel,
+.terminal-panel-card,
+.terminal-entry-card,
+.terminal-request-card,
+.terminal-action-form,
+.terminal-history-entry,
+.terminal-calendar-panel,
+.terminal-calendar-day {
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+@media (max-width: 760px) {
+.terminal-panel-card-grid,
+  .terminal-calendar-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+.terminal-calendar-head-side {
+    justify-content: flex-start;
+  }
+
+.terminal-calendar-weekdays,
+  .terminal-calendar-grid {
+    gap: 4px;
+  }
+
+.terminal-calendar-day {
+    min-height: 36px;
+    padding: 5px;
+  }
+}
+
+.terminal-request-admin-note b,
+.terminal-calendar-reminders-head h6 {
+  color: var(--text);
+  font-size: var(--type-control);
+  letter-spacing: var(--tracking-max);
+  text-transform: uppercase;
+}
+
+.terminal-request-admin-note span,
+.terminal-calendar-reminders-head small {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/*
+  Terminal Calendar canonical CSS.
+  Desktop-first calendar/reminder layout. Replaces layered marker/reminder quickfixes formerly in css/modules.css.
+*/
+
+.terminal-calendar-panel,
+.terminal-calendar-panel *,
+.terminal-calendar-reminders,
+.terminal-calendar-reminders * {
+  box-sizing: border-box;
+}
+
+.terminal-calendar-panel,
+.terminal-calendar-grid,
+.terminal-calendar-reminders,
+.terminal-calendar-reminder-list {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.terminal-calendar-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(143, 189, 180, 0.14);
+  background:
+    linear-gradient(180deg, rgba(143, 189, 180, 0.045), rgba(0, 0, 0, 0.18)),
+    rgba(0, 0, 0, 0.16);
+  padding: 14px;
+}
+
+.terminal-calendar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.terminal-calendar-head .kicker,
+.terminal-calendar-head h5 {
+  margin: 0;
+}
+
+.terminal-calendar-head h5 {
+  color: var(--text);
+  font-size: var(--type-section-title);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.terminal-calendar-head-side {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.terminal-calendar-head strong {
+  color: var(--ok);
+  font-size: var(--type-control);
+  letter-spacing: var(--tracking-max);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.terminal-calendar-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.terminal-calendar-nav button,
+.terminal-calendar-reminder-form button,
+.terminal-calendar-reminder-entry button {
+  min-height: 30px;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: rgba(143, 189, 180, 0.045);
+  color: var(--ok);
+  padding: 7px 10px;
+  font: inherit;
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-max);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.terminal-calendar-nav button:hover,
+.terminal-calendar-nav button:focus-visible,
+.terminal-calendar-reminder-form button:hover,
+.terminal-calendar-reminder-form button:focus-visible,
+.terminal-calendar-reminder-entry button:hover,
+.terminal-calendar-reminder-entry button:focus-visible {
+  border-color: rgba(143, 189, 180, 0.46);
+  background: rgba(143, 189, 180, 0.10);
+  color: var(--text);
+  outline: none;
+}
+
+.terminal-calendar-weekdays,
+.terminal-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.terminal-calendar-weekdays span {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-max);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+button.terminal-calendar-day,
+.terminal-calendar-day {
+  min-height: 46px;
+  display: grid;
+  align-content: space-between;
+  gap: 5px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(0, 0, 0, 0.16);
+  color: inherit;
+  padding: 7px;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.terminal-calendar-day:hover,
+button.terminal-calendar-day:focus-visible {
+  border-color: rgba(143, 189, 180, 0.36);
+  background: rgba(143, 189, 180, 0.055);
+  outline: none;
+}
+
+.terminal-calendar-day span {
+  color: var(--muted);
+  font-size: var(--type-control);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.terminal-calendar-day b {
+  color: var(--ok);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.terminal-calendar-day.is-outside {
+  opacity: 0.36;
+}
+
+.terminal-calendar-day.is-sunday {
+  border-color: rgba(143, 189, 180, 0.22);
+  background:
+    linear-gradient(180deg, rgba(143, 189, 180, 0.045), rgba(0, 0, 0, 0.12)),
+    rgba(143, 189, 180, 0.025);
+}
+
+.terminal-calendar-day.is-settlement:not(.is-current) {
+  border-color: rgba(185, 154, 107, 0.32);
+  background: rgba(185, 154, 107, 0.045);
+}
+
+.terminal-calendar-day.is-selected:not(.is-current) {
+  border-color: rgba(127, 148, 184, 0.38);
+  background:
+    linear-gradient(135deg, rgba(127, 148, 184, 0.10), rgba(0, 0, 0, 0.18)),
+    rgba(127, 148, 184, 0.025);
+}
+
+.terminal-calendar-day.has-reminder {
+  border-color: color-mix(in srgb, var(--reminder-color, var(--ok)) 42%, rgba(143, 189, 180, 0.12));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--reminder-color, var(--ok)) 9%, transparent), rgba(0, 0, 0, 0.18)),
+    rgba(0, 0, 0, 0.16);
+}
+
+.terminal-calendar-day.has-reminder b {
+  color: color-mix(in srgb, var(--reminder-color, var(--ok)) 82%, white 18%);
+}
+
+.terminal-calendar-day.is-current {
+  border-color: rgba(143, 189, 180, 0.58);
+  background:
+    linear-gradient(135deg, rgba(143, 189, 180, 0.16), rgba(0, 0, 0, 0.18)),
+    rgba(143, 189, 180, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(143, 189, 180, 0.10), 0 0 16px rgba(143, 189, 180, 0.08);
+  animation: terminalCurrentDatePulse 2.8s ease-in-out infinite;
+}
+
+.terminal-calendar-day.is-current::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(143, 189, 180, 0.20);
+  pointer-events: none;
+  animation: terminalCurrentDateInsetPulse 2.8s ease-in-out infinite;
+}
+
+.terminal-calendar-day.is-current span {
+  color: var(--text);
+}
+
+.terminal-calendar-reminders {
+  display: grid;
+  gap: 11px;
+  overflow: visible;
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(0, 0, 0, 0.14);
+  padding: 12px;
+}
+
+.terminal-calendar-reminders-head {
+  display: grid;
+  gap: 4px;
+}
+
+.terminal-calendar-reminders-head h6 {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--type-control);
+  letter-spacing: var(--tracking-max);
+  text-transform: uppercase;
+}
+
+.terminal-calendar-reminders-head small {
+  color: var(--dim);
+  font-size: var(--type-meta);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.terminal-calendar-reminder-form {
+  display: grid;
+  grid-template-columns: minmax(128px, 0.8fr) minmax(180px, 1.2fr) 132px minmax(146px, 0.78fr) minmax(220px, 1.35fr) auto;
+  gap: 9px;
+  align-items: end;
+  overflow: visible;
+}
+
+.terminal-calendar-reminder-form label,
+.terminal-calendar-color-field,
+.terminal-calendar-selected-date {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.terminal-calendar-reminder-form label.is-wide {
+  min-width: 220px;
+}
+
+.terminal-calendar-reminder-form span,
+.terminal-calendar-color-field > span,
+.terminal-calendar-selected-date span {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-max);
+  text-transform: uppercase;
+}
+
+.terminal-calendar-reminder-form input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text);
+  padding: 7px 9px;
+  font: inherit;
+  font-size: var(--type-control);
+  outline: none;
+}
+
+.terminal-calendar-reminder-form input:focus {
+  border-color: rgba(143, 189, 180, 0.40);
+  box-shadow: 0 0 0 1px rgba(143, 189, 180, 0.08);
+}
+
+.terminal-calendar-selected-date {
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.terminal-calendar-selected-date b {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--ok);
+  padding: 7px 9px;
+  font-size: var(--type-control);
+  letter-spacing: 0.11em;
+}
+
+.terminal-calendar-color-field {
+  position: relative;
+  z-index: 40;
+  align-self: end;
+  min-height: 51px;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-panel {
+  position: relative;
+  display: block;
+  height: 34px;
+  max-height: 34px;
+  min-height: 34px;
+  overflow: visible;
+  z-index: 41;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-panel summary {
+  width: 100%;
+  height: 34px;
+  min-height: 34px;
+  max-height: 34px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 14px;
+  grid-template-areas: "bar arrow";
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 0;
+  list-style: none;
+  cursor: pointer;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-panel summary b {
+  grid-area: bar;
+  width: auto;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  position: relative;
+  box-shadow: none;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-panel summary b::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 50%;
+  height: 7px;
+  transform: translateY(-50%);
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: var(--reminder-color, var(--ok));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--reminder-color, var(--ok)) 18%, transparent);
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-panel summary::after {
+  grid-area: arrow;
+  content: "▾";
+  color: var(--muted);
+  font-size: var(--type-micro);
+  justify-self: center;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-panel[open] {
+  z-index: 110;
+  overflow: visible;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-panel[open] summary::after {
+  content: "▴";
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-bars {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(2, 8, 8, 0.97);
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.42);
+  padding: 6px 7px;
+  z-index: 120;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-option {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: pointer;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-option:nth-of-type(n+7) {
+  display: none;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-option span {
+  display: block;
+  width: 100%;
+  height: 7px;
+  min-height: 7px;
+  max-height: 7px;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: var(--reminder-color, var(--ok));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--reminder-color, var(--ok)) 12%, transparent);
+}
+
+.terminal-calendar-color-field .terminal-calendar-color-option input:checked + span {
+  border-color: rgba(232, 255, 247, 0.68);
+  box-shadow:
+    0 0 0 1px rgba(143, 189, 180, 0.28),
+    0 0 12px color-mix(in srgb, var(--reminder-color, var(--ok)) 28%, transparent);
+}
+
+.terminal-calendar-reminder-list {
+  display: grid;
+  gap: 8px;
+}
+
+.terminal-calendar-reminder-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--reminder-color, var(--ok)) 36%, rgba(143, 189, 180, 0.12));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--reminder-color, var(--ok)) 8%, transparent), rgba(0, 0, 0, 0.16)),
+    rgba(0, 0, 0, 0.18);
+  padding: 9px 10px;
+}
+
+.terminal-calendar-reminder-entry.is-notified {
+  opacity: 0.58;
+}
+
+.terminal-calendar-reminder-entry span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.terminal-calendar-reminder-entry b {
+  color: var(--text);
+  font-size: var(--type-control);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.terminal-calendar-reminder-entry small {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.terminal-reminder-color-0 { --reminder-color: #8fbdb4; }
+.terminal-reminder-color-1 { --reminder-color: #c6b66d; }
+.terminal-reminder-color-2 { --reminder-color: #b08ccf; }
+.terminal-reminder-color-3 { --reminder-color: #78a8d2; }
+.terminal-reminder-color-4 { --reminder-color: #c98282; }
+.terminal-reminder-color-5 { --reminder-color: #7eb98d; }
+.terminal-reminder-color-6,
+.terminal-reminder-color-7 { --reminder-color: #8fbdb4; }
+
+@keyframes terminalCurrentDatePulse {
+  0%, 100% {
+    border-color: rgba(143, 189, 180, 0.54);
+    box-shadow:
+      inset 0 0 0 1px rgba(143, 189, 180, 0.10),
+      0 0 10px rgba(143, 189, 180, 0.06);
+  }
+
+  50% {
+    border-color: rgba(190, 232, 222, 0.84);
+    box-shadow:
+      inset 0 0 0 1px rgba(190, 232, 222, 0.18),
+      0 0 16px rgba(143, 189, 180, 0.15);
+  }
+}
+
+@keyframes terminalCurrentDateInsetPulse {
+  0%, 100% {
+    border-color: rgba(143, 189, 180, 0.18);
+    opacity: 0.72;
+  }
+
+  50% {
+    border-color: rgba(190, 232, 222, 0.34);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1180px) {
+  .terminal-calendar-head,
+  .terminal-calendar-head-side {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .terminal-calendar-reminder-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .terminal-calendar-reminder-form button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-calendar-day.is-current,
+  .terminal-calendar-day.is-current::after {
+    animation: none;
+  }
+}

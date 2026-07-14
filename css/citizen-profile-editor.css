@@ -1,0 +1,80 @@
+.citizen-profile-editor-overlay {
+  align-items: center;
+}
+
+.citizen-profile-editor-shell {
+  width: min(760px, calc(100vw - 36px));
+  height: auto;
+  max-height: calc(100vh - 36px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.citizen-profile-editor-form {
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.citizen-profile-editor-intro {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(143, 189, 180, 0.18);
+  background: rgba(143, 189, 180, 0.045);
+}
+
+.citizen-profile-editor-intro div {
+  display: grid;
+  gap: 4px;
+}
+
+.citizen-profile-editor-intro span,
+.citizen-profile-editor-intro small {
+  color: #7d8f8c;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.citizen-profile-editor-intro strong {
+  color: #d6dedc;
+  font-size: 1rem;
+}
+
+.citizen-profile-editor-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(143, 189, 180, 0.16);
+}
+
+.citizen-profile-editor-foot > div {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 680px) {
+  .citizen-profile-editor-intro,
+  .citizen-profile-editor-foot {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .citizen-profile-editor-foot > div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.citizen-profile-shortcut {
+  color: #71817e;
+  font-size: 0.68rem;
+  margin-right: auto;
+}

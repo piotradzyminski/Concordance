@@ -1,0 +1,896 @@
+.citizen-profile {
+  padding: 18px;
+}
+
+.profile-header {
+  display: grid;
+  gap: 14px;
+  border-bottom: 1px solid rgba(143, 189, 180, 0.13);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.portrait-frame {
+  width: 100%;
+  aspect-ratio: 1 / 1.08;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background:
+    linear-gradient(135deg, rgba(143, 189, 180, 0.08), transparent),
+    radial-gradient(circle at 50% 38%, rgba(143, 189, 180, 0.13), transparent 32%),
+    rgba(0, 0, 0, 0.28);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.portrait-frame::after {
+  content: "IMAGE NOT SYNCHRONIZED";
+  color: var(--dim);
+  font-size: var(--type-body);
+  letter-spacing: var(--tracking-wide);
+  text-align: center;
+  padding: 18px;
+}
+
+.portrait-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(0.55) contrast(0.94) brightness(0.82);
+  opacity: 0.92;
+  z-index: 2;
+}
+
+.profile-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.profile-title h3 {
+  margin: 0 0 5px;
+  font-size: var(--type-page-title);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-none);
+}
+
+.profile-title span {
+  color: var(--muted);
+  font-size: var(--type-body-lg);
+}
+
+.profile-badge {
+  border: 1px solid var(--badge-neutral-border);
+  min-height: 22px;
+  padding: 3px 7px;
+  font-size: var(--type-micro);
+  line-height: 1.15;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--badge-neutral-bg);
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.profile-badge.alpha {
+  color: var(--badge-blue-text);
+  border-color: var(--badge-blue-border);
+  background: var(--badge-blue-bg);
+}
+
+.profile-badge.beta {
+  color: var(--badge-ok-text);
+  border-color: var(--badge-ok-border);
+  background: var(--badge-ok-bg);
+}
+
+.profile-badge.gamma {
+  color: var(--badge-warn-text);
+  border-color: var(--badge-warn-border);
+  background: var(--badge-warn-bg);
+}
+
+.profile-badge.operator {
+  color: var(--badge-owned-text);
+  border-color: var(--badge-owned-border);
+  background: var(--badge-owned-bg);
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.profile-tag {
+  border: 1px solid var(--badge-neutral-border);
+  background: var(--badge-neutral-bg);
+  color: var(--badge-neutral-text);
+  min-height: 22px;
+  padding: 3px 7px;
+  font-size: var(--type-micro);
+  line-height: 1.15;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.profile-data {
+  display: grid;
+  gap: 9px;
+}
+
+.data-row {
+  border-bottom: 1px solid rgba(143, 189, 180, 0.09);
+  padding-bottom: 8px;
+}
+
+.data-row b {
+  display: block;
+  color: var(--dim);
+  font-size: var(--type-control);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 4px;
+}
+
+.data-row span {
+  color: var(--text);
+  font-size: var(--type-body-lg);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.risk-block {
+  margin: 0 0 16px;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: linear-gradient(90deg, rgba(143, 189, 180, 0.055), rgba(0, 0, 0, 0.18));
+  padding: 12px;
+}
+
+.risk-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: var(--type-body);
+  margin-bottom: 7px;
+}
+
+.risk-label strong {
+  color: var(--text);
+}
+
+.risk-meter {
+  height: 8px;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(0, 0, 0, 0.36);
+  overflow: hidden;
+}
+
+.risk-meter span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(143, 189, 180, 0.78),
+    rgba(185, 154, 107, 0.78),
+    rgba(184, 92, 102, 0.82)
+  );
+}
+
+.profile-note {
+  margin: 0;
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(0, 0, 0, 0.20);
+  color: var(--muted);
+  padding: 11px;
+  font-size: var(--type-body-lg);
+  line-height: 1.6;
+}
+
+.admin-access-panel {
+  padding: 18px;
+}
+
+.admin-access-header {
+  border-bottom: 1px solid rgba(143, 189, 180, 0.13);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-access-header h3 {
+  margin: 5px 0 10px;
+  font-size: var(--type-page-title);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-none);
+}
+
+.admin-access-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--type-body-lg);
+  line-height: 1.6;
+}
+
+.admin-database-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.admin-database-link {
+  width: 100%;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(143, 189, 180, 0.035);
+  color: var(--text);
+  padding: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-database-link:hover,
+.admin-database-link:focus-visible {
+  border-color: rgba(143, 189, 180, 0.55);
+  background: rgba(143, 189, 180, 0.09);
+  outline: none;
+}
+
+.admin-database-link b,
+.admin-database-link small {
+  display: block;
+}
+
+.admin-database-link b {
+  margin-bottom: 4px;
+  font-size: var(--type-body-lg);
+  text-transform: uppercase;
+}
+
+.admin-database-link small {
+  color: var(--muted);
+  font-size: var(--type-body);
+  line-height: 1.45;
+}
+
+.admin-database-link strong {
+  color: var(--ok);
+  font-size: var(--type-control);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Campaign age badges */
+.profile-badge-stack {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.citizen-age-badge {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(143, 189, 180, 0.26);
+  background: rgba(143, 189, 180, 0.055);
+  color: var(--text);
+  min-height: 26px;
+  padding: 3px 7px;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.citizen-age-badge small {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-max);
+}
+
+.citizen-age-badge b {
+  color: var(--ok);
+  font-size: var(--type-body-lg);
+}
+
+.citizen-age-badge.is-profile-age {
+  justify-self: end;
+}
+
+/* Admin Command Panel */
+.admin-command-panel {
+  padding: 18px;
+}
+
+.admin-command-panel .admin-access-header h3 {
+  margin-bottom: 4px;
+}
+
+.admin-command-block {
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(0, 0, 0, 0.20);
+  padding: 12px;
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-command-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid rgba(143, 189, 180, 0.10);
+  padding-bottom: 8px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  font-size: var(--type-meta);
+}
+
+.admin-command-head strong {
+  color: var(--ok);
+  font-size: var(--type-control);
+  text-align: right;
+}
+
+.admin-command-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-command-actions.is-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-command-block button,
+.admin-command-primary {
+  border: 1px solid rgba(143, 189, 180, 0.24);
+  background: rgba(143, 189, 180, 0.045);
+  color: var(--ok);
+  min-height: 34px;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: var(--type-meta);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.admin-command-block button:hover,
+.admin-command-block button:focus-visible {
+  border-color: rgba(143, 189, 180, 0.55);
+  background: rgba(143, 189, 180, 0.09);
+  outline: none;
+}
+
+.admin-command-field {
+  display: grid;
+  gap: 5px;
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.admin-command-field input,
+.admin-command-field select {
+  width: 100%;
+  border: 1px solid rgba(143, 189, 180, 0.18);
+  background: rgba(0, 0, 0, 0.34);
+  color: var(--text);
+  min-height: 36px;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: var(--type-body);
+  text-transform: none;
+  letter-spacing: 0.03em;
+}
+
+.admin-command-field.is-disabled {
+  opacity: 0.52;
+}
+
+.currency-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.currency-input b {
+  color: var(--ok);
+  font-size: var(--type-section-title);
+}
+
+/* Admin Control polish */
+.admin-command-panel.is-polished {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-command-group {
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(0, 0, 0, 0.12);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-command-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(143, 189, 180, 0.11);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-max);
+  font-size: var(--type-meta);
+}
+
+.admin-command-group-head strong {
+  color: var(--ok);
+  text-align: right;
+}
+
+.admin-command-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-command-field-grid.is-risk-grid {
+  grid-template-columns: minmax(0, 1.3fr) 110px minmax(0, 1fr);
+}
+
+.admin-command-block.is-compact-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+
+.admin-command-block.is-compact-actions .admin-command-head,
+.admin-command-block.is-compact-actions .admin-command-hint {
+  grid-column: 1 / -1;
+}
+
+.admin-command-hint,
+.admin-command-empty {
+  color: var(--dim);
+  font-size: var(--type-meta);
+  line-height: 1.55;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.admin-command-request-list {
+  display: grid;
+  gap: 8px;
+  max-height: 340px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.admin-command-request-card {
+  border: 1px solid rgba(143, 189, 180, 0.13);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-command-request-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.admin-command-request-card header span {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-command-request-card b {
+  color: var(--text);
+  font-size: var(--type-control);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.admin-command-request-card small,
+.admin-command-request-card p {
+  color: var(--dim);
+  font-size: var(--type-meta);
+  line-height: 1.5;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.admin-command-request-card strong {
+  color: var(--ok);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.admin-command-request-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (max-width: 1100px) {
+  .admin-command-field-grid,
+  .admin-command-field-grid.is-risk-grid,
+  .admin-command-block.is-compact-actions,
+  .admin-command-request-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Player profile panel synced to Citizen Card data model. */
+.citizen-profile.is-card-synced .profile-header {
+  gap: 13px;
+}
+
+.citizen-profile.is-card-synced .profile-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 12px;
+  align-items: start;
+}
+
+.citizen-profile.is-card-synced .profile-title h3 {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--type-panel-title);
+  font-weight: 900;
+  line-height: 1.06;
+  letter-spacing: var(--tracking-none);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.citizen-profile.is-card-synced .profile-title span {
+  display: block;
+  color: var(--muted);
+  font-size: var(--type-body-lg);
+  font-weight: 500;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.citizen-profile.is-card-synced .profile-badge-stack {
+  width: 96px;
+  min-width: 96px;
+  display: grid;
+  gap: 7px;
+  justify-items: stretch;
+  align-self: start;
+}
+
+.citizen-profile.is-card-synced .profile-badge-stack .profile-badge {
+  width: 100%;
+  min-width: 0;
+  min-height: 31px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(143, 189, 180, 0.28);
+  background: rgba(143, 189, 180, 0.045);
+  color: var(--text);
+  padding: 6px 8px;
+  font-family: var(--font-display);
+  font-size: var(--type-control);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: var(--tracking-wide);
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.citizen-profile.is-card-synced .profile-badge-stack .profile-badge.age,
+.citizen-profile.is-card-synced .profile-badge-stack .profile-badge.is-profile-age {
+  min-height: 29px;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: var(--type-meta);
+  letter-spacing: var(--tracking-meta);
+}
+
+.citizen-profile.is-card-synced .profile-badge-stack .profile-badge.is-profile-age small {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-max);
+  font-weight: 800;
+}
+
+.citizen-profile.is-card-synced .profile-badge-stack .profile-badge.is-profile-age b {
+  color: var(--ok);
+  font-size: var(--type-body-lg);
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-data.is-card-summary {
+  gap: 12px;
+}
+
+.profile-summary-section {
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(0, 0, 0, 0.16);
+  padding: 11px;
+  display: grid;
+  gap: 7px;
+}
+
+.profile-summary-section h4 {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--type-meta);
+  letter-spacing: var(--tracking-max);
+  text-transform: uppercase;
+}
+
+.profile-summary-section p {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--type-body-lg);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.profile-occupation-list {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--muted);
+  display: grid;
+  gap: 5px;
+  font-size: var(--type-body);
+  line-height: 1.45;
+}
+
+.profile-occupation-list b {
+  color: var(--ok);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.profile-metric {
+  min-height: 58px;
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(0, 0, 0, 0.16);
+  padding: 9px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
+.profile-metric b {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.profile-metric span {
+  color: var(--text);
+  font-size: var(--type-body);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.profile-action-footer {
+  display: grid;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(143, 189, 180, 0.10);
+}
+
+.profile-edit-button {
+  min-height: 36px;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: rgba(0, 0, 0, 0.20);
+  color: var(--ok);
+  padding: 9px 11px;
+  font: inherit;
+  font-size: var(--type-meta);
+  font-weight: 800;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.profile-edit-button:hover,
+.profile-edit-button:focus-visible {
+  border-color: rgba(143, 189, 180, 0.45);
+  background: rgba(143, 189, 180, 0.065);
+  color: var(--text);
+  outline: none;
+}
+
+/* Admin side Command Panel tabs + risk control layout cleanup. */
+.admin-command-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(0, 0, 0, 0.14);
+  padding: 6px;
+}
+
+
+.admin-command-group[hidden] {
+  display: none !important;
+}
+
+.admin-risk-control-layout {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-risk-preview {
+  border: 1px solid rgba(143, 189, 180, 0.14);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-risk-preview > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-risk-preview span {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-max);
+  text-transform: uppercase;
+}
+
+.admin-risk-preview strong {
+  color: var(--text);
+  font-size: var(--type-card-title);
+  letter-spacing: 0.06em;
+}
+
+.admin-risk-operation-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.85fr) minmax(0, 1.15fr);
+  gap: 10px;
+}
+
+.admin-risk-delta-field {
+  max-width: 132px;
+}
+
+.admin-risk-delta-field input {
+  text-align: center;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .admin-command-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-risk-operation-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-risk-delta-field {
+    max-width: none;
+  }
+}
+
+
+.profile-service-log summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.profile-service-log summary::-webkit-details-marker {
+  display: none;
+}
+
+.profile-service-log summary h4 {
+  margin: 0;
+}
+
+.profile-service-log summary span {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.profile-service-log-list {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.profile-service-log-list article {
+  border-top: 1px solid rgba(143, 189, 180, 0.10);
+  padding-top: 6px;
+  display: grid;
+  gap: 3px;
+}
+
+.profile-service-log-list b {
+  color: var(--ok);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+}
+
+.profile-service-log-list small,
+.profile-service-log-list p {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* SERVICEv2 fix4: service log lives under Active Service. */
+.profile-active-service-block .profile-service-log {
+  margin-top: 12px;
+  border-top: 1px solid rgba(143, 189, 180, 0.12);
+  padding-top: 10px;
+}
+
+/* SERVICEv2 CV placement / compact spacing fix. */
+.citizen-core-profile .citizen-occupation-section + .citizen-service-log-summary,
+.citizen-card-compact-profile-card .citizen-occupation-section + .citizen-service-log-summary {
+  margin-top: 14px;
+}
+
+.citizen-card-compact-profile-card .citizen-service-log-summary {
+  margin-bottom: 16px;
+}
+
+.citizen-core-profile .citizen-core-facts,
+.citizen-card-compact-profile-card .citizen-core-facts {
+  margin-top: 10px;
+}

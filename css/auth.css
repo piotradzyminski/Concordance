@@ -1,0 +1,223 @@
+.auth-screen {
+  place-items: center;
+  padding: 28px;
+}
+
+.auth-frame {
+  width: min(620px, 100%);
+  border: 1px solid var(--line-hard);
+  background:
+    linear-gradient(145deg, rgba(15, 22, 24, 0.96), rgba(4, 8, 9, 0.92));
+  box-shadow: 0 0 34px rgba(143, 189, 180, 0.11);
+  padding: clamp(22px, 4vw, 36px);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-frame::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(143, 189, 180, 0.09);
+  pointer-events: none;
+}
+
+.auth-header {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 26px;
+}
+
+.system-mark {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-hard);
+  color: var(--ok);
+  font-weight: 800;
+  letter-spacing: var(--tracking-none);
+  background: rgba(143, 189, 180, 0.045);
+}
+
+.auth-header h1 {
+  margin: 5px 0 0;
+  font-size: var(--type-auth-title);
+  line-height: 0.95;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-none);
+  font-weight: 800;
+}
+
+.auth-status {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.auth-status div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(143, 189, 180, 0.12);
+  padding-bottom: 8px;
+  font-size: var(--type-body-lg);
+}
+
+.auth-status span {
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.auth-status strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.auth-form {
+  display: grid;
+  gap: 15px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: var(--type-body);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.auth-message {
+  display: none;
+  margin-top: 16px;
+  border: 1px solid rgba(184, 92, 102, 0.42);
+  background: rgba(184, 92, 102, 0.075);
+  color: #d8a4aa;
+  padding: 12px;
+  font-size: var(--type-body-lg);
+  line-height: 1.55;
+}
+
+.auth-message.is-visible {
+  display: block;
+}
+
+.auth-hint {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--dim);
+  font-size: var(--type-body);
+  text-transform: uppercase;
+}
+
+.auth-hint span {
+  margin-right: 4px;
+}
+
+.auth-cache-button {
+  border: 1px solid rgba(143, 189, 180, 0.18);
+  background: rgba(143, 189, 180, 0.035);
+  color: var(--muted);
+  padding: 5px 7px;
+  font: inherit;
+  font-weight: 500;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.auth-cache-button:hover,
+.auth-cache-button:focus-visible,
+.auth-cache-button.is-selected {
+  border-color: rgba(143, 189, 180, 0.55);
+  background: rgba(143, 189, 180, 0.105);
+  color: var(--text);
+  outline: none;
+}
+
+.auth-test-mode-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.auth-test-mode-button strong {
+  color: var(--dim);
+  font-size: var(--type-meta);
+  letter-spacing: 0.08em;
+}
+
+.auth-test-mode-button.is-active {
+  border-color: rgba(143, 189, 180, 0.62);
+  background: rgba(143, 189, 180, 0.14);
+  color: var(--text);
+}
+
+.auth-test-mode-button.is-active strong {
+  color: var(--ok);
+}
+
+.auth-frame.is-denied {
+  animation: denied 180ms linear 2;
+}
+
+@keyframes denied {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+
+.boot-screen {
+  place-items: center;
+  padding: 28px;
+}
+
+.boot-frame {
+  width: min(720px, 100%);
+  border: 1px solid var(--line);
+  background: rgba(5, 9, 10, 0.86);
+  padding: 28px;
+  box-shadow: 0 0 34px rgba(143, 189, 180, 0.09);
+}
+
+.boot-lines {
+  margin-top: 20px;
+  display: grid;
+  gap: 10px;
+  color: var(--muted);
+  font-size: var(--type-card-title);
+}
+
+.boot-line {
+  border-bottom: 1px solid rgba(143, 189, 180, 0.10);
+  padding-bottom: 8px;
+}
+
+.boot-line::before {
+  content: "> ";
+  color: var(--ok);
+}
+
+.terminal-screen {
+  place-items: center;
+  padding: 28px;
+}
+
+.terminal-placeholder {
+  width: min(900px, 100%);
+  border: 1px solid var(--line);
+  background: rgba(5, 9, 10, 0.86);
+  padding: 32px;
+}
+
+.terminal-placeholder h2 {
+  margin: 8px 0 12px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-none);
+}

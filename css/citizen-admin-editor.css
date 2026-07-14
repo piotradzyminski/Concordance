@@ -1,0 +1,789 @@
+.citizen-admin-editor-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.citizen-admin-editor-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.citizen-admin-editor-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
+.citizen-admin-editor-nav {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  border-right: 1px solid rgba(143, 189, 180, 0.18);
+  background: rgba(4, 8, 9, 0.92);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.citizen-admin-editor-nav button {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #829390;
+  text-align: left;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.citizen-admin-editor-nav button:hover,
+.citizen-admin-editor-nav button:focus-visible,
+.citizen-admin-editor-nav button.is-active {
+  border-color: rgba(143, 189, 180, 0.28);
+  background: rgba(143, 189, 180, 0.08);
+  color: #d6dedc;
+  outline: none;
+}
+
+.citizen-admin-editor-main {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+
+.citizen-admin-editor-panel {
+  display: none;
+  gap: 16px;
+}
+
+.citizen-admin-editor-panel.is-active {
+  display: grid;
+}
+
+.citizen-admin-panel-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid rgba(143, 189, 180, 0.18);
+}
+
+.citizen-admin-panel-head p,
+.citizen-admin-panel-head h4,
+.citizen-admin-panel-head small {
+  margin: 0;
+}
+
+.citizen-admin-panel-head p,
+.citizen-admin-panel-head small {
+  color: #7d8f8c;
+  font-size: 0.69rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.citizen-admin-panel-head h4 {
+  margin-top: 4px;
+  font-size: 1.08rem;
+}
+
+.citizen-admin-panel-head small {
+  max-width: 620px;
+  text-align: right;
+  line-height: 1.5;
+}
+
+.citizen-admin-state {
+  padding: 6px 9px;
+  border: 1px solid rgba(143, 189, 180, 0.28);
+  color: #a9c3c1;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.citizen-admin-overview-grid,
+.citizen-admin-domain-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.citizen-admin-fact,
+.citizen-admin-domain-card,
+.citizen-admin-action-block,
+.citizen-admin-mechanics-block,
+.citizen-admin-audit-columns > section {
+  border: 1px solid rgba(143, 189, 180, 0.17);
+  background: rgba(143, 189, 180, 0.035);
+}
+
+.citizen-admin-fact {
+  min-height: 74px;
+  padding: 12px;
+  display: grid;
+  align-content: space-between;
+  gap: 9px;
+}
+
+.citizen-admin-fact span,
+.citizen-admin-domain-card span,
+.citizen-admin-section-foot span,
+.citizen-admin-copy {
+  color: #7d8f8c;
+  font-size: 0.69rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.citizen-admin-fact b {
+  color: #d6dedc;
+  word-break: break-word;
+}
+
+.citizen-admin-action-block {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.citizen-admin-action-block header h5,
+.citizen-admin-action-block header p,
+.citizen-admin-domain-card h5,
+.citizen-admin-domain-card p {
+  margin: 0;
+}
+
+.citizen-admin-action-block header p,
+.citizen-admin-domain-card p {
+  margin-top: 5px;
+  color: #7d8f8c;
+  font-size: 0.76rem;
+}
+
+.citizen-admin-inline-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.citizen-admin-inline-controls .citizen-editor-field {
+  min-width: 240px;
+}
+
+.citizen-admin-inline-controls .is-grow {
+  flex: 1 1 auto;
+}
+
+.citizen-admin-switch,
+.citizen-admin-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #b8c7c4;
+}
+
+.citizen-admin-switch input,
+.citizen-admin-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #8fbdb4;
+}
+
+.citizen-admin-switch span {
+  display: grid;
+  gap: 3px;
+}
+
+.citizen-admin-switch small {
+  color: #7d8f8c;
+  font-size: 0.7rem;
+}
+
+.citizen-admin-section-form {
+  display: grid;
+  gap: 16px;
+}
+
+.citizen-admin-section-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(143, 189, 180, 0.16);
+}
+
+.citizen-admin-mechanics-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.8fr) minmax(420px, 1.2fr);
+  gap: 14px;
+}
+
+.citizen-admin-mechanics-block {
+  min-height: 0;
+  padding: 12px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.citizen-admin-mechanics-block > header,
+.citizen-admin-audit-columns > section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.citizen-admin-mechanics-block h5,
+.citizen-admin-audit-columns h5 {
+  margin: 0;
+}
+
+.citizen-admin-mechanics-block > header span,
+.citizen-admin-audit-columns > section > header span {
+  color: #7d8f8c;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.citizen-admin-mechanics-block > header input {
+  min-height: 34px;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: rgba(3, 7, 8, 0.82);
+  color: #d6dedc;
+  padding: 6px 9px;
+}
+
+.citizen-admin-ability-list,
+.citizen-admin-skill-list {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.citizen-admin-ability-row,
+.citizen-admin-skill-row {
+  min-height: 48px;
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(2, 6, 7, 0.54);
+}
+
+.citizen-admin-ability-row {
+  grid-template-columns: minmax(0, 1fr) 72px 76px;
+}
+
+.citizen-admin-skill-row {
+  grid-template-columns: 22px minmax(0, 1fr) 72px;
+}
+
+.citizen-admin-ability-row span,
+.citizen-admin-skill-row span {
+  min-width: 0;
+  display: grid;
+}
+
+.citizen-admin-ability-row small,
+.citizen-admin-skill-row small,
+.citizen-admin-ability-row em {
+  color: #71817e;
+  font-size: 0.65rem;
+  font-style: normal;
+}
+
+.citizen-admin-ability-row input,
+.citizen-admin-skill-row input[type="number"] {
+  width: 100%;
+  min-height: 32px;
+  box-sizing: border-box;
+  border: 1px solid rgba(143, 189, 180, 0.2);
+  background: rgba(3, 7, 8, 0.82);
+  color: #d6dedc;
+  padding: 5px 7px;
+}
+
+.citizen-admin-skill-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #8fbdb4;
+}
+
+.citizen-admin-domain-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.citizen-admin-domain-card {
+  min-height: 148px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.citizen-admin-domain-card h5 {
+  margin-top: 7px;
+  font-size: 1rem;
+}
+
+.citizen-admin-audit-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.citizen-admin-audit-columns > section {
+  min-height: 0;
+  padding: 12px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.citizen-admin-audit-list {
+  max-height: 580px;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.citizen-admin-audit-list article {
+  padding: 9px 10px;
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(2, 6, 7, 0.54);
+}
+
+.citizen-admin-audit-list article header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.citizen-admin-audit-list p {
+  margin: 7px 0;
+  color: #a9b6b3;
+  font-size: 0.76rem;
+}
+
+.citizen-admin-audit-list small,
+.citizen-admin-audit-list time {
+  color: #71817e;
+  font-size: 0.66rem;
+}
+
+@media (max-width: 1100px) {
+  .citizen-admin-editor-layout {
+    grid-template-columns: 178px minmax(0, 1fr);
+  }
+
+  .citizen-admin-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .citizen-admin-mechanics-grid,
+  .citizen-admin-audit-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .citizen-admin-domain-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .citizen-admin-editor-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .citizen-admin-editor-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid rgba(143, 189, 180, 0.18);
+  }
+
+  .citizen-admin-editor-nav button {
+    flex: 0 0 auto;
+  }
+
+  .citizen-admin-overview-grid,
+  .citizen-admin-domain-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .citizen-admin-inline-controls,
+  .citizen-admin-panel-head,
+  .citizen-admin-section-foot {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .citizen-admin-panel-head small {
+    text-align: left;
+  }
+}
+
+.citizen-admin-shortcuts {
+  color: #71817e;
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Citizen Card Editor 2.1.1 hotfix: persistent actions and restored mechanics cards */
+.citizen-admin-editor-head-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.citizen-admin-editor-persistent-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.citizen-admin-editor-persistent-actions .citizen-editor-button {
+  min-height: 34px;
+  padding: 7px 11px;
+  white-space: nowrap;
+}
+
+.citizen-admin-editor-persistent-actions .citizen-editor-button:disabled,
+.citizen-admin-rating-stepper button:disabled,
+.citizen-admin-rating-stepper input:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.citizen-admin-section-foot {
+  position: sticky;
+  bottom: -18px;
+  z-index: 5;
+  margin: 0 -18px -18px;
+  padding: 13px 18px 16px;
+  background: linear-gradient(to bottom, rgba(5, 9, 10, 0.9), rgba(5, 9, 10, 0.985) 38%);
+  backdrop-filter: blur(8px);
+}
+
+.citizen-editor-field > span small {
+  display: block;
+  margin-top: 3px;
+  color: #71817e;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.citizen-admin-mechanics-grid {
+  grid-template-columns: 1fr;
+}
+
+.citizen-admin-mechanics-block {
+  padding: 14px;
+  grid-template-rows: auto auto;
+}
+
+.citizen-admin-mechanics-block-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid rgba(143, 189, 180, 0.14);
+}
+
+.citizen-admin-mechanics-block-head h5,
+.citizen-admin-mechanics-block-head p,
+.citizen-admin-skill-group h6 {
+  margin: 0;
+}
+
+.citizen-admin-mechanics-block-head p {
+  margin-top: 4px;
+  color: #71817e;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+.citizen-admin-mechanics-block-head > span,
+.citizen-admin-skill-group > header span {
+  color: #7d8f8c;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.citizen-admin-ability-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.citizen-admin-ability-card,
+.citizen-admin-skill-card {
+  border: 1px solid rgba(143, 189, 180, 0.14);
+  background:
+    linear-gradient(135deg, rgba(143, 189, 180, 0.04), transparent 52%),
+    rgba(2, 6, 7, 0.62);
+}
+
+.citizen-admin-ability-card {
+  min-height: 172px;
+  padding: 12px;
+  display: grid;
+  grid-template-rows: auto minmax(34px, auto) auto auto;
+  gap: 10px;
+}
+
+.citizen-admin-ability-card > header,
+.citizen-admin-skill-group > header,
+.citizen-admin-skill-enable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.citizen-admin-ability-card > header > div,
+.citizen-admin-skill-enable > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.citizen-admin-ability-card > header b,
+.citizen-admin-skill-enable b {
+  color: #d6dedc;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.citizen-admin-ability-card > header small,
+.citizen-admin-skill-enable small {
+  color: #71817e;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.citizen-admin-ability-card > header strong {
+  min-width: 36px;
+  min-height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(169, 195, 193, 0.34);
+  color: #d0f1ed;
+  background: rgba(143, 189, 180, 0.065);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.citizen-admin-ability-card > p,
+.citizen-admin-skill-card > p {
+  margin: 0;
+  color: #8a9a97;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.citizen-admin-rating-control {
+  display: grid;
+  grid-template-columns: auto minmax(150px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  color: #7d8f8c;
+  font-size: 0.66rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.citizen-admin-cyber-readout b {
+  color: #7f94b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.citizen-admin-rating-stepper {
+  display: grid;
+  grid-template-columns: 34px minmax(48px, 1fr) 34px;
+  gap: 4px;
+}
+
+.citizen-admin-rating-stepper button,
+.citizen-admin-rating-stepper input {
+  min-height: 34px;
+  box-sizing: border-box;
+  border: 1px solid rgba(143, 189, 180, 0.2);
+  background: rgba(3, 7, 8, 0.86);
+  color: #d6dedc;
+  text-align: center;
+}
+
+.citizen-admin-rating-stepper button {
+  cursor: pointer;
+}
+
+.citizen-admin-rating-stepper button:hover:not(:disabled),
+.citizen-admin-rating-stepper button:focus-visible:not(:disabled) {
+  border-color: rgba(169, 195, 193, 0.55);
+  background: rgba(143, 189, 180, 0.11);
+  outline: none;
+}
+
+.citizen-admin-rating-blocks {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(7px, 1fr);
+  gap: 4px;
+}
+
+.citizen-rating-mini-block {
+  min-width: 0;
+  height: 10px;
+  border: 1px solid rgba(95, 116, 115, 0.55);
+  transform: skewX(-10deg);
+  background: transparent;
+}
+
+.citizen-rating-mini-block.is-filled.is-natural,
+.citizen-rating-mini-block.is-filled.is-skill {
+  border-color: #a9c3c1;
+  background: #88a09e;
+  box-shadow: 0 0 8px rgba(136, 160, 158, 0.18);
+}
+
+.citizen-rating-mini-block.is-filled.is-cyberware {
+  border-color: #7f94b8;
+  background: #7f94b8;
+  box-shadow: 0 0 8px rgba(127, 148, 184, 0.2);
+}
+
+.citizen-rating-mini-block.is-empty {
+  opacity: 0.35;
+}
+
+.citizen-rating-mini-block.is-cyberware-slot.is-empty {
+  border-color: rgba(127, 148, 184, 0.45);
+}
+
+.citizen-admin-skill-search {
+  display: grid;
+  gap: 4px;
+  min-width: 240px;
+  color: #71817e;
+  font-size: 0.63rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.citizen-admin-skill-search input {
+  min-height: 35px;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: rgba(3, 7, 8, 0.86);
+  color: #d6dedc;
+  padding: 6px 9px;
+}
+
+.citizen-admin-skill-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.citizen-admin-skill-group {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(143, 189, 180, 0.018);
+}
+
+.citizen-admin-skill-group > header {
+  padding: 2px 2px 9px;
+  border-bottom: 1px solid rgba(143, 189, 180, 0.11);
+}
+
+.citizen-admin-skill-group h6 {
+  color: #a9c3c1;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.citizen-admin-skill-list {
+  margin-top: 8px;
+  overflow: visible;
+}
+
+.citizen-admin-skill-card {
+  padding: 9px;
+  display: grid;
+  gap: 7px;
+  opacity: 0.63;
+}
+
+.citizen-admin-skill-card.is-enabled {
+  border-color: rgba(143, 189, 180, 0.28);
+  opacity: 1;
+}
+
+.citizen-admin-skill-enable {
+  justify-content: flex-start;
+}
+
+.citizen-admin-skill-enable input {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  accent-color: #8fbdb4;
+}
+
+.citizen-admin-skill-value {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 1180px) {
+  .citizen-admin-ability-card-grid,
+  .citizen-admin-skill-groups {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .citizen-admin-editor-head-actions,
+  .citizen-admin-editor-persistent-actions {
+    width: 100%;
+  }
+
+  .citizen-admin-editor-persistent-actions .citizen-editor-button {
+    flex: 1 1 0;
+  }
+
+  .citizen-admin-mechanics-block-head,
+  .citizen-admin-rating-control,
+  .citizen-admin-skill-value {
+    grid-template-columns: 1fr;
+  }
+
+  .citizen-admin-mechanics-block-head {
+    align-items: stretch;
+  }
+
+  .citizen-admin-skill-search {
+    min-width: 0;
+  }
+}

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Habitat Standard Ration Pack">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1213"/>
+      <stop offset="1" stop-color="#030506"/>
+    </linearGradient>
+    <pattern id="scan" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M0 7.5H8" stroke="#C0DDD9" stroke-opacity="0.035"/>
+    </pattern>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="640" height="400" fill="url(#bg)"/>
+  <rect width="640" height="400" fill="url(#scan)"/>
+  <g fill="none" stroke="#5F7473" stroke-opacity="0.24">
+    <path d="M24 76V24H76M564 24H616V76M24 324V376H76M564 376H616V324"/>
+    <path d="M320 18V50M320 350V382M18 200H50M590 200H622"/>
+    <rect x="74" y="52" width="492" height="296" rx="2"/>
+  </g>
+  <g stroke="#B99A6B" stroke-opacity="0.2">
+    <path d="M92 92H188M452 92H548M92 308H188M452 308H548"/>
+  </g>
+  
+  <g transform="translate(154 82)" fill="none" stroke="#B99A6B" stroke-width="5" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M34 30h298l-20 230H54Z" fill="#201A12" fill-opacity="0.76"/>
+    <path d="M34 76h298M94 76l12 184M272 76l-12 184" opacity="0.62"/>
+    <circle cx="183" cy="160" r="50"/><path d="M183 110v100M133 160h100" opacity="0.45"/>
+  </g>
+  <g fill="#B99A6B" opacity="0.55">
+    <circle cx="96" cy="92" r="3"/><circle cx="544" cy="92" r="3"/>
+    <circle cx="96" cy="308" r="3"/><circle cx="544" cy="308" r="3"/>
+  </g>
+</svg>

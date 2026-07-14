@@ -1,0 +1,27 @@
+model = "gpt-5.4-mini"
+model_reasoning_effort = "minimal"
+model_reasoning_summary = "none"
+model_verbosity = "low"
+web_search = "disabled"
+service_tier = "flex"
+
+instructions = """
+Project-local optimization rules for C:/Users/piotr/Desktop/future2.0/future:
+
+- Prefer the narrowest useful scan. Start from FILE_MAP.md and PATCH_STATE.md for project state, then inspect only files relevant to the current request.
+- Keep work scoped to the requested module. Do not run broad consistency audits unless the user explicitly asks for an audit or cleanup.
+- Do not modify, add, move, or regenerate assets unless the user explicitly asks for asset work.
+- For UI work, preserve the existing terminal-style design language and consolidate existing selectors before adding new local overrides.
+- Prefer existing project files and conventions: js/modules.js, css/modules.css, css/admin-control.css, js/admin-control.js, docs/README.md, docs/FILE_MAP.md, docs/PATCH_STATE.md, FILE_MAP.md, and PATCH_STATE.md.
+- Before replacing files from a ZIP or patch, compare them with the current project and merge forward so newer local changes are not reverted.
+- For small targeted fixes, validate with the cheapest relevant checks first, usually rg plus node --check for changed JavaScript.
+- Use browser/screenshot verification only when the request is visual, layout-sensitive, or when static checks cannot confirm the result.
+- Keep user-facing responses concise: report changed files, verification, and any real limitation.
+"""
+
+approval_policy = "never"
+
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = true

@@ -1,0 +1,373 @@
+:root {
+  --bg: #050707;
+  --bg-soft: #080d0e;
+
+  --panel: rgba(12, 17, 18, 0.92);
+  --panel-strong: rgba(16, 22, 24, 0.98);
+
+  --line: rgba(143, 189, 180, 0.22);
+  --line-hard: rgba(143, 189, 180, 0.44);
+
+  --text: #d6dedc;
+  --muted: #7d8f8c;
+  --dim: #4d5d5a;
+
+  --ok: #8fbdb4;
+  --alert: #b85c66;
+  --warn: #b99a6b;
+  --blue: #7f94b8;
+
+  --badge-neutral-text: var(--muted);
+  --badge-neutral-border: rgba(143, 189, 180, 0.18);
+  --badge-neutral-bg: rgba(0, 0, 0, 0.18);
+  --badge-ok-text: var(--ok);
+  --badge-ok-border: rgba(143, 189, 180, 0.36);
+  --badge-ok-bg: rgba(143, 189, 180, 0.055);
+  --badge-warn-text: var(--warn);
+  --badge-warn-border: rgba(185, 154, 107, 0.42);
+  --badge-warn-bg: rgba(185, 154, 107, 0.06);
+  --badge-alert-text: var(--alert);
+  --badge-alert-border: rgba(184, 92, 102, 0.46);
+  --badge-alert-bg: rgba(184, 92, 102, 0.07);
+  --badge-suspended-text: rgba(224, 156, 165, 0.92);
+  --badge-suspended-border: rgba(184, 92, 102, 0.28);
+  --badge-suspended-bg: rgba(184, 92, 102, 0.045);
+  --badge-blue-text: var(--blue);
+  --badge-blue-border: rgba(127, 148, 184, 0.38);
+  --badge-blue-bg: rgba(127, 148, 184, 0.075);
+  --badge-disabled-text: var(--dim);
+  --badge-disabled-border: rgba(143, 189, 180, 0.14);
+  --badge-disabled-bg: rgba(143, 189, 180, 0.025);
+  --badge-owned-text: var(--text);
+  --badge-owned-border: rgba(220, 220, 200, 0.34);
+  --badge-owned-bg: rgba(220, 220, 200, 0.045);
+
+  --font-main:
+    "Rajdhani",
+    "Segoe UI",
+    "Arial",
+    sans-serif;
+  --font-display:
+    "Oxanium",
+    "Rajdhani",
+    "Segoe UI",
+    sans-serif;
+
+  --type-page-title: 28px;
+  --type-auth-title: 42px;
+  --type-screen-title: 24px;
+  --type-panel-title: 20px;
+  --type-tile-title: 18px;
+  --type-section-title: 16px;
+  --type-card-title: 15px;
+  --type-body: 13px;
+  --type-body-lg: 14px;
+  --type-meta: 11px;
+  --type-control: 11px;
+  --type-badge: 10px;
+  --type-micro: 10px;
+  --type-watermark: 36px;
+
+  --leading-tight: 1.08;
+  --leading-title: 1.18;
+  --leading-body: 1.45;
+  --leading-copy: 1.6;
+
+  --tracking-none: 0;
+  --tracking-tight: 0.02em;
+  --tracking-title: 0.06em;
+  --tracking-meta: 0.10em;
+  --tracking-wide: 0.12em;
+  --tracking-max: 0.14em;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(143, 189, 180, 0.055), transparent 30%),
+    radial-gradient(circle at 82% 72%, rgba(184, 92, 102, 0.045), transparent 26%),
+    linear-gradient(180deg, #071011 0%, var(--bg) 62%, #020303 100%);
+  color: var(--text);
+  font-family: var(--font-main);
+  font-size: var(--type-body);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: 0.72;
+  z-index: 1;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.025) 0,
+    rgba(255, 255, 255, 0.025) 1px,
+    transparent 2px,
+    transparent 6px
+  );
+  opacity: 0.28;
+  z-index: 2;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+.kicker,
+button,
+.module-status,
+.panel-status,
+.profile-badge,
+.profile-tag,
+.activity-tag,
+.payment-tag,
+.ui-badge,
+.system-mark {
+  font-family: var(--font-display);
+}
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 22px;
+  border: 1px solid var(--badge-neutral-border);
+  background: var(--badge-neutral-bg);
+  color: var(--badge-neutral-text);
+  padding: 3px 7px;
+  font-style: normal;
+  font-size: var(--type-badge);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  flex: 0 0 auto;
+}
+
+.ui-badge--access,
+.ui-badge--content,
+.ui-badge--priority {
+  color: var(--badge-ok-text);
+  border-color: var(--badge-ok-border);
+  background: var(--badge-ok-bg);
+}
+
+.ui-badge--paid {
+  color: var(--badge-ok-text);
+  border-color: var(--badge-ok-border);
+  background: var(--badge-ok-bg);
+}
+
+.ui-badge--pending {
+  color: var(--badge-warn-text);
+  border-color: var(--badge-warn-border);
+  background: var(--badge-warn-bg);
+}
+
+.ui-badge--overdue {
+  color: var(--badge-alert-text);
+  border-color: var(--badge-alert-border);
+  background: var(--badge-alert-bg);
+}
+
+.ui-badge--suspended {
+  color: var(--badge-suspended-text);
+  border-color: var(--badge-suspended-border);
+  background: var(--badge-suspended-bg);
+}
+
+.ui-badge--cancelled,
+.ui-badge--disabled {
+  color: var(--badge-disabled-text);
+  border-color: var(--badge-disabled-border);
+  background: var(--badge-disabled-bg);
+  opacity: 0.76;
+}
+
+.ui-badge--owned {
+  color: var(--badge-owned-text);
+  border-color: var(--badge-owned-border);
+  background: var(--badge-owned-bg);
+}
+
+.ui-badge--market,
+.ui-badge--system,
+.ui-badge--private,
+.ui-badge--neutral {
+  color: var(--badge-neutral-text);
+  border-color: var(--badge-neutral-border);
+  background: var(--badge-neutral-bg);
+}
+
+.ui-badge--blue {
+  color: var(--badge-blue-text);
+  border-color: var(--badge-blue-border);
+  background: var(--badge-blue-bg);
+}
+
+.app {
+  position: relative;
+  z-index: 3;
+  min-height: 100vh;
+}
+
+.screen {
+  min-height: 100vh;
+  display: none;
+  opacity: 0;
+  transition:
+    opacity 420ms ease,
+    filter 420ms ease,
+    transform 420ms ease;
+}
+
+.screen.is-active {
+  display: grid;
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+.screen.is-leaving {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(-8px);
+}
+
+.kicker {
+  margin: 0;
+  color: var(--ok);
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-max);
+}
+
+input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.38);
+  color: var(--text);
+  padding: 13px 12px;
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--line-hard);
+  box-shadow: 0 0 0 3px rgba(143, 189, 180, 0.08);
+}
+
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #061010;
+  color: var(--text);
+  padding: 11px 12px;
+  outline: none;
+  color-scheme: dark;
+}
+
+select:focus {
+  border-color: var(--line-hard);
+  box-shadow: 0 0 0 3px rgba(143, 189, 180, 0.08);
+}
+
+select option {
+  background: #050707;
+  color: var(--text);
+}
+
+select option:checked,
+select option:hover {
+  background: #101819;
+  color: var(--ok);
+}
+
+button {
+  width: 100%;
+  border: 1px solid var(--line-hard);
+  background: rgba(143, 189, 180, 0.09);
+  color: var(--text);
+  padding: 13px 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+button:hover {
+  background: rgba(143, 189, 180, 0.15);
+}
+
+/* Hide browser-native number steppers so numeric filters match terminal UI. */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Terminal-styled form arrows instead of browser-native controls. */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 34px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(167, 215, 202, 0.85) 50%),
+    linear-gradient(135deg, rgba(167, 215, 202, 0.85) 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 50%,
+    calc(100% - 11px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+select::-ms-expand {
+  display: none;
+}

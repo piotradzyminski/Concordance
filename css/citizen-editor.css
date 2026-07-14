@@ -1,0 +1,194 @@
+body.is-citizen-editor-open {
+  overflow: hidden;
+}
+
+.citizen-editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: none;
+  align-items: stretch;
+  justify-content: center;
+  background: rgba(2, 5, 6, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.citizen-editor-overlay.is-active {
+  display: flex;
+}
+
+.citizen-editor-shell {
+  width: min(1480px, calc(100vw - 36px));
+  height: min(920px, calc(100vh - 36px));
+  margin: 18px;
+  border: 1px solid rgba(143, 189, 180, 0.34);
+  background: #070a0b;
+  box-shadow: 0 26px 90px rgba(0, 0, 0, 0.72), inset 0 0 0 1px rgba(143, 189, 180, 0.05);
+  color: #d6dedc;
+  overflow: hidden;
+}
+
+.citizen-editor-shell button,
+.citizen-editor-shell input,
+.citizen-editor-shell select,
+.citizen-editor-shell textarea {
+  font: inherit;
+}
+
+.citizen-editor-head {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(143, 189, 180, 0.2);
+  background: rgba(11, 17, 18, 0.96);
+}
+
+.citizen-editor-head p,
+.citizen-editor-head h3 {
+  margin: 0;
+}
+
+.citizen-editor-head p {
+  color: #7d8f8c;
+  font-size: 0.72rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.citizen-editor-head h3 {
+  margin-top: 4px;
+  font-size: 1.12rem;
+  letter-spacing: 0.04em;
+}
+
+.citizen-editor-close,
+.citizen-editor-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(143, 189, 180, 0.3);
+  background: rgba(143, 189, 180, 0.08);
+  color: #d6dedc;
+  cursor: pointer;
+}
+
+.citizen-editor-close:hover,
+.citizen-editor-button:hover,
+.citizen-editor-close:focus-visible,
+.citizen-editor-button:focus-visible {
+  border-color: rgba(169, 195, 193, 0.72);
+  background: rgba(143, 189, 180, 0.14);
+  outline: none;
+}
+
+.citizen-editor-button.is-primary {
+  border-color: rgba(143, 189, 180, 0.58);
+  background: rgba(143, 189, 180, 0.18);
+}
+
+.citizen-editor-button.is-danger {
+  border-color: rgba(184, 92, 102, 0.62);
+  color: #e2b7bc;
+  background: rgba(184, 92, 102, 0.1);
+}
+
+.citizen-editor-message {
+  display: none;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(143, 189, 180, 0.24);
+  color: #c7d3d0;
+  background: rgba(143, 189, 180, 0.07);
+}
+
+.citizen-editor-message.is-visible {
+  display: block;
+}
+
+.citizen-editor-message.is-error {
+  border-color: rgba(184, 92, 102, 0.58);
+  color: #e2b7bc;
+  background: rgba(184, 92, 102, 0.08);
+}
+
+.citizen-editor-message.is-ok {
+  border-color: rgba(143, 189, 180, 0.48);
+  color: #cfe0dc;
+}
+
+.citizen-editor-field {
+  display: grid;
+  gap: 7px;
+}
+
+.citizen-editor-field > span {
+  color: #8ea19e;
+  font-size: 0.69rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.citizen-editor-field input,
+.citizen-editor-field select,
+.citizen-editor-field textarea {
+  width: 100%;
+  min-height: 38px;
+  box-sizing: border-box;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: rgba(3, 7, 8, 0.82);
+  color: #d6dedc;
+  padding: 9px 10px;
+}
+
+.citizen-editor-field textarea {
+  min-height: 104px;
+  resize: vertical;
+}
+
+.citizen-editor-field input:focus,
+.citizen-editor-field select:focus,
+.citizen-editor-field textarea:focus {
+  border-color: rgba(169, 195, 193, 0.64);
+  outline: 1px solid rgba(169, 195, 193, 0.12);
+}
+
+.citizen-editor-field input[readonly],
+.citizen-editor-field textarea[readonly] {
+  color: #7d8f8c;
+  background: rgba(7, 11, 12, 0.72);
+}
+
+.citizen-editor-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.citizen-editor-form-grid .is-wide {
+  grid-column: 1 / -1;
+}
+
+.citizen-editor-unsaved {
+  color: #b99a6b;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .citizen-editor-shell {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    margin: 8px;
+  }
+
+  .citizen-editor-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .citizen-editor-form-grid .is-wide {
+    grid-column: auto;
+  }
+}

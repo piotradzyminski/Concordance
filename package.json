@@ -1,0 +1,24 @@
+{
+  "name": "future-noir-web-terminal",
+  "version": "0.0.0-prealpha",
+  "private": true,
+  "description": "Local static TTRPG terminal test harness.",
+  "scripts": {
+    "check": "node scripts/check-js.mjs",
+    "test:unit": "node scripts/run-tests.mjs tests/unit",
+    "test:contracts": "node scripts/run-tests.mjs tests/contracts",
+    "test:data-io": "node scripts/run-tests.mjs tests/data-io",
+    "test:node": "node scripts/run-tests.mjs tests/unit tests/contracts tests/data-io",
+    "test:e2e": "playwright test",
+    "test": "npm run check && npm run test:node",
+    "cleanup:retired:check": "node scripts/apply-delete-manifest.mjs",
+    "cleanup:retired": "node scripts/apply-delete-manifest.mjs --apply",
+    "test:e2e:citizen": "node scripts/run-citizen-e2e.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

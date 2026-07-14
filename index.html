@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>WATCH & SECURE / LOCAL ACCESS NODE</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap&subset=latin-ext" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/base.css?v=46" />
+  <link rel="stylesheet" href="css/auth.css?v=29" />
+  <link rel="stylesheet" href="css/terminal.css?v=55" />
+  <link rel="stylesheet" href="css/citizen-profile.css?v=33" />
+    <link rel="stylesheet" href="css/citizen-editor.css?v=54" />
+  <link rel="stylesheet" href="css/citizen-profile-editor.css?v=2" />
+  <link rel="stylesheet" href="css/citizen-admin-editor.css?v=3" />
+  <link rel="stylesheet" href="css/citizen-quick-npc.css?v=1" />
+  <link rel="stylesheet" href="css/citizen-creator.css?v=2" />
+  <link rel="stylesheet" href="css/global-search.css?v=37" />
+  <link rel="stylesheet" href="css/data-io.css?v=42" />
+  <link rel="stylesheet" href="css/encyclopedia.css?v=43" />
+  <link rel="stylesheet" href="css/address-core.css?v=43" />
+  <link rel="stylesheet" href="css/tag-registry.css?v=41" />
+  <link rel="stylesheet" href="css/case-files.css?v=46" />
+  <link rel="stylesheet" href="css/terminal-effects.css?v=44" />
+<link rel="stylesheet" href="css/modules.css?v=147" />
+  <link rel="stylesheet" href="css/system-tabs.css?v=8" />
+  <link rel="stylesheet" href="css/module-cards.css?v=7" />
+  <link rel="stylesheet" href="css/database.css?v=8" />
+  <link rel="stylesheet" href="css/citizen-card.css?v=23" />
+  <link rel="stylesheet" href="css/knowledge-sections.css?v=9" />
+</head>
+
+<body>
+  <main class="app">
+    <section class="screen auth-screen is-active" id="auth-screen" aria-labelledby="auth-title">
+      <div class="auth-frame">
+        <div class="auth-header">
+          <div class="system-mark">W&S</div>
+
+          <div>
+            <p class="kicker">WATCH & SECURE / LOCAL ACCESS NODE</p>
+            <h1 id="auth-title">Authorization Required</h1>
+          </div>
+        </div>
+
+        <div class="auth-status">
+          <div>
+            <span>NODE</span>
+            <strong>N5:52.21 / LOCAL</strong>
+          </div>
+
+          <div>
+            <span>SYNC</span>
+            <strong>UNCONFIRMED</strong>
+          </div>
+
+          <div>
+            <span>MODE</span>
+            <strong>CAMPAIGN ACCESS</strong>
+          </div>
+        </div>
+
+        <form class="auth-form" id="auth-form" autocomplete="off">
+          <label>
+            User profile
+            <input
+              id="login-input"
+              name="login"
+              type="text"
+              placeholder="np. Obywatel B"
+              autocomplete="off"
+              autofocus
+            />
+          </label>
+
+          <label>
+            Access code
+            <input
+              id="password-input"
+              name="password"
+              type="password"
+              placeholder="********"
+              autocomplete="off"
+            />
+          </label>
+
+          <button type="submit">Authorize</button>
+        </form>
+
+        <div class="auth-message" id="auth-message">
+          ACCESS DENIED / Błędny profil użytkownika lub kod dostępu.
+        </div>
+
+        <div class="auth-hint" id="auth-cache">
+          <span>LOCAL AUTH CACHE:</span>
+          <button class="auth-cache-button" type="button" data-login="Admin">Admin</button>
+          <button class="auth-cache-button" type="button" data-login="Obywatel A">Obywatel A</button>
+          <button class="auth-cache-button" type="button" data-login="Obywatel B">Obywatel B</button>
+          <button class="auth-cache-button auth-test-mode-button" type="button" role="switch" aria-checked="false" data-test-mode-toggle>
+            <span>TEST MODE</span>
+            <strong data-test-mode-state>OFF</strong>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen boot-screen" id="boot-screen" aria-label="Ładowanie terminala">
+      <div class="boot-frame">
+        <p class="kicker">WATCH & SECURE / SESSION TRANSFER</p>
+        <div class="boot-lines" id="boot-lines"></div>
+      </div>
+    </section>
+
+    <section class="screen terminal-screen" id="terminal-screen" aria-label="Terminal główny">
+      <div class="terminal-shell">
+        <header class="terminal-topbar top-panel" aria-label="Top Panel">
+          <div class="terminal-brand">
+            <div class="system-mark small">W&S</div>
+
+            <div>
+              <p class="kicker">WATCH & SECURE / LOCAL TERMINAL</p>
+              <h2>Local Access Node</h2>
+            </div>
+          </div>
+
+          <form class="terminal-searchbar" id="terminal-searchbar" role="search" autocomplete="off">
+            <label class="terminal-search-label" for="terminal-search-input">Search local cache</label>
+            <input
+              id="terminal-search-input"
+              type="search"
+              placeholder="Search local cache / Ctrl+K"
+              autocomplete="off"
+            />
+            <button class="terminal-search-submit" type="submit">Query</button>
+          </form>
+
+          <div class="terminal-session">
+            <div>
+              <span>USER</span>
+              <strong id="session-user">UNKNOWN</strong>
+            </div>
+
+            <div>
+              <span>ROLE</span>
+              <strong id="session-role">UNKNOWN</strong>
+            </div>
+
+            <div>
+              <span>SYNC</span>
+              <strong class="sync-warn">LOCAL</strong>
+            </div>
+
+          </div>
+
+          <div class="terminal-actions">
+            <button class="logout-button" id="logout-button" type="button">
+              Log Out
+            </button>
+          </div>
+        </header>
+
+        <section class="terminal-date-strip status-bar" aria-label="Status Bar">
+          <div class="terminal-date-strip-item status-bar-item">
+            <span>DATE</span>
+            <strong id="campaign-date-label" data-campaign-date-label>13.02.2109</strong>
+          </div>
+
+          <div class="terminal-date-strip-item status-bar-item is-wide">
+            <span>NEXT SETTLEMENT PERIOD</span>
+            <strong id="settlement-period-end-label" data-settlement-period-end-label>17.02.2109</strong>
+          </div>
+
+          <div class="terminal-date-strip-item status-bar-item is-wide terminal-unread-strip-item">
+            <span>TERMINAL</span>
+            <strong data-terminal-unread-label>0 UNREAD TERMINAL ENTRIES</strong>
+          </div>
+        </section>
+
+        <div class="terminal-grid">
+          <aside class="profile-panel player-sidepanel" id="profile-panel" aria-label="Player Sidepanel">
+            <!-- renderowane przez js/citizen-profile.js -->
+          </aside>
+
+          <main class="module-panel module-panel-region" aria-label="Desktop Layout">
+            <div class="module-workspace desktop-layout">
+              <section class="module-main-panel module-panel-shell" aria-label="Module Panel">
+                <div class="panel-head">
+                  <div>
+                    <p class="kicker">SYSTEM MODULES / USER SCOPE</p>
+                    <h3>Access Panel</h3>
+                  </div>
+
+                  <span class="panel-status" id="module-status">MODULES READY</span>
+                </div>
+
+                <div class="module-grid" id="module-grid">
+                  <!-- renderowane przez js/modules.js -->
+                </div>
+              </section>
+            </div>
+          </main>
+
+          <aside class="session-log-panel" aria-label="Session Log Panel">
+            <aside class="terminal-sidefeed session-log" aria-label="Session Log">
+              <section class="telemetry-panel" aria-label="Data Refresh">
+                <div class="telemetry-head">
+                  <p class="kicker">DATA REFRESH</p>
+                  <span id="telemetry-refresh-state">LOCAL</span>
+                </div>
+
+                <div class="telemetry-grid">
+                  <div><span>REFRESH</span><strong id="telemetry-refresh-timer">00:13</strong></div>
+                  <div><span>CACHE</span><strong id="telemetry-cache-node">N5-LC/04-A9</strong></div>
+                  <div><span>DELTA</span><strong id="telemetry-cache-delta">004</strong></div>
+                </div>
+              </section>
+
+              <section class="telemetry-panel" aria-label="Control Scan">
+                <div class="telemetry-head">
+                  <p class="kicker">CONTROL SCAN</p>
+                  <span id="telemetry-control-state">ACTIVE</span>
+                </div>
+
+                <div class="telemetry-grid">
+                  <div><span>SCAN</span><strong id="telemetry-scan-state">NO BREACH</strong></div>
+                  <div><span>DRIFT</span><strong id="telemetry-drift-state">LOW</strong></div>
+                  <div><span>RISK ?</span><strong id="telemetry-risk-delta">+000</strong></div>
+                </div>
+              </section>
+
+              <section class="telemetry-panel" aria-label="Trace">
+                <div class="telemetry-head">
+                  <p class="kicker">TRACE</p>
+                  <span id="telemetry-trace-state">LOCKED</span>
+                </div>
+
+                <div class="telemetry-grid">
+                  <div><span>TOKEN</span><strong id="telemetry-trace-token">K7X9Q2</strong></div>
+                  <div><span>ROUTE</span><strong id="telemetry-route-state">LOCAL</strong></div>
+                  <div><span>SIGN</span><strong id="telemetry-signature">F91A</strong></div>
+                </div>
+              </section>
+
+              <section class="terminal-log">
+                <div class="telemetry-head">
+                  <p class="kicker">SESSION LOG</p>
+                  <span id="terminal-log-state">STREAM</span>
+                </div>
+
+                <div id="terminal-log-lines"></div>
+              </section>
+            </aside>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="data/users.js?v=28"></script>
+  <script src="data/citizens.js?v=77"></script>
+  <script src="data/item-instances.js?v=6"></script>
+  <script src="data/modules.js?v=56"></script>
+  <script src="data/citizen-creation-config.js?v=1"></script>
+  <script src="data/citizen-templates.js?v=1"></script>
+  <script src="data/entries.js?v=46"></script>
+  <script src="data/addresses.js?v=41"></script>
+  <script src="data/organizations.js?v=1"></script>
+  <script src="data/organization-locations.js?v=2"></script>
+  <script src="data/tags.js?v=41"></script>
+  <script src="data/access-tags.js?v=1"></script>
+  <script src="data/inbox-notification-types.js?v=6"></script>
+  <script src="data/notification-event-catalog.js?v=5"></script>
+  <script src="data/notification-content-templates.js?v=2"></script>
+  <script src="data/notification-provider-capabilities.js?v=4"></script>
+  <script src="data/item-type-catalog.js?v=4"></script>
+  <script src="data/equipment-catalog.js?v=25"></script>
+  <script src="data/market-offers.js?v=4"></script>
+  <script src="data/subscription-catalog.js?v=12"></script>
+  <script src="data/subscription-bridge-fixtures.js?v=1"></script>
+  <script src="data/service-definitions.js?v=3"></script>
+  <script src="data/firmware-registry.js?v=1"></script>
+  <script src="data/service-bridge-fixtures.js?v=2"></script>
+  <script src="data/system-records.js?v=62"></script>
+  <script src="data/case-files.js?v=43"></script>
+
+  <script src="js/store-utils.js?v=3"></script>
+  <script src="js/citizen-identity.js?v=3"></script>
+  <script src="js/item-type-registry.js?v=2"></script>
+  <script src="js/equipment-catalog-store.js?v=13"></script>
+  <script src="js/item-instance-store.js?v=15"></script>
+  <script src="js/item-type-operations.js?v=3"></script>
+  <script src="js/item-instance-transaction-store.js?v=2"></script>
+  <script src="js/subscription-entitlement.js?v=7"></script>
+  <script src="js/citizen-finance.js?v=1"></script>
+  <script src="js/service-log-lifecycle.js?v=1"></script>
+  <script src="js/terminal-entry-store.js?v=1"></script>
+  <script src="js/terminal-reminder-store.js?v=1"></script>
+  <script src="js/store.js?v=141"></script>
+  <script src="js/entries-store.js?v=50"></script>
+  <script src="js/address-store.js?v=41"></script>
+  <script src="js/organization-store.js?v=1"></script>
+  <script src="js/notification-registry.js?v=1"></script>
+  <script src="js/notification-content-resolver.js?v=2"></script>
+  <script src="js/notification-projection-policy.js?v=2"></script>
+  <script src="js/notification-api.js?v=3"></script>
+  <script src="js/billing-store.js?v=4"></script>
+  <script src="js/citizen-command-api.js?v=4"></script>
+  <script src="js/citizen-template-service.js?v=1"></script>
+  <script src="js/admin-audit-store.js?v=1"></script>
+  <script src="js/housing-bridge-store.js?v=2"></script>
+  <script src="js/household-store.js?v=2"></script>
+  <script src="js/market-store.js?v=12"></script>
+  <script src="js/service-bridge-store.js?v=9"></script>
+  <script src="js/world-bridge-operation-store.js?v=1"></script>
+  <script src="js/admin-dependency-resolver.js?v=2"></script>
+  <script src="js/firmware-registry.js?v=1"></script>
+  <script src="js/cyberware-world-bridge.js?v=3"></script>
+  <script src="js/service-notification-producer.js?v=1"></script>
+  <script src="js/world-bridge-notification-producer.js?v=1"></script>
+  <script src="js/market-notification-producer.js?v=1"></script>
+  <script src="js/tag-store.js?v=41"></script>
+    <script src="js/access-control.js?v=11"></script>
+  <script src="js/subscription-catalog-store.js?v=7"></script>
+  <script src="js/subscription-api.js?v=5"></script>
+  <script src="js/coverage-resolver.js?v=2"></script>
+  <script src="js/subscription-notification-producer.js?v=1"></script>
+  <script src="js/subscription-bridge-readiness.js?v=2"></script>
+  <script src="js/service-bridge-readiness.js?v=6"></script>
+  <script src="js/system-store.js?v=64"></script>
+  <script src="js/knowledge-relations.js?v=1"></script>
+  <script src="js/knowledge-pack-store.js?v=3"></script>
+  <script src="js/case-store.js?v=43"></script>
+  <script src="js/citizen-file-store.js?v=1"></script>
+  <script src="js/admin-record-lifecycle.js?v=1"></script>
+  <script src="js/database-relations.js?v=1"></script>
+  <script src="js/address-core.js?v=45"></script>
+  <script src="js/tag-registry.js?v=45"></script>
+  <script src="js/case-files.js?v=50"></script>
+  <script src="js/transition.js?v=31"></script>
+  <script src="js/terminal-effects.js?v=48"></script>
+  <script src="js/citizen-profile.js?v=49"></script>
+  <script src="js/modules.js?v=295"></script>
+  <script src="js/citizen-creator.js?v=3"></script>
+
+  <script src="js/subscription-catalog-editor.js?v=2"></script>
+    <script src="js/system-registry.js?v=15"></script>
+    <script src="js/encyclopedia-module.js?v=13"></script>
+  <script src="js/global-search.js?v=48"></script>
+  <script src="js/campaign-data-io-registry.js?v=1"></script>
+  <script src="js/campaign-data-io-adapters.js?v=6"></script>
+  <script src="js/campaign-data-io-v6.js?v=1"></script>
+  <script src="js/data-io.js?v=54"></script>
+    <script src="js/citizen-editor.js?v=63"></script>
+  <script src="js/citizen-profile-editor.js?v=2"></script>
+  <script src="js/citizen-admin-editor.js?v=5"></script>
+  <script src="js/citizen-quick-npc.js?v=1"></script>
+  <script src="js/terminal.js?v=43"></script>
+  <script src="js/auth.js?v=29"></script>
+  <script src="js/main.js?v=37"></script>
+  <script src="js/world-time-service-scheduler.js?v=2"></script>
+</body>
+</html>

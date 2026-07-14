@@ -1,0 +1,1582 @@
+/* Terminal module patch: local session, inbox, billing, requests and command line. */
+.module-detail--terminal {
+  display: grid;
+  gap: 14px;
+}
+
+
+.terminal-local-session {
+  padding: 12px 13px;
+  display: grid;
+  gap: 8px;
+  background:
+    linear-gradient(90deg, rgba(143, 189, 180, 0.06), rgba(0, 0, 0, 0.12));
+}
+
+.terminal-local-session-head,
+.terminal-subpanel-head,
+.terminal-entry-card header,
+.terminal-entry-card footer,
+.terminal-request-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.terminal-local-session-head .kicker,
+.terminal-subpanel-head .kicker {
+  margin: 0;
+}
+
+.terminal-local-session-head strong {
+  color: var(--ok);
+  font-size: var(--type-control);
+  letter-spacing: var(--tracking-max);
+  text-transform: uppercase;
+}
+
+.terminal-local-session-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--muted);
+  font-size: var(--type-control);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.terminal-local-session-line b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.terminal-admin-target {
+  padding: 10px 12px;
+}
+
+.terminal-admin-target label,
+.terminal-action-form label,
+.terminal-request-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--dim);
+  font-size: var(--type-meta);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.terminal-admin-target select,
+.terminal-subpanel-actions select,
+.terminal-action-form select,
+.terminal-action-form input,
+.terminal-request-form select,
+.terminal-request-form textarea,
+.terminal-command-form input {
+  width: 100%;
+  border: 1px solid rgba(143, 189, 180, 0.20);
+  background: rgba(0, 0, 0, 0.26);
+  color: var(--text);
+  padding: 9px 10px;
+  font: inherit;
+  font-size: var(--type-control);
+  outline: none;
+}
+
+.terminal-request-form textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.terminal-admin-target select:focus,
+.terminal-subpanel-actions select:focus,
+.terminal-action-form select:focus,
+.terminal-action-form input:focus,
+.terminal-request-form select:focus,
+.terminal-request-form textarea:focus,
+.terminal-command-form input:focus {
+  border-color: rgba(143, 189, 180, 0.52);
+  background: rgba(143, 189, 180, 0.055);
+}
+
+.terminal-panel-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+
+
+.terminal-subpanel {
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.terminal-subpanel-head h5,
+.terminal-action-form h6,
+.terminal-history-section h6,
+.terminal-request-list h6,
+.terminal-entry-card h6 {
+  margin: 0;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.terminal-subpanel-actions,
+.terminal-entry-card footer span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.terminal-subpanel-actions > button,
+.terminal-entry-card button:not(.ui-select-button):not(.terminal-entry-icon-btn),
+.terminal-action-form button:not(.system-mode-switch__option),
+.terminal-request-form button,
+.terminal-command-form button,
+.terminal-subpanel-head > button {
+  border: 1px solid rgba(143, 189, 180, 0.24);
+  background: rgba(143, 189, 180, 0.055);
+  color: var(--ok);
+  padding: 9px 11px;
+  font: inherit;
+  font-size: var(--type-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.terminal-action-form button:not(.system-mode-switch__option):disabled,
+.terminal-subpanel-actions > button:disabled,
+.terminal-entry-card button:not(.ui-select-button):not(.terminal-entry-icon-btn):disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.terminal-subpanel-actions > button:hover:not(:disabled),
+.terminal-entry-card button:not(.ui-select-button):not(.terminal-entry-icon-btn):hover,
+.terminal-action-form button:not(.system-mode-switch__option):hover:not(:disabled),
+.terminal-request-form button:hover,
+.terminal-command-form button:hover,
+.terminal-subpanel-head > button:hover {
+  border-color: rgba(143, 189, 180, 0.48);
+  background: rgba(143, 189, 180, 0.11);
+}
+
+.terminal-entry-list,
+.terminal-request-list,
+.terminal-history-section {
+  display: grid;
+  gap: 10px;
+}
+
+@keyframes terminalUnreadPulse {
+  0%, 100% {
+    border-color: var(--terminal-pulse-border, rgba(229, 183, 91, 0.38));
+    box-shadow: inset 0 0 0 1px var(--terminal-pulse-inset, rgba(229, 183, 91, 0.025)), 0 0 0 var(--terminal-pulse-glow, rgba(229, 183, 91, 0));
+  }
+  50% {
+    border-color: var(--terminal-pulse-border-active, rgba(229, 183, 91, 0.76));
+    box-shadow: inset 0 0 0 1px var(--terminal-pulse-inset-active, rgba(229, 183, 91, 0.10)), 0 0 14px var(--terminal-pulse-glow-active, rgba(229, 183, 91, 0.14));
+  }
+}
+
+@keyframes terminalImportantPulse {
+  0%, 100% {
+    border-color: rgba(127, 148, 184, 0.42);
+    box-shadow: inset 0 0 0 1px rgba(127, 148, 184, 0.035);
+  }
+  50% {
+    border-color: rgba(127, 148, 184, 0.70);
+    box-shadow: inset 0 0 0 1px rgba(127, 148, 184, 0.09), 0 0 14px rgba(127, 148, 184, 0.08);
+  }
+}
+
+@keyframes terminalWarningPulse {
+  0%, 100% {
+    border-color: rgba(184, 92, 102, 0.56);
+    box-shadow: inset 0 0 0 1px rgba(184, 92, 102, 0.045);
+  }
+  50% {
+    border-color: rgba(184, 92, 102, 0.82);
+    box-shadow: inset 0 0 0 1px rgba(184, 92, 102, 0.12), 0 0 16px rgba(184, 92, 102, 0.08);
+  }
+}
+
+@keyframes terminalCriticalPulse {
+  0%, 100% {
+    border-color: rgba(230, 82, 96, 0.82);
+    box-shadow: inset 0 0 0 1px rgba(230, 82, 96, 0.10), 0 0 14px rgba(230, 82, 96, 0.07);
+  }
+  50% {
+    border-color: rgba(230, 82, 96, 0.98);
+    box-shadow: inset 0 0 0 1px rgba(230, 82, 96, 0.19), 0 0 26px rgba(230, 82, 96, 0.14);
+  }
+}
+
+.terminal-entry-card {
+  --terminal-entry-accent-border: rgba(143, 189, 180, 0.46);
+  --terminal-entry-accent-fill: rgba(143, 189, 180, 0.10);
+  --terminal-entry-accent-text: var(--text);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.terminal-entry-card.is-unread {
+  border-color: rgba(229, 183, 91, 0.30);
+  background:
+    linear-gradient(90deg, rgba(229, 183, 91, 0.045), rgba(0, 0, 0, 0.14));
+  animation: terminalUnreadPulse var(--terminal-unread-pulse-duration, 2800ms) ease-in-out infinite;
+  animation-delay: var(--terminal-unread-pulse-delay, 0s);
+}
+
+.terminal-entry-card header {
+  align-items: flex-start;
+}
+
+.terminal-entry-heading {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  align-items: start;
+  gap: 10px;
+  width: 100%;
+}
+
+.terminal-entry-heading h6 {
+  min-width: 0;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.terminal-entry-tags {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.terminal-entry-summary {
+  max-width: 820px;
+  color: var(--text) !important;
+  font-size: var(--type-body) !important;
+  line-height: 1.55;
+}
+
+.terminal-entry-state-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.terminal-entry-state {
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(143, 189, 180, 0.035);
+  color: var(--muted);
+  padding: 3px 6px;
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.terminal-entry-state--domain {
+  color: var(--ok);
+  border-color: rgba(143, 189, 180, 0.28);
+}
+
+.terminal-entry-state--attention,
+.terminal-entry-state--lifecycle {
+  color: var(--terminal-entry-accent-text);
+  border-color: var(--terminal-entry-accent-border);
+  background: var(--terminal-entry-accent-fill);
+}
+
+.terminal-entry-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding-top: 2px;
+}
+
+.terminal-entry-context span {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.terminal-entry-context b {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.terminal-entry-context strong {
+  color: var(--text);
+  font-size: var(--type-meta);
+  letter-spacing: 0.04em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.terminal-entry-card header > strong {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.terminal-entry-type,
+.terminal-entry-subtype,
+.terminal-entry-severity,
+.terminal-entry-important-tag,
+.terminal-entry-status-tag,
+.terminal-entry-card header strong,
+.terminal-request-card header strong {
+  border: 1px solid rgba(143, 189, 180, 0.18);
+  color: var(--ok);
+  padding: 4px 7px;
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.terminal-entry-subtype {
+  color: var(--muted);
+  border-color: rgba(143, 189, 180, 0.13);
+  background: rgba(143, 189, 180, 0.025);
+}
+
+.terminal-entry-severity {
+  color: var(--dim);
+  border-color: rgba(143, 189, 180, 0.12);
+}
+
+
+.terminal-entry-important-tag {
+  color: rgba(127, 148, 184, 0.98);
+  border-color: rgba(127, 148, 184, 0.42);
+  background: rgba(127, 148, 184, 0.07);
+}
+
+.terminal-entry-status-tag {
+  color: var(--dim);
+  border-color: rgba(143, 189, 180, 0.12);
+}
+
+
+.terminal-entry-card p,
+.terminal-request-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--type-body);
+  line-height: 1.55;
+}
+
+
+.terminal-entry-body {
+  display: grid;
+  gap: 10px;
+}
+
+.terminal-entry-sections {
+  display: grid;
+  gap: 10px;
+}
+
+.terminal-entry-section {
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(143, 189, 180, 0.035);
+  padding: 10px 11px;
+  display: grid;
+  gap: 8px;
+}
+
+.terminal-entry-section h6 {
+  margin: 0;
+  font-size: var(--type-control);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text);
+  text-transform: uppercase;
+}
+
+.terminal-entry-section-table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+}
+
+.terminal-entry-section-table span {
+  color: var(--muted);
+  font-size: var(--type-meta);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.terminal-entry-section-table strong {
+  color: var(--text);
+  font-size: var(--type-control);
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
+.terminal-entry-card small,
+.terminal-request-card small,
+.terminal-history-entry small {
+  color: var(--dim);
+  font-size: var(--type-meta);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+
+.terminal-action-form,
+.terminal-request-form {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.terminal-action-form .is-wide,
+.terminal-request-form .is-wide {
+  grid-column: 1 / -1;
+}
+
+.terminal-history-entry {
+  padding: 10px 11px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.terminal-history-entry span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.terminal-history-entry b {
+  color: var(--text);
+  font-size: var(--type-control);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.terminal-history-entry strong {
+  color: var(--ok);
+  font-size: var(--type-control);
+  text-align: right;
+}
+
+.terminal-request-form {
+  grid-template-columns: 240px minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.terminal-request-card {
+  padding: 11px;
+  display: grid;
+  gap: 8px;
+}
+
+.terminal-command-output {
+  min-height: 220px;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(0, 0, 0, 0.26);
+  color: var(--ok);
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: var(--type-control);
+  line-height: 1.55;
+}
+
+.terminal-command-line {
+  position: relative;
+  padding: 1px 0 1px 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.terminal-command-line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 4px;
+  height: 1px;
+  background: rgba(143, 189, 180, 0.32);
+}
+
+.terminal-command-line.is-command {
+  color: var(--ok);
+}
+
+.terminal-command-line.is-command::before {
+  width: 6px;
+  background: var(--ok);
+}
+
+.terminal-command-line.is-ok {
+  color: rgba(143, 189, 180, 0.92);
+}
+
+.terminal-command-line.is-warning {
+  color: var(--warn);
+}
+
+.terminal-command-line.is-warning::before {
+  background: var(--warn);
+}
+
+.terminal-command-line.is-error {
+  color: var(--alert);
+}
+
+.terminal-command-line.is-error::before {
+  background: var(--alert);
+}
+
+.terminal-command-line.is-muted {
+  color: var(--dim);
+}
+
+.terminal-command-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.terminal-command-form span {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+
+
+@media (max-width: 1100px) {
+  .terminal-panel-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .terminal-request-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .terminal-panel-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  
+
+  
+
+  .terminal-subpanel-head,
+  .terminal-entry-card header,
+  .terminal-entry-card footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .terminal-subpanel-actions,
+  .terminal-entry-card footer span {
+    justify-content: flex-start;
+  }
+
+  .terminal-entry-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .terminal-entry-tags {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+
+/* Terminal inbox/request/calendar hardening patch. */
+.terminal-panel-badge {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(229, 183, 91, 0.38);
+  background: rgba(229, 183, 91, 0.10);
+  color: var(--warn);
+  font-style: normal;
+  font-size: var(--type-meta);
+  letter-spacing: 0.08em;
+}
+
+.terminal-panel-card.has-badge {
+  position: relative;
+  padding-right: 42px;
+}
+
+.terminal-panel-badge.is-empty {
+  border-color: rgba(143, 189, 180, 0.14);
+  background: rgba(0, 0, 0, 0.10);
+  color: var(--dim);
+  opacity: 0.68;
+}
+
+.terminal-panel-badge.has-unread {
+  border-color: rgba(229, 183, 91, 0.42);
+  background: rgba(229, 183, 91, 0.10);
+  color: var(--warn);
+  opacity: 1;
+}
+
+
+.terminal-inbox-folder-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+
+.terminal-entry-card.is-important {
+  --terminal-entry-accent-border: rgba(127, 148, 184, 0.58);
+  --terminal-entry-accent-fill: rgba(127, 148, 184, 0.14);
+  --terminal-entry-accent-text: rgba(169, 191, 222, 0.98);
+  border-color: rgba(127, 148, 184, 0.48);
+  background:
+    linear-gradient(90deg, rgba(127, 148, 184, 0.085), rgba(0, 0, 0, 0.12)),
+    rgba(127, 148, 184, 0.022);
+}
+
+.terminal-entry-card.is-important.is-unread {
+  animation: terminalImportantPulse var(--terminal-unread-pulse-duration, 2800ms) ease-in-out infinite;
+  animation-delay: var(--terminal-unread-pulse-delay, 0s);
+}
+
+.terminal-entry-card.is-severity-warning,
+.terminal-entry-card.is-severity-warning.is-unread,
+.terminal-entry-card.is-severity-warning.is-important,
+.terminal-entry-card.is-severity-warning.is-important.is-unread {
+  --terminal-entry-accent-border: rgba(184, 92, 102, 0.62);
+  --terminal-entry-accent-fill: rgba(184, 92, 102, 0.12);
+  --terminal-entry-accent-text: rgba(255, 146, 156, 0.98);
+  border-color: rgba(184, 92, 102, 0.56);
+  background:
+    linear-gradient(90deg, rgba(184, 92, 102, 0.055), rgba(0, 0, 0, 0.13)),
+    rgba(184, 92, 102, 0.014);
+}
+
+.terminal-entry-card.is-severity-warning.is-unread,
+.terminal-entry-card.is-severity-warning.is-important.is-unread {
+  animation: terminalWarningPulse var(--terminal-unread-pulse-duration, 2800ms) ease-in-out infinite;
+  animation-delay: var(--terminal-unread-pulse-delay, 0s);
+}
+
+.terminal-entry-card.is-severity-critical,
+.terminal-entry-card.is-severity-critical.is-unread,
+.terminal-entry-card.is-severity-critical.is-important,
+.terminal-entry-card.is-severity-critical.is-important.is-unread {
+  --terminal-entry-accent-border: rgba(230, 82, 96, 0.82);
+  --terminal-entry-accent-fill: rgba(230, 82, 96, 0.16);
+  --terminal-entry-accent-text: rgba(255, 146, 156, 0.98);
+  border-color: rgba(230, 82, 96, 0.82);
+  background:
+    linear-gradient(90deg, rgba(230, 82, 96, 0.125), rgba(0, 0, 0, 0.16)),
+    rgba(230, 82, 96, 0.032);
+}
+
+.terminal-entry-card.is-severity-critical.is-unread,
+.terminal-entry-card.is-severity-critical.is-important.is-unread {
+  animation: terminalCriticalPulse var(--terminal-unread-pulse-duration, 2800ms) ease-in-out infinite;
+  animation-delay: var(--terminal-unread-pulse-delay, 0s);
+}
+
+.terminal-entry-card.is-severity-warning .terminal-entry-severity,
+.terminal-entry-card.is-severity-warning.is-important .terminal-entry-severity,
+.terminal-entry-card.is-severity-warning.is-unread .terminal-entry-severity {
+  color: rgba(230, 122, 132, 0.96);
+  border-color: rgba(184, 92, 102, 0.46);
+  background: rgba(184, 92, 102, 0.055);
+}
+
+.terminal-entry-card.is-severity-critical .terminal-entry-severity,
+.terminal-entry-card.is-severity-critical.is-important .terminal-entry-severity,
+.terminal-entry-card.is-severity-critical.is-unread .terminal-entry-severity {
+  color: rgba(255, 146, 156, 0.98);
+  border-color: rgba(230, 82, 96, 0.68);
+  background: rgba(230, 82, 96, 0.10);
+}
+
+.terminal-entry-card.is-attention-badge {
+  --terminal-entry-accent-border: rgba(127, 148, 184, 0.52);
+  --terminal-entry-accent-fill: rgba(127, 148, 184, 0.10);
+  --terminal-entry-accent-text: rgba(169, 191, 222, 0.98);
+}
+
+.terminal-entry-card.is-attention-banner {
+  --terminal-entry-accent-border: rgba(185, 154, 107, 0.62);
+  --terminal-entry-accent-fill: rgba(185, 154, 107, 0.12);
+  --terminal-entry-accent-text: rgba(229, 198, 142, 0.98);
+  border-color: rgba(185, 154, 107, 0.48);
+  box-shadow: inset 3px 0 0 rgba(185, 154, 107, 0.52);
+}
+
+.terminal-entry-card.is-attention-blocking {
+  --terminal-entry-accent-border: rgba(230, 82, 96, 0.82);
+  --terminal-entry-accent-fill: rgba(230, 82, 96, 0.16);
+  --terminal-entry-accent-text: rgba(255, 146, 156, 0.98);
+  border-color: rgba(230, 82, 96, 0.76);
+  box-shadow: inset 3px 0 0 rgba(230, 82, 96, 0.80);
+}
+
+.terminal-entry-card.is-lifecycle-resolved,
+.terminal-entry-card.is-lifecycle-expired,
+.terminal-entry-card.is-lifecycle-archived {
+  opacity: 0.78;
+}
+
+.terminal-entry-card.is-lifecycle-resolved .terminal-entry-state--lifecycle {
+  color: var(--ok);
+  border-color: rgba(143, 189, 180, 0.34);
+  background: rgba(143, 189, 180, 0.06);
+}
+
+.terminal-entry-technical-details {
+  border-top: 1px solid rgba(143, 189, 180, 0.10);
+  padding-top: 8px;
+}
+
+.terminal-entry-technical-details summary {
+  cursor: pointer;
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.terminal-entry-technical-details > div {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.terminal-entry-technical-details span {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.35fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.terminal-entry-technical-details b {
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.terminal-entry-technical-details code {
+  color: var(--muted);
+  font-family: var(--mono, monospace);
+  font-size: var(--type-meta);
+  overflow-wrap: anywhere;
+}
+
+.terminal-entry-card.is-trash {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.terminal-request-admin-note {
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(143, 189, 180, 0.035);
+  padding: 10px 11px;
+  display: grid;
+  gap: 4px;
+}
+
+
+.terminal-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+
+.terminal-admin-target + .terminal-panel-card-grid .terminal-panel-card.has-zero-badge .terminal-panel-badge,
+.terminal-panel-card.has-zero-badge .terminal-panel-badge {
+  border-color: rgba(143, 189, 180, 0.14);
+  background: rgba(0, 0, 0, 0.10);
+  color: var(--dim);
+}
+
+
+.terminal-entry-card footer {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.terminal-entry-actions {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 5px;
+  justify-content: flex-end;
+  margin-left: auto;
+  max-width: 100%;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn {
+  appearance: none;
+  box-sizing: border-box;
+  border: 1px solid rgba(143, 189, 180, 0.20);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--ok);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  max-width: 28px;
+  max-height: 28px;
+  padding: 0;
+  overflow: hidden;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+  text-transform: none;
+}
+
+.terminal-entry-card .terminal-entry-icon-glyph {
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  transform: none;
+  pointer-events: none;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="OPEN"] .terminal-entry-icon-glyph,
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="CMD"] .terminal-entry-icon-glyph {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="BILLING"] .terminal-entry-icon-glyph {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="SUBS"] .terminal-entry-icon-glyph,
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="SYSTEM"] .terminal-entry-icon-glyph {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="CYBERWARE"] .terminal-entry-icon-glyph,
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="SERVICE"] .terminal-entry-icon-glyph,
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="MARKET"] .terminal-entry-icon-glyph,
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="HOUSING"] .terminal-entry-icon-glyph {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="REQUEST"] .terminal-entry-icon-glyph,
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="CALENDAR"] .terminal-entry-icon-glyph {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="TRASH"] .terminal-entry-icon-glyph,
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="DELETE"] .terminal-entry-icon-glyph {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="READ"] .terminal-entry-icon-glyph,
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="RESTORE"] .terminal-entry-icon-glyph {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="FLAG"] .terminal-entry-icon-glyph,
+.terminal-entry-card .terminal-entry-icon-btn[data-terminal-entry-action-icon="UNFLAG"] .terminal-entry-icon-glyph {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.terminal-entry-card .terminal-entry-icon-btn:hover,
+.terminal-entry-card .terminal-entry-action-btn:hover {
+  border-color: rgba(143, 189, 180, 0.50);
+  background: rgba(143, 189, 180, 0.10);
+  color: var(--text);
+}
+
+.terminal-entry-card .terminal-entry-icon-btn[data-important="false"] {
+  border-color: var(--terminal-entry-accent-border);
+  color: var(--terminal-entry-accent-text);
+  background: var(--terminal-entry-accent-fill);
+  box-shadow: inset 0 0 12px rgba(127, 148, 184, 0.10);
+}
+
+.terminal-request-card.is-closed {
+  opacity: 0.86;
+}
+
+.terminal-request-actions button[data-terminal-request-delete] {
+  border-color: rgba(207, 117, 117, 0.30);
+  color: rgba(207, 117, 117, 0.90);
+}
+
+.terminal-inbox-panel .terminal-inbox-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.terminal-inbox-panel .terminal-inbox-actions {
+  display: flex;
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.terminal-inbox-panel .terminal-inbox-filter-tabs {
+  width: 100%;
+  max-width: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.terminal-inbox-panel .terminal-inbox-actions > button {
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 5px 7px;
+  white-space: nowrap;
+}
+
+.terminal-inbox-panel .terminal-inbox-actions > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.terminal-inbox-panel .terminal-inbox-filter-tabs .system-inline-tab {
+  width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.terminal-inbox-panel .terminal-inbox-actions > button {
+  min-width: 118px;
+}
+
+.terminal-inbox-list-toolbar {
+  min-height: 36px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.terminal-inbox-result-state {
+  margin: 0;
+  min-height: 18px;
+}
+
+.terminal-inbox-sort-controls {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.terminal-inbox-filter-menu {
+  position: relative;
+  flex: 0 0 190px;
+  width: 190px;
+  max-width: 100%;
+}
+
+.terminal-inbox-filter-menu summary,
+.terminal-inbox-sort-controls select {
+  width: 190px;
+  min-width: 150px;
+  max-width: 190px;
+  flex: 0 0 190px;
+  min-height: 28px;
+  padding: 5px 7px;
+  border: 1px solid rgba(143, 189, 180, 0.20);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--type-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.terminal-inbox-filter-menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+}
+
+.terminal-inbox-filter-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.terminal-inbox-filter-menu summary::after {
+  content: "\25BE ";
+  color: var(--muted);
+  margin-left: 10px;
+}
+
+.terminal-inbox-filter-menu[open] summary {
+  border-color: rgba(143, 189, 180, 0.46);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.terminal-inbox-filter-menu-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow: auto;
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid rgba(143, 189, 180, 0.24);
+  background: rgba(3, 7, 7, 0.98);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(143, 189, 180, 0.035);
+}
+
+.terminal-inbox-filter-menu-panel span {
+  padding: 6px 6px 2px;
+  color: var(--dim);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.terminal-inbox-filter-menu-panel button {
+  width: 100%;
+  min-height: 28px;
+  border: 1px solid rgba(143, 189, 180, 0.14);
+  background: transparent;
+  color: var(--ok);
+  padding: 5px 7px;
+  font: inherit;
+  font-size: var(--type-micro);
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.terminal-inbox-filter-menu-panel button:hover,
+.terminal-inbox-filter-menu-panel button:focus-visible {
+  border-color: rgba(143, 189, 180, 0.42);
+  outline: none;
+}
+
+.terminal-inbox-filter-menu-panel button.is-selected {
+  border-color: rgba(143, 189, 180, 0.58);
+  animation: terminalFilterSelectedPulse 2200ms ease-in-out infinite;
+}
+
+@keyframes terminalFilterSelectedPulse {
+  0%, 100% {
+    box-shadow: inset 0 0 0 1px rgba(143, 189, 180, 0.04), 0 0 0 rgba(143, 189, 180, 0);
+  }
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(143, 189, 180, 0.12), 0 0 10px rgba(143, 189, 180, 0.12);
+  }
+}
+
+@media (max-width: 1100px) {
+  .terminal-inbox-panel .terminal-inbox-head,
+  .terminal-inbox-list-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .terminal-inbox-panel .terminal-inbox-actions,
+  .terminal-inbox-sort-controls {
+    justify-content: flex-start;
+  }
+
+  .terminal-inbox-panel .terminal-inbox-actions {
+    flex-wrap: wrap;
+  }
+
+  .terminal-inbox-panel .terminal-inbox-filter-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .terminal-inbox-filter-menu,
+  .terminal-inbox-sort-controls select {
+    width: auto;
+    max-width: none;
+    flex: 1 1 150px;
+  }
+}
+
+@media (max-width: 680px) {
+  .terminal-inbox-panel .terminal-inbox-filter-tabs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Billing inbox compact finance layout. */
+.terminal-entry-card.is-finance-entry {
+  gap: 9px;
+}
+
+.terminal-entry-finance {
+  display: grid;
+  gap: 8px;
+  max-width: 860px;
+}
+
+.terminal-entry-card.is-finance-finance-settlement .terminal-entry-finance,
+.terminal-entry-card.is-finance-finance-transfer .terminal-entry-finance,
+.terminal-entry-card.is-finance-finance-debt .terminal-entry-finance,
+.terminal-entry-card.is-finance-finance-payment .terminal-entry-finance {
+  width: min(860px, 100%);
+}
+
+.terminal-finance-panel-grid {
+  --finance-panel-count: 2;
+  display: grid;
+  grid-template-columns: repeat(var(--finance-panel-count), minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.terminal-finance-panel,
+.terminal-finance-final-row {
+  border: 1px solid rgba(143, 189, 180, 0.14);
+  background:
+    linear-gradient(90deg, rgba(143, 189, 180, 0.045), rgba(0, 0, 0, 0.08)),
+    rgba(5, 8, 8, 0.42);
+  padding: 8px 10px;
+}
+
+.terminal-finance-panel {
+  min-height: 86px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 6px;
+}
+
+.terminal-finance-panel h6,
+.terminal-finance-final-row h6 {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.terminal-finance-panel-rows {
+  align-content: start;
+  display: grid;
+  gap: 4px 10px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.terminal-finance-panel-rows span,
+.terminal-finance-final-items b {
+  color: var(--muted);
+  font-size: var(--type-meta);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.terminal-finance-panel-rows strong,
+.terminal-finance-final-items strong {
+  color: var(--text);
+  font-size: var(--type-control);
+  letter-spacing: 0.03em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.terminal-finance-final-row {
+  display: grid;
+  gap: 6px;
+}
+
+.terminal-finance-final-items {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.terminal-finance-final-items span {
+  border-left: 1px solid rgba(143, 189, 180, 0.12);
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-left: 7px;
+}
+
+.terminal-finance-final-items span:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.terminal-finance-final-items strong {
+  text-align: left;
+}
+
+.terminal-finance-panel-rows strong.is-positive-change,
+.terminal-finance-final-items strong.is-positive-change {
+  color: var(--ok);
+}
+
+.terminal-finance-panel-rows strong.is-negative-change,
+.terminal-finance-final-items strong.is-negative-change {
+  color: var(--alert);
+}
+
+.terminal-finance-panel-rows strong.is-neutral-change,
+.terminal-finance-final-items strong.is-neutral-change {
+  color: var(--muted);
+}
+
+.terminal-entry-card.is-record-entry {
+  gap: 10px;
+}
+
+.terminal-entry-record {
+  display: grid;
+  gap: 8px;
+  width: min(860px, 100%);
+}
+
+@media (max-width: 980px) {
+  .terminal-finance-final-items {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+
+/* Inbox domain event cards: canonical non-finance visual system.
+   Billing remains the benchmark: equal grid panels, neutral panel chrome, compact summary rows. */
+.terminal-entry-domain {
+  display: grid;
+  gap: 8px;
+  width: min(860px, 100%);
+}
+
+.terminal-entry-domain--density-compact {
+  width: min(640px, 100%);
+}
+
+.terminal-domain-panel-set {
+  display: grid;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.terminal-domain-panel-set--grid {
+  grid-template-columns: repeat(var(--domain-panel-count, 2), minmax(0, 1fr));
+}
+
+.terminal-domain-panel-set--single,
+.terminal-domain-panel-set--stack {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.terminal-domain-panel,
+.terminal-domain-final-row {
+  border: 1px solid rgba(143, 189, 180, 0.14);
+  background:
+    linear-gradient(90deg, rgba(143, 189, 180, 0.045), rgba(0, 0, 0, 0.08)),
+    rgba(5, 8, 8, 0.42);
+  box-sizing: border-box;
+  padding: 8px 10px;
+}
+
+.terminal-domain-panel {
+  display: grid;
+  gap: 6px;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+
+.terminal-domain-panel-set--grid .terminal-domain-panel,
+.terminal-domain-panel-set--standard .terminal-domain-panel {
+  min-height: 86px;
+}
+
+.terminal-domain-panel.is-wide-panel {
+  grid-column: 1 / -1;
+}
+
+.terminal-domain-panel h6,
+.terminal-domain-final-row h6 {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.terminal-domain-row-list {
+  align-content: start;
+  display: grid;
+  gap: 4px 10px;
+  grid-template-columns: minmax(92px, 0.85fr) minmax(0, 1.15fr);
+  min-width: 0;
+}
+
+.terminal-domain-row-label,
+.terminal-domain-final-items b {
+  color: var(--muted);
+  font-size: var(--type-meta);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.terminal-domain-row-value {
+  color: var(--text);
+  font-size: var(--type-control);
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+  word-break: normal;
+}
+
+.terminal-entry-domain--density-compact .terminal-domain-panel,
+.terminal-entry-domain--density-tight .terminal-domain-panel {
+  padding: 7px 9px;
+}
+
+.terminal-entry-domain--density-compact .terminal-domain-row-list,
+.terminal-entry-domain--density-tight .terminal-domain-row-list {
+  gap: 3px 9px;
+}
+
+.terminal-domain-final-row {
+  display: grid;
+  gap: 6px;
+}
+
+.terminal-domain-final-items {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.terminal-domain-final-items span {
+  border-left: 1px solid rgba(143, 189, 180, 0.12);
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-left: 7px;
+}
+
+.terminal-domain-final-items span:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.terminal-domain-final-items strong {
+  color: var(--text);
+  font-size: var(--type-control);
+  letter-spacing: 0.03em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.terminal-domain-panel-role--finance,
+.terminal-domain-panel--billing,
+.terminal-domain-panel--charge,
+.terminal-domain-panel--account,
+.terminal-domain-panel--payout,
+.terminal-domain-panel--payment,
+.terminal-domain-panel--expected {
+  background:
+    linear-gradient(90deg, rgba(185, 154, 107, 0.045), rgba(0, 0, 0, 0.08)),
+    rgba(5, 8, 8, 0.42);
+}
+
+.terminal-domain-panel-role--warning,
+.terminal-domain-panel-role--action,
+.terminal-domain-panel--warning,
+.terminal-domain-panel--action,
+.terminal-domain-panel--failed-payment {
+  background:
+    linear-gradient(90deg, rgba(184, 92, 102, 0.045), rgba(0, 0, 0, 0.08)),
+    rgba(5, 8, 8, 0.42);
+}
+
+.terminal-domain-panel--details h6 {
+  color: var(--ok);
+}
+
+.terminal-entry-domain--system-notice .terminal-domain-panel {
+  min-height: 0;
+}
+
+@media (max-width: 980px) {
+  .terminal-domain-panel-set--grid,
+  .terminal-domain-final-items {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .terminal-entry-domain,
+  .terminal-entry-domain--density-compact {
+    width: 100%;
+  }
+}
+
+/* Inbox bulk selection controls. */
+.terminal-inbox-bulk-actions {
+  min-height: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.terminal-inbox-bulk-actions.is-disabled {
+  display: none;
+}
+
+.terminal-inbox-bulk-actions button,
+.terminal-select-mode-toggle {
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
+  min-height: 28px;
+  border: 1px solid rgba(143, 189, 180, 0.24);
+  background: rgba(143, 189, 180, 0.055);
+  color: var(--ok);
+  padding: 5px 7px;
+  font: inherit;
+  font-size: var(--type-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.terminal-inbox-bulk-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.terminal-select-mode-toggle.is-active,
+.terminal-inbox-bulk-actions button:hover:not(:disabled) {
+  border-color: rgba(143, 189, 180, 0.48);
+  background: rgba(143, 189, 180, 0.11);
+  color: var(--text);
+}
+
+.terminal-entry-card[hidden] {
+  display: none;
+}
+
+.terminal-entry-card.is-selectable {
+  position: relative;
+  padding-left: 42px;
+}
+
+.terminal-entry-card.is-selected {
+  border-color: rgba(143, 189, 180, 0.44);
+  box-shadow: inset 0 0 0 1px rgba(143, 189, 180, 0.12);
+}
+
+.terminal-entry-select-box {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  flex: none;
+  line-height: 1;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-panel-badge.has-unread,
+  .terminal-entry-card.is-unread,
+  .terminal-entry-card.is-important.is-unread,
+  .terminal-entry-card.is-severity-warning.is-unread,
+  .terminal-entry-card.is-severity-warning.is-important.is-unread,
+  .terminal-entry-card.is-severity-critical.is-unread,
+  .terminal-entry-card.is-severity-critical.is-important.is-unread {
+    animation: none;
+  }
+}

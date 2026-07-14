@@ -1,0 +1,244 @@
+
+
+/* Migrated from css/modules.css by patch_project_modules_css_cleanup_1.0x.
+   Keep this block before the canonical rules below so existing canonical overrides preserve cascade. */
+
+.module-card {
+  min-height: 142px;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background:
+    linear-gradient(145deg, rgba(143, 189, 180, 0.04), rgba(0, 0, 0, 0.12));
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card.is-openable {
+  cursor: pointer;
+}
+
+.module-card::before {
+  content: attr(data-watermark);
+  position: absolute;
+  right: 14px;
+  bottom: 2px;
+  max-width: calc(100% - 28px);
+  color: rgba(143, 189, 180, 0.026);
+  font-size: clamp(24px, 2.2vw, var(--type-watermark));
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  pointer-events: none;
+  text-transform: uppercase;
+  transform: translateY(16%);
+  white-space: nowrap;
+}
+
+.module-card h4 {
+  margin: 0 0 10px;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-none);
+  font-size: var(--type-tile-title);
+  line-height: 1.05;
+}
+
+.module-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--type-control);
+  line-height: 1.45;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.module-card:hover {
+  border-color: rgba(143, 189, 180, 0.34);
+  background:
+    linear-gradient(145deg, rgba(143, 189, 180, 0.065), rgba(0, 0, 0, 0.10));
+}
+
+.module-card:focus-visible,
+.module-back-button:focus-visible,
+.system-article-row:focus-visible {
+  border-color: rgba(229, 183, 91, 0.66);
+  outline: none;
+}
+
+.module-status.public {
+  color: var(--ok);
+  border-color: rgba(143, 189, 180, 0.32);
+}
+
+.module-section-grid .module-card {
+  min-height: 148px;
+  height: 100%;
+}
+
+/*
+  Module card canonical CSS.
+  Desktop-first canon for Access Panel cards, module status/metric badges and terminal notification count.
+*/
+
+.module-card,
+.module-tile {
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card > div,
+.module-card .module-footer,
+.module-tile > div,
+.module-tile .module-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.module-footer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--type-body);
+}
+
+.module-status,
+.module-status-badge,
+.module-action,
+.module-card-metric,
+.module-card-notification-badge {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--badge-neutral-border);
+  background: var(--badge-neutral-bg);
+  padding: 5px 7px;
+  color: var(--badge-neutral-text);
+  font-size: var(--type-micro);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.module-card-metric {
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.module-action {
+  justify-self: end;
+  border-color: rgba(143, 189, 180, 0.24);
+  background:
+    linear-gradient(135deg, rgba(143, 189, 180, 0.045), rgba(0, 0, 0, 0.18)),
+    rgba(5, 7, 7, 0.34);
+  color: var(--ok);
+}
+
+.module-status,
+.module-status-badge {
+  justify-self: start;
+}
+
+.module-status.active,
+.module-status.ready,
+.module-status-badge.active,
+.module-status-badge.ready {
+  border-color: var(--badge-ok-border);
+  background: var(--badge-ok-bg);
+  color: var(--badge-ok-text);
+}
+
+.module-status.empty,
+.module-status-badge.empty {
+  border-color: var(--badge-disabled-border);
+  background: var(--badge-disabled-bg);
+  color: var(--badge-disabled-text);
+  opacity: 0.72;
+}
+
+.module-status.admin,
+.module-status.confidential,
+.module-status-badge.admin,
+.module-status-badge.confidential {
+  border-color: var(--badge-blue-border);
+  background: var(--badge-blue-bg);
+  color: var(--badge-blue-text);
+}
+
+.module-status.restricted,
+.module-status-badge.restricted {
+  border-color: var(--badge-warn-border);
+  background: var(--badge-warn-bg);
+  color: var(--badge-warn-text);
+}
+
+.module-status.locked,
+.module-status.black,
+.module-status-badge.locked,
+.module-status-badge.black {
+  border-color: var(--badge-alert-border);
+  background: var(--badge-alert-bg);
+  color: var(--badge-alert-text);
+}
+
+.module-card--empty {
+  background:
+    linear-gradient(145deg, rgba(143, 189, 180, 0.018), rgba(0, 0, 0, 0.13));
+}
+
+.module-card-notification-badge {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 2;
+  min-width: 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-color: var(--badge-disabled-border);
+  background: var(--badge-disabled-bg);
+  color: var(--badge-disabled-text);
+  font-size: var(--type-control);
+  font-weight: 900;
+}
+
+.module-card-notification-badge.has-unread {
+  border-color: var(--badge-warn-border);
+  background:
+    linear-gradient(135deg, rgba(229, 183, 91, 0.13), rgba(0, 0, 0, 0.26)),
+    rgba(229, 183, 91, 0.045);
+  color: var(--badge-warn-text);
+  animation: terminalUnreadPulse var(--terminal-unread-pulse-duration, 2800ms) ease-in-out infinite;
+  animation-delay: var(--terminal-unread-pulse-delay, 0s);
+}
+
+.module-card-notification-badge.is-empty {
+  border-color: var(--badge-disabled-border);
+  background: var(--badge-disabled-bg);
+  color: var(--badge-disabled-text);
+  opacity: 0.72;
+}
+
+.module-card.has-notification-count h4,
+.module-tile.has-notification-count h4 {
+  padding-right: 42px;
+}
+
+.module-card > div:first-child > .module-card-metric,
+.module-tile > div:first-child > .module-card-metric {
+  display: none;
+}
+
