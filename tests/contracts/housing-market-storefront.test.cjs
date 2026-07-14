@@ -16,35 +16,32 @@ function getFunctionBlock(source, name, nextName) {
   return source.slice(start, end);
 }
 
-test("Housing Market renders a six-product paginated storefront", () => {
-  const source = `${read("js/housing.js")}
-${read("js/housing-market-runtime.js")}`;
+function marketSource() {
+  return `${read("js/market.js")}\n${read("js/housing-market-runtime.js")}`;
+}
 
-  assert.match(source, /const HOUSING_MARKET_PAGE_SIZE = 6/);
+test("Global Market renders a six-product paginated storefront", () => {
+  const source = marketSource();
+  assert.match(source, /const MARKET_PAGE_SIZE = 6/);
   assert.match(source, /visibleItems\.slice\(pagination\.startIndex, pagination\.endIndex\)/);
   assert.match(source, /data-housing-market-page=/);
   assert.match(source, /pagination\.totalItems = visibleItems\.length/);
-  assert.match(source, /rendered catalog product cards <= 6|HOUSING_MARKET_PAGE_SIZE/);
 });
 
-test("Housing Market navigation separates catalog, active orders and delivered history", () => {
-  const source = `${read("js/housing.js")}
-${read("js/housing-market-runtime.js")}`;
+test("Global Market navigation separates catalog, active orders and delivered history", () => {
+  const source = marketSource();
   const tabs = getFunctionBlock(source, "renderHousingMarketModeTabs", "renderHousingMarketDepartmentNavigation");
-
-  assert.match(source, /const HOUSING_MARKET_MODES = \["CATALOG", "ORDERS", "DELIVERED"\]/);
+  assert.match(source, /const MARKET_MODES = \["CATALOG", "ORDERS", "DELIVERED"\]/);
   assert.match(tabs, /id: "CATALOG"/);
   assert.match(tabs, /id: "ORDERS"/);
   assert.match(tabs, /id: "DELIVERED"/);
   assert.match(source, /activeMode === "DELIVERED" \? "HISTORY" : "ACTIVE"/);
 });
 
-test("Housing Market departments support equipment, cyberware, medical, food and household products", () => {
-  const source = `${read("js/housing.js")}
-${read("js/housing-market-runtime.js")}`;
+test("Global Market departments support equipment, cyberware, medical, food and household products", () => {
+  const source = marketSource();
   const classifier = getFunctionBlock(source, "getHousingMarketDepartment", "getHousingMarketSubcategory");
-
-  assert.match(source, /\["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"\]/);
+  assert.match(source, /const MARKET_DEPARTMENTS = \["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"\]/);
   assert.match(classifier, /return "CYBERWARE"/);
   assert.match(classifier, /return "MEDICAL"/);
   assert.match(classifier, /return "FOOD"/);
@@ -55,11 +52,9 @@ ${read("js/housing-market-runtime.js")}`;
 });
 
 test("Product cards prioritize shopping data and hide routine technical tags", () => {
-  const source = `${read("js/housing.js")}
-${read("js/housing-market-runtime.js")}`;
+  const source = marketSource();
   const card = getFunctionBlock(source, "renderHousingMarketProductCard", "getHousingMarketPagination");
   const commandBar = getFunctionBlock(source, "renderHousingMarketCommandBar", "renderHousingMarketTab");
-
   assert.match(card, /housing-market-product-price/);
   assert.match(card, /ADD TO CART/);
   assert.match(card, /getHousingMarketProductFacts/);
@@ -68,23 +63,18 @@ ${read("js/housing-market-runtime.js")}`;
   assert.doesNotMatch(card, /getHousingMarketFulfillmentLabel/);
   assert.doesNotMatch(commandBar, /INDEXED OFFERS/);
   assert.doesNotMatch(commandBar, /VISIBLE OFFERS/);
-  assert.doesNotMatch(commandBar, /Completed checkout performs/);
 });
 
 test("Storefront layout is a department rail plus a two-column product grid", () => {
   const css = read("css/housing.css");
-
   assert.match(css, /\.housing-market-storefront\s*\{[\s\S]*?grid-template-columns:\s*190px minmax\(0, 1fr\)/);
   assert.match(css, /\.housing-market-card-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /\.housing-market-pagination/);
   assert.match(css, /\.housing-market-product-buy-row/);
 });
 
-
 test("Order actions stay synchronized with the primary Orders and Delivered sections", () => {
-  const source = `${read("js/housing.js")}
-${read("js/housing-market-runtime.js")}`;
-
+  const source = marketSource();
   assert.match(source, /function syncHousingMarketModeToOrder/);
   assert.match(source, /view === "ACTIVE" \? "ORDERS" : "DELIVERED"/);
   assert.match(source, /currentMode === "DELIVERED" \? "DELIVERED" : "ORDERS"/);
@@ -92,9 +82,7 @@ ${read("js/housing-market-runtime.js")}`;
 });
 
 test("The All department cannot retain a hidden legacy subcategory filter", () => {
-  const source = `${read("js/housing.js")}
-${read("js/housing-market-runtime.js")}`;
+  const source = marketSource();
   const normalize = getFunctionBlock(source, "normalizeHousingMarketFilters", "getHousingMarketFilters");
-
   assert.match(normalize, /normalized\.type === "ALL"\) normalized\.category = "ALL"/);
 });

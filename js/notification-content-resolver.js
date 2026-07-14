@@ -832,11 +832,11 @@ window.WS_APP = window.WS_APP || {};
         actionId: "OPEN_MARKET_ORDER",
         label: "OPEN MARKET",
         routeId: "MARKET_ORDER",
-        module: "housing",
-        panel: "market",
+        module: "market",
+        panel: "orders",
         section: "orders",
         entityRef: context.marketOrderId ? { type: "MARKET_ORDER", id: context.marketOrderId } : null,
-        params: context.marketOrderId ? { marketOrderId: context.marketOrderId, housingTab: "MARKET" } : { housingTab: "MARKET" }
+        params: context.marketOrderId ? { marketOrderId: context.marketOrderId } : {}
       }],
       subjectLabel: context.itemSummary,
       providerLabel: context.vendorLabel,

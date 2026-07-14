@@ -1,28 +1,88 @@
 window.WS_APP = window.WS_APP || {};
 
+const CAMPAIGN_TIME_STORAGE_KEY = "ws_app_campaign_time_iso_v1";
+const CAMPAIGN_TIME_REVISION_STORAGE_KEY = "ws_app_campaign_time_revision_v1";
+const CAMPAIGN_TIME_RECEIPTS_STORAGE_KEY = "ws_app_campaign_time_receipts_v1";
 const CAMPAIGN_DATE_STORAGE_KEY = "ws_app_campaign_date_iso_v1";
 const SETTLEMENT_PERIOD_STORAGE_KEY = "ws_app_next_settlement_period_iso_v1";
+const DEFAULT_CAMPAIGN_DATE_ISO = "2109-02-13";
+const DEFAULT_CAMPAIGN_TIME_ISO = `${DEFAULT_CAMPAIGN_DATE_ISO}T00:00:00.000Z`;
+const CAMPAIGN_TIME_RECEIPT_LIMIT = 128;
 
-window.WS_APP.CAMPAIGN_DATE_ISO = readStoredCampaignDate() || "2109-02-13";
-window.WS_APP.CAMPAIGN_DATE_LABEL = formatCampaignDateLabel(window.WS_APP.CAMPAIGN_DATE_ISO);
+const initialCampaignTimeIso = readStoredCampaignTime()
+  || readStoredCampaignDateAsTime()
+  || DEFAULT_CAMPAIGN_TIME_ISO;
+
+window.WS_APP.CAMPAIGN_TIME_REVISION = readStoredCampaignTimeRevision();
+syncCampaignTimeState(initialCampaignTimeIso);
 window.WS_APP.SETTLEMENT_PERIOD_END_ISO = readStoredSettlementPeriodEnd() || getSettlementPeriodEndIso(window.WS_APP.CAMPAIGN_DATE_ISO);
 window.WS_APP.SETTLEMENT_PERIOD_END_LABEL = formatCampaignDateLabel(window.WS_APP.SETTLEMENT_PERIOD_END_ISO);
+let campaignTimeReceipts = readStoredCampaignTimeReceipts();
+writeStoredCampaignTime(window.WS_APP.CAMPAIGN_TIME_ISO, window.WS_APP.CAMPAIGN_TIME_REVISION);
 writeStoredSettlementPeriodEnd(window.WS_APP.SETTLEMENT_PERIOD_END_ISO);
 
-function readStoredCampaignDate() {
+function readStoredCampaignTime() {
   try {
-    const value = window.localStorage.getItem(CAMPAIGN_DATE_STORAGE_KEY);
-    return isValidIsoDate(value) ? value : "";
+    return normalizeCampaignTimeIso(window.localStorage.getItem(CAMPAIGN_TIME_STORAGE_KEY));
   } catch (error) {
     return "";
   }
 }
 
-function writeStoredCampaignDate(value) {
+function readStoredCampaignDateAsTime() {
   try {
-    window.localStorage.setItem(CAMPAIGN_DATE_STORAGE_KEY, value);
+    const value = window.localStorage.getItem(CAMPAIGN_DATE_STORAGE_KEY);
+    return isValidIsoDate(value) ? `${value}T00:00:00.000Z` : "";
   } catch (error) {
-    console.warn("W&S campaign date could not be stored.", error);
+    return "";
+  }
+}
+
+function readStoredCampaignTimeRevision() {
+  try {
+    const revision = Number(window.localStorage.getItem(CAMPAIGN_TIME_REVISION_STORAGE_KEY));
+    return Number.isInteger(revision) && revision >= 0 ? revision : 0;
+  } catch (error) {
+    return 0;
+  }
+}
+
+function readStoredCampaignTimeReceipts() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(CAMPAIGN_TIME_RECEIPTS_STORAGE_KEY) || "[]");
+    if (!Array.isArray(parsed)) return new Map();
+    return new Map(parsed
+      .filter((entry) => entry && typeof entry === "object" && String(entry.idempotencyKey || "").trim())
+      .slice(-CAMPAIGN_TIME_RECEIPT_LIMIT)
+      .map((entry) => [String(entry.idempotencyKey).trim(), entry]));
+  } catch (error) {
+    return new Map();
+  }
+}
+
+function writeStoredCampaignTime(value, revision = window.WS_APP.CAMPAIGN_TIME_REVISION) {
+  const timeIso = normalizeCampaignTimeIso(value);
+  if (!timeIso) return false;
+
+  try {
+    window.localStorage.setItem(CAMPAIGN_TIME_STORAGE_KEY, timeIso);
+    window.localStorage.setItem(CAMPAIGN_DATE_STORAGE_KEY, timeIso.slice(0, 10));
+    window.localStorage.setItem(CAMPAIGN_TIME_REVISION_STORAGE_KEY, String(Math.max(0, Number(revision) || 0)));
+    return true;
+  } catch (error) {
+    console.warn("W&S campaign time could not be stored.", error);
+    return false;
+  }
+}
+
+function writeStoredCampaignTimeReceipts() {
+  try {
+    const receipts = Array.from(campaignTimeReceipts.values()).slice(-CAMPAIGN_TIME_RECEIPT_LIMIT);
+    window.localStorage.setItem(CAMPAIGN_TIME_RECEIPTS_STORAGE_KEY, JSON.stringify(receipts));
+    return true;
+  } catch (error) {
+    console.warn("W&S campaign time receipts could not be stored.", error);
+    return false;
   }
 }
 
@@ -52,14 +112,34 @@ function isValidIsoDate(value) {
   return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === iso;
 }
 
+function normalizeCampaignTimeIso(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (isValidIsoDate(raw)) return `${raw}T00:00:00.000Z`;
+
+  const localMatch = raw.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?Z?$/);
+  if (localMatch && isValidIsoDate(localMatch[1])) {
+    const hour = Number(localMatch[2]);
+    const minute = Number(localMatch[3]);
+    const second = Number(localMatch[4] || 0);
+    const millisecond = Number(String(localMatch[5] || "0").padEnd(3, "0"));
+    if (hour > 23 || minute > 59 || second > 59 || millisecond > 999) return "";
+    const [year, month, day] = localMatch[1].split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day, hour, minute, second, millisecond)).toISOString();
+  }
+
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+}
+
 function compareIsoDates(a, b) {
-  const left = isValidIsoDate(a) ? a : "2109-02-13";
-  const right = isValidIsoDate(b) ? b : "2109-02-13";
+  const left = isValidIsoDate(a) ? a : DEFAULT_CAMPAIGN_DATE_ISO;
+  const right = isValidIsoDate(b) ? b : DEFAULT_CAMPAIGN_DATE_ISO;
   return left.localeCompare(right);
 }
 
 function addDaysIso(iso, days = 0) {
-  const safeIso = isValidIsoDate(iso) ? iso : "2109-02-13";
+  const safeIso = isValidIsoDate(iso) ? iso : DEFAULT_CAMPAIGN_DATE_ISO;
   const date = new Date(`${safeIso}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + (Number(days) || 0));
   return date.toISOString().slice(0, 10);
@@ -71,8 +151,86 @@ function formatCampaignDateLabel(iso) {
   return `${match[3]}.${match[2]}.${match[1]}`;
 }
 
+function formatCampaignTimeLabel(value) {
+  const timeIso = normalizeCampaignTimeIso(value);
+  if (!timeIso) return "13.02.2109 / 00:00";
+  return `${formatCampaignDateLabel(timeIso.slice(0, 10))} / ${timeIso.slice(11, 16)}`;
+}
+
+function resolveCampaignDayPhase(value = window.WS_APP.CAMPAIGN_TIME_ISO) {
+  const timeIso = normalizeCampaignTimeIso(value) || DEFAULT_CAMPAIGN_TIME_ISO;
+  const hour = Number(timeIso.slice(11, 13));
+  if (hour < 6) return "NIGHT";
+  if (hour < 12) return "MORNING";
+  if (hour < 18) return "DAY";
+  return "EVENING";
+}
+
+function syncCampaignTimeState(value) {
+  const timeIso = normalizeCampaignTimeIso(value) || DEFAULT_CAMPAIGN_TIME_ISO;
+  window.WS_APP.CAMPAIGN_TIME_ISO = timeIso;
+  window.WS_APP.CAMPAIGN_DATE_ISO = timeIso.slice(0, 10);
+  window.WS_APP.CAMPAIGN_DATE_LABEL = formatCampaignDateLabel(window.WS_APP.CAMPAIGN_DATE_ISO);
+  window.WS_APP.CAMPAIGN_TIME_LABEL = formatCampaignTimeLabel(timeIso);
+  window.WS_APP.CAMPAIGN_DAY_PHASE = resolveCampaignDayPhase(timeIso);
+}
+
+function getCampaignTimeBoundarySummary(previousTimeIso, currentTimeIso) {
+  const previous = new Date(normalizeCampaignTimeIso(previousTimeIso) || DEFAULT_CAMPAIGN_TIME_ISO);
+  const current = new Date(normalizeCampaignTimeIso(currentTimeIso) || DEFAULT_CAMPAIGN_TIME_ISO);
+  const previousDay = Date.UTC(previous.getUTCFullYear(), previous.getUTCMonth(), previous.getUTCDate());
+  const currentDay = Date.UTC(current.getUTCFullYear(), current.getUTCMonth(), current.getUTCDate());
+  const signedDayBoundaries = Math.trunc((currentDay - previousDay) / 86400000);
+  const signedMonthBoundaries = (current.getUTCFullYear() - previous.getUTCFullYear()) * 12
+    + current.getUTCMonth() - previous.getUTCMonth();
+  const mondayBucket = (date) => {
+    const midnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const mondayOffset = (date.getUTCDay() + 6) % 7;
+    return Math.trunc((midnight - mondayOffset * 86400000) / 604800000);
+  };
+
+  return {
+    advancedMinutes: Math.trunc((current.getTime() - previous.getTime()) / 60000),
+    crossedDayBoundaries: Math.abs(signedDayBoundaries),
+    crossedWeekBoundaries: Math.abs(mondayBucket(current) - mondayBucket(previous)),
+    crossedMonthBoundaries: Math.abs(signedMonthBoundaries),
+    crossedDayBoundary: signedDayBoundaries !== 0,
+    direction: current > previous ? "FORWARD" : current < previous ? "BACKWARD" : "UNCHANGED"
+  };
+}
+
+function rememberCampaignTimeReceipt(idempotencyKey, result) {
+  const key = String(idempotencyKey || "").trim();
+  if (!key) return;
+  const storedResult = {
+    ok: result?.ok === true,
+    reason: String(result?.reason || "CAMPAIGN_TIME_RESULT_RECORDED"),
+    noChange: result?.noChange === true,
+    previousTimeIso: String(result?.previousTimeIso || ""),
+    currentTimeIso: String(result?.currentTimeIso || window.WS_APP.CAMPAIGN_TIME_ISO),
+    campaignTimeIso: String(result?.campaignTimeIso || result?.currentTimeIso || window.WS_APP.CAMPAIGN_TIME_ISO),
+    campaignDateIso: String(result?.campaignDateIso || window.WS_APP.CAMPAIGN_DATE_ISO),
+    revision: Number(result?.revision || window.WS_APP.CAMPAIGN_TIME_REVISION || 0),
+    advancedMinutes: Number(result?.advancedMinutes || 0),
+    crossedDayBoundaries: Number(result?.crossedDayBoundaries || 0),
+    crossedWeekBoundaries: Number(result?.crossedWeekBoundaries || 0),
+    crossedMonthBoundaries: Number(result?.crossedMonthBoundaries || 0),
+    crossedDayBoundary: result?.crossedDayBoundary === true,
+    direction: String(result?.direction || "UNCHANGED")
+  };
+  campaignTimeReceipts.set(key, {
+    idempotencyKey: key,
+    result: storedResult,
+    recordedAt: window.WS_APP.CAMPAIGN_TIME_ISO
+  });
+  while (campaignTimeReceipts.size > CAMPAIGN_TIME_RECEIPT_LIMIT) {
+    campaignTimeReceipts.delete(campaignTimeReceipts.keys().next().value);
+  }
+  writeStoredCampaignTimeReceipts();
+}
+
 function getSettlementPeriodEndIso(iso) {
-  const safeIso = isValidIsoDate(iso) ? iso : "2109-02-13";
+  const safeIso = isValidIsoDate(iso) ? iso : DEFAULT_CAMPAIGN_DATE_ISO;
   const date = new Date(`${safeIso}T00:00:00Z`);
   const day = date.getUTCDay();
   const daysUntilSunday = (7 - day) % 7;
@@ -100,7 +258,8 @@ function processDueSettlementPeriods(options = {}) {
     const result = window.WS_APP.SubscriptionAPI?.processWeeklySubscriptionSettlement?.({
       settlementDateIso,
       campaignDateIso: window.WS_APP.CAMPAIGN_DATE_ISO,
-      source: options.source || "CAMPAIGN_DATE"
+      campaignTimeIso: window.WS_APP.CAMPAIGN_TIME_ISO,
+      source: options.source || "CAMPAIGN_TIME"
     }) || {
       ok: false,
       settlementDateIso,
@@ -150,8 +309,12 @@ function syncCampaignDateLabels() {
   refreshSettlementPeriodEnd();
   window.WS_APP.processTerminalCalendarReminders?.(window.WS_APP.CAMPAIGN_DATE_ISO);
 
-  document.querySelectorAll("[data-campaign-date-label], #campaign-date-label").forEach((node) => {
+  document.querySelectorAll("[data-campaign-date-label]").forEach((node) => {
     node.textContent = window.WS_APP.CAMPAIGN_DATE_LABEL;
+  });
+
+  document.querySelectorAll("[data-campaign-time-label], #campaign-time-label").forEach((node) => {
+    node.textContent = window.WS_APP.CAMPAIGN_TIME_LABEL;
   });
 
   document.querySelectorAll("[data-settlement-period-end-label], #settlement-period-end-label").forEach((node) => {
@@ -202,11 +365,11 @@ function ensureTerminalDateStrip() {
   if (!strip) {
     strip = document.createElement("section");
     strip.className = "terminal-date-strip";
-    strip.setAttribute("aria-label", "Date and next settlement period");
+    strip.setAttribute("aria-label", "Campaign time and next settlement period");
     strip.innerHTML = `
       <div class="terminal-date-strip-item">
-        <span>DATE</span>
-        <strong data-campaign-date-label>${window.WS_APP.CAMPAIGN_DATE_LABEL}</strong>
+        <span>TIME</span>
+        <strong data-campaign-time-label>${window.WS_APP.CAMPAIGN_TIME_LABEL}</strong>
       </div>
 
       <div class="terminal-date-strip-item is-wide">
@@ -241,6 +404,24 @@ function ensureTerminalDateStrip() {
   syncCampaignDateLabels();
 }
 
+window.WS_APP.getCampaignTimeIso = function getCampaignTimeIso() {
+  return window.WS_APP.CAMPAIGN_TIME_ISO;
+};
+
+window.WS_APP.getCampaignTimeLabel = function getCampaignTimeLabel() {
+  return window.WS_APP.CAMPAIGN_TIME_LABEL;
+};
+
+window.WS_APP.getCampaignClockLabel = window.WS_APP.getCampaignTimeLabel;
+
+window.WS_APP.getCampaignTimeRevision = function getCampaignTimeRevision() {
+  return Number(window.WS_APP.CAMPAIGN_TIME_REVISION || 0);
+};
+
+window.WS_APP.getCampaignDayPhase = function getCampaignDayPhase() {
+  return window.WS_APP.CAMPAIGN_DAY_PHASE;
+};
+
 window.WS_APP.getCampaignDateIso = function getCampaignDateIso() {
   return window.WS_APP.CAMPAIGN_DATE_ISO;
 };
@@ -268,6 +449,7 @@ window.WS_APP.forceNextSettlementPeriod = function forceNextSettlementPeriod(opt
   const result = window.WS_APP.SubscriptionAPI?.processWeeklySubscriptionSettlement?.({
     settlementDateIso,
     campaignDateIso: window.WS_APP.CAMPAIGN_DATE_ISO,
+    campaignTimeIso: window.WS_APP.CAMPAIGN_TIME_ISO,
     source: options.source || "ADMIN_FORCE_SETTLEMENT"
   }) || {
     ok: false,
@@ -301,34 +483,163 @@ window.WS_APP.forceNextSettlementPeriod = function forceNextSettlementPeriod(opt
   };
 };
 
-window.WS_APP.setCampaignDateIso = function setCampaignDateIso(value) {
-  const iso = String(value || "").trim();
-  if (!isValidIsoDate(iso)) return false;
+function commitCampaignTime(value, options = {}) {
+  const targetTimeIso = normalizeCampaignTimeIso(value);
+  if (!targetTimeIso) return { ok: false, reason: "CAMPAIGN_TIME_INVALID" };
 
-  window.WS_APP.CAMPAIGN_DATE_ISO = iso;
-  window.WS_APP.CAMPAIGN_DATE_LABEL = formatCampaignDateLabel(iso);
-  writeStoredCampaignDate(iso);
+  const idempotencyKey = String(options.idempotencyKey || "").trim();
+  const existingReceipt = idempotencyKey ? campaignTimeReceipts.get(idempotencyKey) : null;
+  if (existingReceipt?.result) return { ...JSON.parse(JSON.stringify(existingReceipt.result)), replayed: true };
 
-  const settlementResult = processDueSettlementPeriods({ source: "CAMPAIGN_DATE_SET" });
+  const currentRevision = Number(window.WS_APP.CAMPAIGN_TIME_REVISION || 0);
+  if (options.expectedRevision !== undefined && Number(options.expectedRevision) !== currentRevision) {
+    return {
+      ok: false,
+      reason: "CAMPAIGN_TIME_REVISION_CONFLICT",
+      expectedRevision: Number(options.expectedRevision),
+      currentRevision
+    };
+  }
+
+  const previousTimeIso = window.WS_APP.CAMPAIGN_TIME_ISO;
+  const previousDateIso = window.WS_APP.CAMPAIGN_DATE_ISO;
+  const previousTimeLabel = window.WS_APP.CAMPAIGN_TIME_LABEL;
+  const boundaries = getCampaignTimeBoundarySummary(previousTimeIso, targetTimeIso);
+
+  if (options.forwardOnly === true && boundaries.direction === "BACKWARD") {
+    return {
+      ok: false,
+      reason: "CAMPAIGN_TIME_BACKWARD_NOT_ALLOWED",
+      previousTimeIso,
+      targetTimeIso,
+      revision: currentRevision
+    };
+  }
+
+  if (previousTimeIso === targetTimeIso) {
+    const result = {
+      ok: true,
+      reason: "CAMPAIGN_TIME_UNCHANGED",
+      noChange: true,
+      previousTimeIso,
+      currentTimeIso: targetTimeIso,
+      campaignDateIso: previousDateIso,
+      revision: currentRevision,
+      ...boundaries
+    };
+    rememberCampaignTimeReceipt(idempotencyKey, result);
+    return result;
+  }
+
+  window.WS_APP.CAMPAIGN_TIME_REVISION = currentRevision + 1;
+  syncCampaignTimeState(targetTimeIso);
+  writeStoredCampaignTime(window.WS_APP.CAMPAIGN_TIME_ISO, window.WS_APP.CAMPAIGN_TIME_REVISION);
+
+  const settlement = processDueSettlementPeriods({ source: options.source || options.reason || "CAMPAIGN_TIME_SET" });
   syncCampaignDateLabels();
 
-  window.dispatchEvent(new CustomEvent("ws:campaign-date-updated", {
-    detail: {
-      iso,
-      label: window.WS_APP.CAMPAIGN_DATE_LABEL,
-      settlementPeriodEndIso: window.WS_APP.SETTLEMENT_PERIOD_END_ISO,
-      settlementPeriodEndLabel: window.WS_APP.SETTLEMENT_PERIOD_END_LABEL,
-      settlement: settlementResult
-    }
-  }));
-  return true;
+  const detail = {
+    previousTimeIso,
+    currentTimeIso: window.WS_APP.CAMPAIGN_TIME_ISO,
+    campaignTimeIso: window.WS_APP.CAMPAIGN_TIME_ISO,
+    timeIso: window.WS_APP.CAMPAIGN_TIME_ISO,
+    previousDateIso,
+    currentDateIso: window.WS_APP.CAMPAIGN_DATE_ISO,
+    campaignDateIso: window.WS_APP.CAMPAIGN_DATE_ISO,
+    dateIso: window.WS_APP.CAMPAIGN_DATE_ISO,
+    previousLabel: previousTimeLabel,
+    currentLabel: window.WS_APP.CAMPAIGN_TIME_LABEL,
+    label: window.WS_APP.CAMPAIGN_TIME_LABEL,
+    dayPhase: window.WS_APP.CAMPAIGN_DAY_PHASE,
+    revision: window.WS_APP.CAMPAIGN_TIME_REVISION,
+    reason: String(options.reason || options.source || "CAMPAIGN_TIME_SET").trim() || "CAMPAIGN_TIME_SET",
+    actorId: String(options.actorId || "").trim(),
+    idempotencyKey,
+    settlement,
+    ...boundaries
+  };
+
+  window.dispatchEvent(new CustomEvent("ws:campaign-time-updated", { detail }));
+
+  if (previousDateIso !== window.WS_APP.CAMPAIGN_DATE_ISO) {
+    window.dispatchEvent(new CustomEvent("ws:campaign-date-updated", {
+      detail: {
+        iso: window.WS_APP.CAMPAIGN_DATE_ISO,
+        dateIso: window.WS_APP.CAMPAIGN_DATE_ISO,
+        campaignDateIso: window.WS_APP.CAMPAIGN_DATE_ISO,
+        previousDateIso,
+        timeIso: window.WS_APP.CAMPAIGN_TIME_ISO,
+        campaignTimeIso: window.WS_APP.CAMPAIGN_TIME_ISO,
+        label: window.WS_APP.CAMPAIGN_DATE_LABEL,
+        timeLabel: window.WS_APP.CAMPAIGN_TIME_LABEL,
+        revision: window.WS_APP.CAMPAIGN_TIME_REVISION,
+        campaignTimeEventDispatched: true,
+        reason: detail.reason,
+        settlementPeriodEndIso: window.WS_APP.SETTLEMENT_PERIOD_END_ISO,
+        settlementPeriodEndLabel: window.WS_APP.SETTLEMENT_PERIOD_END_LABEL,
+        settlement,
+        ...boundaries
+      }
+    }));
+  }
+
+  const result = { ok: true, reason: "CAMPAIGN_TIME_UPDATED", ...detail };
+  rememberCampaignTimeReceipt(idempotencyKey, result);
+  return result;
+}
+
+window.WS_APP.setCampaignTimeIso = function setCampaignTimeIso(value, options = {}) {
+  return commitCampaignTime(value, options);
 };
 
-window.WS_APP.addCampaignDays = function addCampaignDays(days = 0) {
-  const base = new Date(`${window.WS_APP.getCampaignDateIso()}T00:00:00Z`);
-  const delta = Number(days) || 0;
-  base.setUTCDate(base.getUTCDate() + delta);
-  return window.WS_APP.setCampaignDateIso(base.toISOString().slice(0, 10));
+window.WS_APP.setCampaignDateIso = function setCampaignDateIso(value, options = {}) {
+  const iso = String(value || "").trim();
+  if (!isValidIsoDate(iso)) return false;
+  return commitCampaignTime(`${iso}T00:00:00.000Z`, {
+    ...options,
+    reason: options.reason || "CAMPAIGN_DATE_SET"
+  }).ok === true;
+};
+
+window.WS_APP.advanceCampaignTime = function advanceCampaignTime(options = {}) {
+  const input = typeof options === "number" ? { hours: options } : (options || {});
+  const currentTimeIso = window.WS_APP.CAMPAIGN_TIME_ISO;
+  let targetTimeIso = normalizeCampaignTimeIso(input.targetTimeIso || input.targetTime || "");
+
+  if (!targetTimeIso) {
+    const deltaMinutes = Math.trunc((Number(input.days) || 0) * 1440
+      + (Number(input.hours) || 0) * 60
+      + (Number(input.minutes) || 0));
+    if (deltaMinutes <= 0) {
+      return { ok: false, reason: "CAMPAIGN_TIME_FORWARD_DELTA_REQUIRED", currentTimeIso };
+    }
+    const target = new Date(currentTimeIso);
+    target.setUTCMinutes(target.getUTCMinutes() + deltaMinutes);
+    targetTimeIso = target.toISOString();
+  }
+
+  return commitCampaignTime(targetTimeIso, {
+    ...input,
+    forwardOnly: true,
+    reason: input.reason || "CAMPAIGN_TIME_ADVANCED"
+  });
+};
+
+window.WS_APP.addCampaignHours = function addCampaignHours(hours = 0, options = {}) {
+  return window.WS_APP.advanceCampaignTime({ ...options, hours });
+};
+
+window.WS_APP.addCampaignDays = function addCampaignDays(days = 0, options = {}) {
+  const amount = Number(days) || 0;
+  if (amount === 0) return true;
+  if (amount > 0) return window.WS_APP.advanceCampaignTime({ ...options, days: amount }).ok === true;
+
+  const target = new Date(window.WS_APP.CAMPAIGN_TIME_ISO);
+  target.setUTCDate(target.getUTCDate() + amount);
+  return commitCampaignTime(target.toISOString(), {
+    ...options,
+    reason: options.reason || "CAMPAIGN_DAY_SET"
+  }).ok === true;
 };
 
 window.WS_APP.extractCitizenBirthDate = function extractCitizenBirthDate(citizen = {}) {

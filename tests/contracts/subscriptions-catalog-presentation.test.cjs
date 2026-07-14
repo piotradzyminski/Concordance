@@ -91,5 +91,5 @@ test("Player profiles render benefit, limitation, usage and presentation-first t
   assert.match(modules, /js\/subscription-catalog-store\.js\?v=7/);
   assert.match(modules, /css\/subscriptions\.css\?v=21/);
   assert.match(modules, /js\/subscriptions\.js\?v=34/);
-  assert.match(index, /js\/modules\.js\?v=295/);
+  assert.match(index, /js\/modules\.js\?v=297/);
 });

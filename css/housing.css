@@ -3123,3 +3123,17 @@ body.housing-market-modal-open {
   .housing-market-admin-delivery { align-items: stretch; flex-direction: column; }
   .housing-market-admin-delivery .housing-market-order-workflow-actions { justify-content: flex-start; }
 }
+
+/* Housing / Market module decoupling 2.2x */
+.housing-deliveries-tab {
+  display: grid;
+  gap: 14px;
+}
+
+[data-market-module] .housing-market-tab {
+  min-width: 0;
+}
+
+[data-market-module] .housing-target-panel {
+  margin-bottom: 14px;
+}

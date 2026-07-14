@@ -116,7 +116,7 @@ World Time START/COMPLETE receipts
 Terminal cards, lifecycle, dedupe/revision, reminders and requests
 Admin Audit Log
 editable content/address/tag/system/case stores
-campaign date and settlement period
+campaign timestamp, revision, idempotency receipts, date projection and settlement period
 ```
 
 ## Explicitly omitted domains
@@ -163,6 +163,8 @@ LOCAL_UI_STATE_NOT_PART_OF_CAMPAIGN
   projectStateVersion,
   campaignId,
   campaign: {
+    campaignTimeIso,
+    campaignTimeRevision,
     campaignDateIso,
     nextSettlementPeriodIso
   },

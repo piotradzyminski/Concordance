@@ -266,13 +266,13 @@ GRENADE
 
 CONSUMABLE
   quantity use
-  effect preview
-  active matching Citizen status projection
+  remaining quantity
+  daily Campaign Time usage-log projection
 ```
 
 The UI must present operation state and command feedback without creating a second state owner. A magazine installed in a firearm remains a normal ItemInstance whose canonical location is `INSTALLED_IN_ITEM`; Equipment projection must treat this location as valid and carried, not `ORPHAN`.
 
-The controls do not expose attack, firing, blast, damage or detonation. Grenade arming changes configuration state only. Consumable use previews the registered effect and reports the completed effect-resolution/status result returned by Item Type Operations.
+The controls do not expose attack, firing, blast, damage or detonation. Grenade arming changes configuration state only. Consumable use reports the committed quantity change and transaction-backed daily usage record. It does not resolve an effect, create a Citizen status or apply an automatic gameplay consequence.
 
 ## Current scope boundary
 
@@ -289,9 +289,9 @@ sample grenade, magazine and ammunition definitions
 atomic magazine load/unload and firearm magazine-well placement
 chamber, safety and fire-mode state commands
 grenade arm/disarm state commands
-consumable quantity use with persistent effect-resolution receipt
-Citizen status application/refresh and campaign-time expiration
-external-use resolution for household consumables
+consumable quantity use through the ItemInstance transaction boundary
+transaction-backed daily consumable usage log keyed by Campaign Time day
+legacy consumable effect/status storage cleanup
 ```
 
 Not implemented:

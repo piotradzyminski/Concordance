@@ -2214,6 +2214,9 @@ window.WS_APP = window.WS_APP || {};
     if (workspace.id === "subscriptions" && window.WS_APP.AdminSubscriptionsControl?.renderInspector) {
       return window.WS_APP.AdminSubscriptionsControl.renderInspector({ workspace, user });
     }
+    if (workspace.id === "catalog-management" && window.WS_APP.AdminCatalogManagementControl?.renderInspector) {
+      return window.WS_APP.AdminCatalogManagementControl.renderInspector({ workspace, user });
+    }
 
     const selectedGroup = getAdminSelectedCitizenGroupForWorkspace(workspace.id, user);
     if (selectedGroup?.citizen) {
@@ -2478,6 +2481,9 @@ window.WS_APP = window.WS_APP || {};
     }
     if (window.WS_APP.adminActiveWorkspace === "operations") {
       window.WS_APP.AdminOperationsControl?.bind?.(container, user);
+    }
+    if (window.WS_APP.adminActiveWorkspace === "catalog-management") {
+      window.WS_APP.AdminCatalogManagementControl?.bind?.(container, user);
     }
 
     container.querySelectorAll("[data-admin-workspace-target], [data-admin-open-workspace]").forEach((button) => {
@@ -5151,6 +5157,7 @@ window.WS_APP = window.WS_APP || {};
     const notes = {
       dashboard: ["Dashboard is an admin overview, not a player module grid.", "Priority Queue summarizes current operator-facing counts."],
       operations: ["Operations is a projection of the canonical World Bridge Operation Store.", "Retry, reconcile and resource claims always call public World Bridge APIs and require an operator note."],
+      "catalog-management": ["Catalog Management separates reusable definitions from campaign-owned runtime instances.", "Equipment authoring publishes through the canonical Equipment Catalog Store and exports data packs without creating ItemInstances."],
       citizens: ["Citizen Management is citizen-scoped: the selector determines the inspected citizen.", "Equipment Editor writes physical records to the canonical global ItemInstance store.", "Detailed identity edits still route to existing Citizen Cards / Database modules."],
       "tags-access": ["Access/Clearance tags and Content/Record tags are separate families.", "Admin Tag Manager manages tag records; Access Matrix edits hierarchy and relation logic."],
       subscriptions: ["Subscription Admin is citizen-scoped: the citizen selector determines visible subscription records.", "Tier/payment edits still route to the existing Subscriptions module."],

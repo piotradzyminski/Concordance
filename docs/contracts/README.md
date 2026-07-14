@@ -5,11 +5,12 @@ This directory contains only contracts that define current runtime ownership, da
 ```text
 admin/        Admin safety, audit and workspace runtime
 citizen/      Citizen record, creation, editing, Citizen Files and Database relations
-commerce/     Market and Housing boundaries
-core/         ItemInstance, Billing, Coverage and Campaign Data I/O
+commerce/     Global Market, Housing and delivery boundaries
+core/         Campaign Time, ItemInstance, Billing, Coverage and Campaign Data I/O
+
 cyberware/    Cyberware runtime, planner, UI and performance
 equipment/    Equipment state, tooltips and laterality
-knowledge/    Knowledge Pack schema
+knowledge/    Knowledge Pack schema and registry-isolated relation contract
 quality/      Test harness
 services/     Service and Subscription boundaries
 world_bridge/ cross-domain operation, notifications, firmware and compensation

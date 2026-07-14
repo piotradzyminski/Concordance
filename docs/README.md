@@ -175,7 +175,6 @@ Admin workspace renderers are documented in the existing `docs/contracts/admin/a
 ```text
 docs/contracts/admin/admin_record_lifecycle_contract.md
 docs/contracts/commerce/market_product_visual_assets_contract.md
-docs/contracts/equipment/item_effect_resolution_contract.md
 ```
 
 Notification projection policy extends the existing Terminal Notifications contract. Housing Storage Runtime Split, Runtime Cold Entry Dependencies and Subscriptions Actions & Feedback update their existing domain contracts instead of creating competing ownership documents.
@@ -201,3 +200,14 @@ docs/contracts/commerce/market_cart_navigation_contract.md
 ```
 
 Cyberware Index extends the existing Cyberware UI contract. Terminal Store extraction and Market Notification Producer extend the existing Terminal Notifications contract. Subscriptions accessibility, shared-tab visual polish and Housing grid parity update their existing domain/quality contracts.
+
+## Active additions in 15.12x
+
+```text
+docs/contracts/admin/admin_equipment_catalog_authoring_contract.md
+docs/contracts/commerce/housing_market_decoupling_contract.md
+docs/contracts/core/campaign_time_datetime_contract.md
+docs/contracts/knowledge/knowledge_relations_contract.md
+```
+
+Knowledge relation separation updates the existing Knowledge Pack schema contract. The source patch's Encyclopedia/System/System Index content was not imported; only current-compatible data boundaries and UI relation tabs were retained.

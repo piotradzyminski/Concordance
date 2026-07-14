@@ -44,9 +44,17 @@ window.APP_DATA.modules = [
     roles: ["admin", "citizen"]
   },
   {
+    id: "market",
+    title: "Market",
+    description: "Global item storefront, carts, orders, fulfillment and delivery targeting.",
+    status: "READY",
+    column: "left",
+    roles: ["admin", "citizen"]
+  },
+  {
     id: "housing",
     title: "Housing",
-    description: "Housing ledger, assigned unit access, storage, item market and shipment tracking.",
+    description: "Assigned unit access, Household furnishing, storage and delivery intake.",
     status: "READY",
     column: "left",
     roles: ["admin", "citizen"]

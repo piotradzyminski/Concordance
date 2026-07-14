@@ -108,6 +108,8 @@ window.WS_APP = window.WS_APP || {};
       projectStateVersion: PROJECT_STATE_VERSION,
       campaignId: String(options.campaignId || app.CAMPAIGN_ID || "local-campaign").trim() || "local-campaign",
       campaign: {
+        campaignTimeIso: app.getCampaignTimeIso?.() || app.CAMPAIGN_TIME_ISO || "2109-02-13T00:00:00.000Z",
+        campaignTimeRevision: Number(app.getCampaignTimeRevision?.() || app.CAMPAIGN_TIME_REVISION || 0),
         campaignDateIso: app.getCampaignDateIso?.() || app.CAMPAIGN_DATE_ISO || "2109-02-13",
         nextSettlementPeriodIso: app.getSettlementPeriodEndIso?.() || app.SETTLEMENT_PERIOD_END_ISO || ""
       },

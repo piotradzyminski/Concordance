@@ -2,7 +2,7 @@ window.WS_APP = window.WS_APP || {};
 
 (function initKnowledgePackStoreModule() {
   const PACK_SCHEMA = "future-noir.knowledge-pack";
-  const CONTENT_SCHEMA_VERSION = 2;
+  const CONTENT_SCHEMA_VERSION = 3;
   const META_STORAGE_KEY = "ws_app_knowledge_pack_meta_v1";
   const BACKUP_STORAGE_KEY = "ws_app_knowledge_pack_backup_v1";
   const DEFAULT_PACK_ID = "future-noir-main";
@@ -96,7 +96,7 @@ window.WS_APP = window.WS_APP || {};
       return {
         pack: {
           ...pack,
-          relationSchema: "stable-id-v1"
+          relationSchema: "stable-id-v2"
         },
         relationReport: null
       };
@@ -111,7 +111,7 @@ window.WS_APP = window.WS_APP || {};
     return {
       pack: {
         ...pack,
-        relationSchema: "stable-id-v1",
+        relationSchema: "stable-id-v2",
         encyclopedia: migration.registries.encyclopedia,
         system: migration.registries.system,
         systemIndex: migration.registries.systemIndex
@@ -125,6 +125,7 @@ window.WS_APP = window.WS_APP || {};
     if (report.converted > 0) warnings.push(`PACK_RELATIONS_MIGRATED_${report.converted}`);
     if (report.unresolved > 0) warnings.push(`PACK_RELATIONS_UNRESOLVED_${report.unresolved}`);
     if (report.ambiguous > 0) warnings.push(`PACK_RELATIONS_AMBIGUOUS_${report.ambiguous}`);
+    if (report.removedCrossRegistry > 0) warnings.push(`PACK_CROSS_REGISTRY_RELATIONS_REMOVED_${report.removedCrossRegistry}`);
   }
 
   function migratePackPayload(payload = {}) {
@@ -148,7 +149,7 @@ window.WS_APP = window.WS_APP || {};
       const normalized = canonicalizePackRelations({
         schema: PACK_SCHEMA,
         schemaVersion: CONTENT_SCHEMA_VERSION,
-        relationSchema: normalizeText(payload.relationSchema, "stable-id-v1"),
+        relationSchema: normalizeText(payload.relationSchema, "stable-id-v2"),
         packId: normalizeText(payload.packId, DEFAULT_PACK_ID),
         packVersion: normalizeText(payload.packVersion, DEFAULT_PACK_VERSION),
         updatedAt: normalizeText(payload.updatedAt, nowIso()),
@@ -179,11 +180,11 @@ window.WS_APP = window.WS_APP || {};
       return { pack: null, warnings, errors: ["PACK_SCHEMA_NOT_RECOGNIZED"], relationReport: null };
     }
 
-    warnings.push("PACK_SCHEMA_MIGRATED_TO_V2");
+    warnings.push("PACK_SCHEMA_MIGRATED_TO_V3");
     const normalized = canonicalizePackRelations({
       schema: PACK_SCHEMA,
       schemaVersion: CONTENT_SCHEMA_VERSION,
-      relationSchema: "stable-id-v1",
+      relationSchema: "stable-id-v2",
       packId: normalizeText(payload.packId, DEFAULT_PACK_ID),
       packVersion: normalizeText(payload.packVersion, DEFAULT_PACK_VERSION),
       updatedAt: normalizeText(payload.updatedAt || payload.exportedAt, nowIso()),
@@ -403,7 +404,7 @@ window.WS_APP = window.WS_APP || {};
     const current = canonicalizePackRelations({
       schema: PACK_SCHEMA,
       schemaVersion: CONTENT_SCHEMA_VERSION,
-      relationSchema: "stable-id-v1",
+      relationSchema: "stable-id-v2",
       packId: meta.packId,
       packVersion: meta.packVersion,
       updatedAt: nowIso(),

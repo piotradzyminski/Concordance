@@ -63,3 +63,35 @@ test("World Time scheduler replays COMPLETE receipts without a second completion
   assert.equal(second.results[0].reason, "SCHEDULER_RECEIPT_REPLAY");
   assert.equal(handlerCalls, 1);
 });
+
+test("World Time scheduler respects hour precision inside the same campaign day", () => {
+  const order = makeServiceOrder({
+    status: "SCHEDULED",
+    scheduledStartAt: "2109-02-13T15:00:00.000Z",
+    estimatedEndAt: "2109-02-13T17:00:00.000Z",
+    revision: 4
+  });
+  let starts = 0;
+  const runtime = createBrowserRuntime({
+    wsApp: {
+      getCampaignTimeIso: () => "2109-02-13T14:59:00.000Z",
+      getCampaignDateIso: () => "2109-02-13",
+      getServiceOrders: (filters) => Array.isArray(filters?.statuses) && filters.statuses.includes("SCHEDULED") ? [structuredClone(order)] : [],
+      startServiceOrder: () => {
+        starts += 1;
+        return { ok: true, reason: "SERVICE_ORDER_IN_PROGRESS", order: { ...structuredClone(order), status: "IN_PROGRESS", revision: 5 } };
+      }
+    }
+  });
+  runtime.load("js/world-time-service-scheduler.js");
+
+  const before = runtime.window.WS_APP.processDueServiceOrders({ campaignTimeIso: "2109-02-13T14:59:00.000Z" });
+  const due = runtime.window.WS_APP.processDueServiceOrders({ campaignTimeIso: "2109-02-13T15:00:00.000Z" });
+
+  assert.equal(before.notDue, 1);
+  assert.equal(before.started, 0);
+  assert.equal(due.started, 1);
+  assert.equal(due.campaignTimeIso, "2109-02-13T15:00:00.000Z");
+  assert.equal(due.campaignDateIso, "2109-02-13");
+  assert.equal(starts, 1);
+});

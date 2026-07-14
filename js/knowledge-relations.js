@@ -2,7 +2,7 @@ window.WS_APP = window.WS_APP || {};
 
 (function initKnowledgeRelationsModule() {
   const RELATION_SCHEMA = "future-noir.knowledge-relations";
-  const RELATION_SCHEMA_VERSION = 1;
+  const RELATION_SCHEMA_VERSION = 2;
   const TARGET_REGISTRIES = new Set(["encyclopedia", "system", "system-index"]);
   const FIELD_TARGETS = {
     encyclopedia: {
@@ -13,7 +13,6 @@ window.WS_APP = window.WS_APP || {};
       relatedRules: "system"
     },
     "system-index": {
-      relatedTerms: "encyclopedia",
       relatedEntries: "system-index"
     }
   };
@@ -289,6 +288,7 @@ window.WS_APP = window.WS_APP || {};
       preservedLegacy: 0,
       unresolved: 0,
       ambiguous: 0,
+      removedCrossRegistry: 0,
       changedRecords: 0,
       unresolvedRefs: [],
       ambiguousRefs: []
@@ -303,14 +303,30 @@ window.WS_APP = window.WS_APP || {};
     }
   }
 
+  function forbiddenRelationFields(registry) {
+    if (registry === "encyclopedia") return ["relatedRules", "relatedEntries"];
+    if (registry === "system") return ["relatedEntries"];
+    if (registry === "system-index") return ["relatedTerms", "related", "relatedRules"];
+    return [];
+  }
+
+  function sanitizeRegistryRelations(record, registry, report) {
+    const sanitized = clone(record);
+    forbiddenRelationFields(registry).forEach((field) => {
+      const count = parseList(sanitized[field]).length;
+      if (count > 0) report.removedCrossRegistry += count;
+      if (Object.prototype.hasOwnProperty.call(sanitized, field) || count > 0) sanitized[field] = [];
+    });
+    return sanitized;
+  }
+
   function migrateRecordRelations(record, sourceRegistry, resolver, report) {
     const registry = registryForRecord(record, sourceRegistry);
     const targets = FIELD_TARGETS[registry] || {};
-    const migrated = clone(record);
-    const before = {};
+    const originalSignature = stableSignature(record);
+    const migrated = sanitizeRegistryRelations(record, registry, report);
 
     Object.entries(targets).forEach(([field, targetRegistry]) => {
-      before[field] = clone(migrated[field] || (field === "relatedTerms" ? migrated.related : []) || []);
       const fieldReport = createRelationReport();
       migrated[field] = normalizeKnowledgeRelationRefs(
         migrated[field] || (field === "relatedTerms" ? migrated.related : []),
@@ -350,11 +366,7 @@ window.WS_APP = window.WS_APP || {};
       migrated.related = migrated.relatedTerms;
     }
 
-    const changed = Object.keys(targets).some((field) => (
-      stableSignature(before[field]) !== stableSignature(migrated[field])
-    ));
-
-    if (changed) report.changedRecords += 1;
+    if (stableSignature(migrated) !== originalSignature) report.changedRecords += 1;
     return migrated;
   }
 

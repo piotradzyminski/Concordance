@@ -59,9 +59,9 @@ test("Partial return bundle versions are cache-busted consistently", () => {
   const index = readProjectFile("index.html");
   const modules = readProjectFile("js/modules.js");
   assert.match(index, /js\/market-store\.js\?v=12/);
-  assert.match(index, /js\/modules\.js\?v=295/);
-  assert.match(modules, /css\/housing\.css\?v=31/);
+  assert.match(index, /js\/modules\.js\?v=297/);
+  assert.match(modules, /css\/housing\.css\?v=32/);
   assert.match(modules, /js\/market-store\.js\?v=12/);
-  assert.match(modules, /js\/housing\.js\?v=48/);
-  assert.match(modules, /js\/housing-market-runtime\.js\?v=3/);
+  assert.match(modules, /js\/housing\.js\?v=49/);
+  assert.match(modules, /js\/housing-market-runtime\.js\?v=4/);
 });

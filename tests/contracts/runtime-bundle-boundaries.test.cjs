@@ -27,7 +27,7 @@ test("Subscriptions player UI is lazy-only and remains registered in the module 
   assert.match(subscriptions, /js\/subscriptions-workspace\.js\?v=6/);
 });
 
-test("Housing uses Cyberware market projection without full Cyberware UI runtime", () => {
+test("Global Market uses Cyberware market projection without full Cyberware UI runtime", () => {
   const modules = read("js/modules.js");
   const catalogData = extractBlock(
     modules,
@@ -39,15 +39,17 @@ test("Housing uses Cyberware market projection without full Cyberware UI runtime
     "const CYBERWARE_MARKET_PROJECTION_SCRIPTS = [",
     "const CYBERWARE_UI_RUNTIME_SCRIPTS = ["
   );
-  const housing = extractBlock(modules, "  housing: {", "  \"housing-market-workspace\": {");
-  const housingMarket = extractBlock(modules, "  \"housing-market-workspace\": {", "  database: {");
-  const equipment = extractBlock(modules, "  equipment: {", "  housing: {");
+  const market = extractBlock(modules, "  market: {", "  housing: {");
+  const housing = extractBlock(modules, "  housing: {", "  database: {");
+  const equipment = extractBlock(modules, "  equipment: {", "  market: {");
 
+  assert.match(market, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
+  assert.match(market, /js\/housing-market-runtime\.js\?v=4/);
+  assert.match(market, /js\/market\.js\?v=1/);
+  assert.doesNotMatch(market, /CYBERWARE_UI_RUNTIME_SCRIPTS/);
   assert.doesNotMatch(housing, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
   assert.doesNotMatch(housing, /housing-market-runtime\.js/);
-  assert.match(housingMarket, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
-  assert.match(housingMarket, /js\/housing-market-runtime\.js\?v=3/);
-  assert.doesNotMatch(housingMarket, /CYBERWARE_UI_RUNTIME_SCRIPTS/);
+  assert.doesNotMatch(housing, /js\/market\.js/);
   assert.match(equipment, /CYBERWARE_UI_RUNTIME_SCRIPTS/);
 
   assert.match(catalogData, /data\/neurochip-catalog\.js/);
@@ -107,7 +109,7 @@ test("shared citizen finance helpers are eager and independent from Subscription
   const subscriptions = read("js/subscriptions.js");
 
   const financeIndex = index.indexOf('js/citizen-finance.js?v=1');
-  const modulesIndex = index.indexOf('js/modules.js?v=295');
+  const modulesIndex = index.indexOf('js/modules.js?v=297');
   assert.ok(financeIndex >= 0, "citizen-finance.js must be eager-loaded");
   assert.ok(financeIndex < modulesIndex, "citizen-finance.js must load before module routing");
   assert.doesNotMatch(index, /<script[^>]+js\/subscriptions\.js/);

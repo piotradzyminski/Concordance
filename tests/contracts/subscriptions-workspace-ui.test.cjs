@@ -79,7 +79,7 @@ test("Subscriptions workspace is the canonical four-view player shell", () => {
   assert.match(modules, /subscriptions:\s*\{[\s\S]*css\/subscription-action-feedback\.css\?v=1[\s\S]*css\/subscriptions\.css\?v=21/);
   assert.match(modules, /js\/subscriptions-workspace\.js\?v=6/);
 
-  assert.match(index, /js\/modules\.js\?v=295/);
+  assert.match(index, /js\/modules\.js\?v=297/);
   assert.doesNotMatch(index, /<script[^>]+js\/subscriptions\.js/);
   assert.doesNotMatch(index, /<script[^>]+js\/subscriptions-workspace\.js/);
 });

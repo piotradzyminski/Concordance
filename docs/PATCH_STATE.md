@@ -3,7 +3,7 @@
 ## Baseline
 
 ```text
-runtime: Parallel Scope Merge 15.11x
+runtime: Parallel Scope Merge 15.12x
 documentation: Canonical Documentation 4.0x
 phase: pre-alpha
 ```
@@ -98,7 +98,7 @@ Admin Workspace Renderers 1.0x
 
 Completed Market orders may return selected physical ItemInstances through one revisioned `partialReturns[]` operation log. Market Store owns request and recovery state, ItemInstance Transaction Store moves only selected units to vendor custody, Market restores the matching stock quantities and Billing refunds the persisted proportional amount. Housing renders request, execute, withdraw, retry and history controls without owning another return store.
 
-Admin Control resolves workspace content through `AdminWorkspaceRegistry`. Dashboard registers in the base Admin bundle; Citizens, Tags & Access, Subscriptions, Service, Billing, System Requests, Records, Audit and Data / Settings register one renderer from their dedicated lazy workspace bundle. `AdminWorkspaceLoader` marks a bundle ready only after its canonical renderer exists.
+Admin Control resolves workspace content through `AdminWorkspaceRegistry`. Dashboard registers in the base Admin bundle; Catalog Management, Citizens, Tags & Access, Subscriptions, Service, Billing, System Requests, Records, Audit and Data / Settings register one renderer from their dedicated lazy workspace bundle. `AdminWorkspaceLoader` marks a bundle ready only after its canonical renderer exists.
 
 ## Installed in 15.9x
 
@@ -179,6 +179,26 @@ Market Cart distinguishes `LINES` from `ITEMS`, owns a local Back/Escape hierarc
 
 Subscriptions 4.5 adds responsive player/Admin layouts, roving keyboard navigation, semantic tabpanel/listbox behavior, accessible announcements and focus restoration. Shared tabs visual polish remains centralized in eager `css/system-tabs.css?v=8`.
 
+## Installed in 15.12x
+
+```text
+Housing / Market Decoupling 2.2x
+Admin Equipment Catalog Authoring 1.0x
+Item Type Effect Removal 1.3.1x cleanup completion
+Knowledge Relation Tabs / Registry Separation 1.1x — adapted without outdated content
+Campaign Time Datetime Foundation 2.0x
+```
+
+Global Market is now a separate module and lazy bundle. Housing owns Unit, Household, Storage and delivery intake; Market owns storefront, cart, orders, returns and shipment scheduling. Existing compatibility CSS/runtime names do not transfer domain ownership.
+
+Admin Catalog Management adds one lazy workspace. Equipment definitions can be drafted, previewed, published, archived/restored and exported through the canonical Equipment Catalog Store. Preview never creates ItemInstance records.
+
+Consumable effect/status runtime files and their retired test/contract are physically removed by the cleanup manifest. `useConsumable()` remains quantity mutation plus Campaign-Day usage log only.
+
+Knowledge changes are intentionally limited to relation-tab presentation, registry field isolation and Knowledge Pack schema v3 migration. `data/system-records.js`, Encyclopedia seed content and current approved lore were not imported from the outdated source patch.
+
+Campaign Time is a revisioned UTC timestamp with date-only compatibility projections. World Time Service Scheduler compares full timestamps; Campaign Snapshot remains schema v6.
+
 ## Domain status
 
 | Scope | Status | Canonical owner |
@@ -190,6 +210,7 @@ Subscriptions 4.5 adds responsive player/Admin layouts, roving keyboard navigati
 | Admin audit | ACTIVE / STABLE | Admin Audit Store + Snapshot v6 |
 | Admin workspace shell and renderer registry | ACTIVE / STABLE / BROWSER VALIDATION REQUIRED | Admin Shell + Admin Workspace Registry/Loader + dedicated workspace renderers |
 | Admin operations workspace | ACTIVE / LAZY / BROWSER VALIDATION REQUIRED | World Bridge Operation Store + Admin Operations command adapter |
+| Admin catalog authoring | ACTIVE / EQUIPMENT DEFINITIONS / BROWSER VALIDATION REQUIRED | Catalog Management workspace + Equipment Catalog Authoring Store |
 | Billing corrections and transfers | ACTIVE / STABLE | Billing Store public commands |
 | Subscriptions core | ACTIVE / FROZEN | SubscriptionAPI |
 | Subscriptions admin workspace | ACTIVE / ACTION FEEDBACK ENABLED / BROWSER VALIDATION REQUIRED | Admin Subscriptions Control + SubscriptionAPI |
@@ -197,11 +218,11 @@ Subscriptions 4.5 adds responsive player/Admin layouts, roving keyboard navigati
 | Service Log / income | ACTIVE / STRICT LIFECYCLE / BROWSER VALIDATION REQUIRED | Citizen Store + Service Log Lifecycle registry |
 | Transactional services | ACTIVE / FROZEN | Service Bridge |
 | Services UI | ACTIVE / COLD ENTRY DEPENDENCIES STABILIZED / BROWSER VALIDATION REQUIRED | persistent shell + eager Citizen finance/date helpers + panel contexts/cache/pagination |
-| Market fulfillment | ACTIVE / DELIVERY + PICKUP + PARTIAL RETURNS ENABLED / BROWSER VALIDATION REQUIRED | Market Store orchestration boundary + split Housing Market runtime |
-| Housing Market storefront, starter consumables and product visuals | ACTIVE / LAZY WORKSPACE + DELIVERY ENABLED / BROWSER VALIDATION REQUIRED | `js/housing-market-runtime.js` consuming Market Store APIs + Equipment Catalog definitions |
+| Market fulfillment | ACTIVE / DECOUPLED MODULE + DELIVERY + PICKUP + PARTIAL RETURNS / BROWSER VALIDATION REQUIRED | Market module + Market Store orchestration boundary |
+| Global Market storefront, starter consumables and product visuals | ACTIVE / SEPARATE LAZY MODULE / BROWSER VALIDATION REQUIRED | `js/market.js` + `js/housing-market-runtime.js` consuming Market Store APIs |
 | Housing Unit / Household / Storage runtime | ACTIVE / SPLIT FOUNDATION / BROWSER VALIDATION REQUIRED | Housing shell + Household Store + `js/housing-storage-runtime.js` |
 | ItemInstance | ACTIVE / STABLE / VIEW CACHE WARMED | ItemInstance Store |
-| Item Type Framework | ACTIVE / OPERATIONS + EFFECT RESOLUTION | Item Type Registry + Item Type Operations + Item Effect Resolver |
+| Item Type Framework | ACTIVE / OPERATIONS + DAILY USAGE LOG | Item Type Registry + Item Type Operations + ItemInstance Transaction Store |
 | Equipment QA loadouts | ACTIVE / PRE-ALPHA FIXTURE | deterministic Citizen A/B ItemInstance seeds |
 | Equipment / CyberGrid | ACTIVE / BROWSER VALIDATION REQUIRED | Equipment Store + ItemInstance location |
 | Equipment Bodymap transition | ACTIVE / BROWSER VALIDATION REQUIRED | mounted dual-view Bodymap fast path |
@@ -212,7 +233,8 @@ Subscriptions 4.5 adds responsive player/Admin layouts, roving keyboard navigati
 | Firmware | ACTIVE / STABLE | Firmware Registry |
 | Notifications | ACTIVE / CONTENT + PROJECTION POLICY / STABLE | Notification Registry/API + Content Resolver + Projection Policy |
 | Campaign import/export | ACTIVE / STABLE | Campaign Data I/O schema v6 |
-| Knowledge | ACTIVE / STABLE | Knowledge Pack Store v2 |
+| Campaign Time | ACTIVE / TIMESTAMP FOUNDATION | `js/main.js` timestamp/revision API + domain schedulers |
+| Knowledge | ACTIVE / REGISTRY-ISOLATED / CONTENT PRESERVED | Knowledge Pack Store v3 + stable-id-v2 |
 | Node test harness | ACTIVE | deterministic unit/contract/data-I/O tests |
 | Browser E2E | ACTIVE / ENVIRONMENT DEPENDENT | Playwright |
 
@@ -232,7 +254,7 @@ Admin Control Center
   persistent Command Band, Navigation Rail, Workspace and Inspector shell
   registry-owned renderer resolution with no central workspace switch
   dashboard renderer in the base bundle
-  nine non-dashboard renderers loaded through dedicated workspace bundles
+  ten non-dashboard renderers loaded through dedicated workspace bundles
   bundle readiness requires renderer registration
 
 Admin Billing

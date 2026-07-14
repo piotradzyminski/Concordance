@@ -81,9 +81,10 @@ test("Knowledge relation migration persists stable IDs and keeps label adapters"
   assert.deepEqual(Array.from(serviceRule.relatedTerms), ["term-service"]);
   assert.deepEqual(Array.from(serviceRule.relatedRules), ["system-roll-rule"]);
   assert.deepEqual(Array.from(indexService.relatedEntries), ["index-citizen"]);
+  assert.deepEqual(Array.from(indexService.relatedTerms), []);
 
-  assert.equal(runtime.storage.getItem("ws_app_entries_schema"), "future-noir.knowledge.encyclopedia.v2");
-  assert.equal(runtime.storage.getItem("ws_app_system_records_schema"), "future-noir.knowledge.system-records.v2");
+  assert.equal(runtime.storage.getItem("ws_app_entries_schema"), "future-noir.knowledge.encyclopedia.v3");
+  assert.equal(runtime.storage.getItem("ws_app_system_records_schema"), "future-noir.knowledge.system-records.v3");
 
   const byLegacyName = runtime.window.WS_APP.resolveKnowledgeRelation("Służba", "encyclopedia");
   const byStableId = runtime.window.WS_APP.resolveKnowledgeRelation("term-service", "encyclopedia");
@@ -96,12 +97,13 @@ test("Knowledge relation migration persists stable IDs and keeps label adapters"
 
   const validation = runtime.window.WS_APP.validateKnowledgeRelations();
   assert.equal(validation.ok, true, JSON.stringify(validation.report));
-  assert.equal(validation.report.total, 8);
-  assert.equal(validation.report.alreadyCanonical, 8);
+  assert.equal(validation.report.total, 6);
+  assert.equal(validation.report.alreadyCanonical, 6);
+  assert.equal(validation.report.removedCrossRegistry, 0);
   assert.equal(validation.report.unresolved, 0);
 });
 
-test("Knowledge Pack v1 relation names migrate in memory to schema v2 stable IDs", () => {
+test("Knowledge Pack v1 relation names migrate in memory to schema v3 with isolated registries", () => {
   const runtime = createKnowledgeRuntime();
   runtime.loadMany([
     "js/entries-store.js",
@@ -162,11 +164,14 @@ test("Knowledge Pack v1 relation names migrate in memory to schema v2 stable IDs
   });
 
   assert.equal(validation.ok, true, JSON.stringify(validation));
-  assert.equal(validation.pack.schemaVersion, 2);
-  assert.equal(validation.pack.relationSchema, "stable-id-v1");
+  assert.equal(validation.pack.schemaVersion, 3);
+  assert.equal(validation.pack.relationSchema, "stable-id-v2");
   assert.deepEqual(Array.from(validation.pack.encyclopedia[0].relatedTerms), ["term-citizen"]);
   assert.deepEqual(Array.from(validation.pack.system[0].relatedRules), ["system-roll-rule"]);
   assert.deepEqual(Array.from(validation.pack.systemIndex[0].relatedEntries), ["index-citizen"]);
-  assert.equal(validation.warnings.includes("PACK_SCHEMA_MIGRATED_TO_V2"), true);
+  assert.deepEqual(Array.from(validation.pack.systemIndex[0].relatedTerms), []);
+  assert.equal(validation.warnings.includes("PACK_SCHEMA_MIGRATED_TO_V3"), true);
+  assert.equal(validation.warnings.includes("PACK_CROSS_REGISTRY_RELATIONS_REMOVED_2"), true);
+  assert.equal(validation.relationReport.removedCrossRegistry, 2);
   assert.equal(validation.relationReport.unresolved, 0);
 });

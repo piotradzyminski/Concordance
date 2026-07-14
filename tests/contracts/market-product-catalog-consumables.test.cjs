@@ -40,8 +40,7 @@ test("Equipment catalog normalization preserves Market consumable metadata", () 
 });
 
 test("Housing and Market section tabs use the shared Terminal tile contract", () => {
-  const housing = `${read("js/housing.js")}
-${read("js/housing-market-runtime.js")}`;
+  const housing = `${read("js/housing.js")}\n${read("js/market.js")}\n${read("js/housing-market-runtime.js")}`;
   const css = read("css/housing.css");
   const modules = read("js/modules.js");
   const index = read("index.html");
@@ -55,5 +54,5 @@ ${read("js/housing-market-runtime.js")}`;
   assert.doesNotMatch(css, /housing-module-tab\.terminal-panel-card\.system-segment-tile/);
   assert.doesNotMatch(css, /housing-market-subtab\.terminal-panel-card\.system-segment-tile/);
   assert.match(index, /css\/system-tabs\.css\?v=8/);
-  assert.match(modules, /styles: \["css\/housing\.css\?v=31"\]/);
+  assert.match(modules, /styles: \["css\/housing\.css\?v=32"\]/);
 });

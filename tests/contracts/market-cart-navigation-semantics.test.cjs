@@ -137,13 +137,12 @@ test("Cart and Product Inspector are modal dialogs with Escape handling and focu
   assert.match(css, /body\.housing-market-modal-open\s*\{[\s\S]*?overflow:\s*hidden/);
 });
 
-test("Housing Back delegates Market-local navigation before exiting to Access Panel", () => {
-  const shell = read("js/housing.js");
-  const back = getFunctionBlock(shell, "handleHousingModuleBack", "getCampaignDateIso");
+test("Global Market Back delegates local navigation before exiting to module access", () => {
+  const shell = read("js/market.js");
 
-  assert.match(back, /handleHousingMarketBackNavigation/);
-  assert.match(back, /if \(handled\) return/);
-  assert.match(back, /resetHousingMarketTransientState/);
-  assert.match(back, /renderModules/);
-  assert.match(shell, /bindModuleBackButton\?\.\(user, \(\) => handleHousingModuleBack\(user, citizen\.id\)\)/);
+  assert.match(shell, /runtime\.handleHousingMarketBackNavigation/);
+  assert.match(shell, /if \(runtime\.handleHousingMarketBackNavigation\?\.\([^;]+\)\) return/);
+  assert.match(shell, /runtime\.resetHousingMarketTransientUi/);
+  assert.match(shell, /window\.WS_APP\.renderModules\?\.\(user\)/);
+  assert.match(shell, /bindModuleBackButton\?\.\(user, \(\) =>/);
 });

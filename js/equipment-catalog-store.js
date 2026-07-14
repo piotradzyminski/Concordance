@@ -378,14 +378,24 @@ function normalizeEquipmentCyberwareMeta(source = {}) {
     return items.map(normalizeEquipmentCatalogItem).filter((item) => item.id);
   }
 
+  function getAuthoredEquipmentCatalogItems() {
+    if (typeof window.WS_APP.getPublishedEquipmentCatalogDefinitions !== "function") return [];
+    const items = window.WS_APP.getPublishedEquipmentCatalogDefinitions({ includeArchived: true });
+    return (Array.isArray(items) ? items : []).map(normalizeEquipmentCatalogItem).filter((item) => item.id);
+  }
+
   function mergeEquipmentCatalogItems(...lists) {
-    const seen = new Set();
+    const positions = new Map();
     const merged = [];
 
     lists.flat().forEach((item) => {
       const key = item?.catalogId || item?.id;
-      if (!key || seen.has(key)) return;
-      seen.add(key);
+      if (!key) return;
+      if (positions.has(key)) {
+        merged[positions.get(key)] = item;
+        return;
+      }
+      positions.set(key, merged.length);
       merged.push(item);
     });
 
@@ -393,7 +403,11 @@ function normalizeEquipmentCyberwareMeta(source = {}) {
   }
 
   function rebuildEquipmentCatalogIndex() {
-    const catalog = mergeEquipmentCatalogItems(getSeedEquipmentCatalogItems(), getDynamicCyberwareCatalogItems());
+    const catalog = mergeEquipmentCatalogItems(
+      getSeedEquipmentCatalogItems(),
+      getDynamicCyberwareCatalogItems(),
+      getAuthoredEquipmentCatalogItems()
+    );
     const index = new Map();
     catalog.forEach((item) => {
       const ids = [item?.id, item?.catalogId, item?.implantId, item?.sourceCatalogId]

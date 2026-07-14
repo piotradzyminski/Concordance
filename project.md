@@ -4,7 +4,7 @@
 
 ```text
 phase: pre-alpha
-runtime baseline: Parallel Scope Merge 15.11x
+runtime baseline: Parallel Scope Merge 15.12x
 documentation baseline: Canonical Documentation 4.0x
 target: desktop browser
 persistence: client-side campaign data
@@ -44,9 +44,10 @@ Panel MG jest osobnym workspace operatorskim. Używa stałego Command Band, Navi
 | Firmware releases | Firmware Registry |
 | Notifications | Notification Registry/API i producenci domenowi |
 | Campaign import/export | Campaign Data I/O v6 adapter registry |
-| Knowledge | Knowledge Pack Store v2 + stabilne relation IDs |
+| Campaign Time | `js/main.js` timestamp/revision store + domain schedulers |
+| Knowledge | Knowledge Pack Store v3 + registry-isolated stable relation IDs |
 
-## Runtime 15.11x — aktywne rozszerzenia
+## Runtime 15.12x — aktywne rozszerzenia
 
 - Citizen Files są utrzymywane w niezależnym `Citizen File Store`; relacje z Case Files są projekcją stabilnych identyfikatorów obsługiwaną przez `Database Relations`.
 - Item Type Operations wykonują atomowe komendy magazynka, komory, bezpiecznika, trybu ognia, granatu i zużycia ilościowego przez ItemInstance Transaction Store. Inspector jest wyłącznie warstwą poleceń i projekcji.
@@ -72,6 +73,10 @@ Panel MG jest osobnym workspace operatorskim. Używa stałego Command Band, Navi
 - Subscriptions 4.5 dodaje responsywne layouty, roving keyboard navigation, semantyczne tabpanele/listboxy i focus restoration bez nowego UI store.
 - `css/system-tabs.css?v=8` zawiera finalny visual polish wspólnych rodzin segment, inline i mode.
 - Housing Grid Engine Parity Audit 4.6.3x jest kontraktowym quality gate; nie zmienia runtime i potwierdza lokalny DOM patch po dropie bez pełnego renderu.
+- Global Market jest osobnym modułem i lazy bundle. Housing zachowuje Unit, Household, Storage i delivery intake, ale nie jest właścicielem storefrontu, koszyka ani zamówień.
+- Admin Catalog Management udostępnia kanoniczne authoring Equipment definitions: draft, preview, publish, archive/restore i export data pack bez tworzenia ItemInstance.
+- Campaign Time jest pełnym timestampem UTC z revision, idempotency i kompatybilną projekcją daty; domenowe schedulery obserwują czas, ale nie oddają mu własności swoich rekordów.
+- Knowledge Pack schema v3 rozdziela relacje rejestrów: Encyclopedia pozostaje glossary, System rulebookiem, a System Index zatwierdzoną narracją. Aktualne rekordy bazowe nie zostały zastąpione treścią z patcha źródłowego.
 
 ## Nienaruszalne inwarianty
 
@@ -141,9 +146,9 @@ Operacje instalacji, demontażu, wymiany, firmware i maintenance przechodzą prz
 
 ## Market storefront
 
-Housing Market jest playerowym storefrontem nad kanonicznym Market Store. Udostępnia sekcje Catalog, Orders i Delivered, filtruje oferty według działów i generowanych podkategorii oraz renderuje maksymalnie sześć produktów na stronę w układzie dwukolumnowym. Katalog startowy obejmuje wyposażenie, cyberware oraz dziewiętnaście produktów zużywalnych w działach Medical, Food i Household; ich package/dose/duration/shelf-life metadata oraz opcjonalny `visualProfile` pozostają częścią kanonicznych definicji Equipment Catalog. Dziewiętnaście produktów zużywalnych posiada dedykowane lokalne SVG, a produkty bez własnego artworku korzystają z prezentacyjnego fallbacku działu. Ten sam resolver zasila miniaturę karty i pełny widok Product Inspector; Market Offer nie przechowuje konkurencyjnego pola grafiki ani osobnego rejestru assetów. Nawigacja Unit / Storage / Market oraz Catalog / Orders / Delivered korzysta ze wspólnego kontraktu terminalowych kart `system-segment-tile`. Szczegóły zamówienia pozwalają wskazać konkretne, nadal nieużywane ItemInstance do zwrotu; Market zapisuje line receipts, wykonuje jedną transakcję fizyczną, częściowo przywraca stock i zleca Billingowi proporcjonalny refund. UI nie posiada własnego store’a ofert, koszyka, zamówień, zwrotów ani artworku; wszystkie mutacje przechodzą przez publiczne API Market, Billing, Housing, Services i ItemInstance.
+Global Market jest playerowym storefrontem nad kanonicznym Market Store. Udostępnia sekcje Catalog, Orders i Delivered, filtruje oferty według działów i generowanych podkategorii oraz renderuje maksymalnie sześć produktów na stronę w układzie dwukolumnowym. Katalog startowy obejmuje wyposażenie, cyberware oraz dziewiętnaście produktów zużywalnych w działach Medical, Food i Household; ich package/dose/duration/shelf-life metadata oraz opcjonalny `visualProfile` pozostają częścią kanonicznych definicji Equipment Catalog. Dziewiętnaście produktów zużywalnych posiada dedykowane lokalne SVG, a produkty bez własnego artworku korzystają z prezentacyjnego fallbacku działu. Ten sam resolver zasila miniaturę karty i pełny widok Product Inspector; Market Offer nie przechowuje konkurencyjnego pola grafiki ani osobnego rejestru assetów. Nawigacja Unit / Storage / Market oraz Catalog / Orders / Delivered korzysta ze wspólnego kontraktu terminalowych kart `system-segment-tile`. Szczegóły zamówienia pozwalają wskazać konkretne, nadal nieużywane ItemInstance do zwrotu; Market zapisuje line receipts, wykonuje jedną transakcję fizyczną, częściowo przywraca stock i zleca Billingowi proporcjonalny refund. UI nie posiada własnego store’a ofert, koszyka, zamówień, zwrotów ani artworku; wszystkie mutacje przechodzą przez publiczne API Market, Billing, Housing, Services i ItemInstance.
 
-Housing Unit i Storage posiadają osobny runtime `js/housing-storage-runtime.js`. Runtime odpowiada za filtry i wybór Storage, projekcje Equipment/ItemInstance, transfery między kontenerami i jednostkami, renderery Unit/Storage oraz pointer-grid fast path. `js/housing.js` pozostaje właścicielem powłoki Housing i UI Market/Orders/Shipments. Rozdzielenie nie tworzy drugiego store’a Housing, Market ani ItemInstance.
+Housing Unit i Storage posiadają osobny runtime `js/housing-storage-runtime.js`. Runtime odpowiada za filtry i wybór Storage, projekcje Equipment/ItemInstance, transfery między kontenerami i jednostkami, renderery Unit/Storage oraz pointer-grid fast path. `js/housing.js` pozostaje właścicielem powłoki Housing, Household, Storage i delivery intake. `js/market.js` oraz `js/housing-market-runtime.js` posiadają globalny storefront, koszyk, zamówienia, zwroty i shipment scheduling. Rozdzielenie nie tworzy drugiego store’a Housing, Market ani ItemInstance.
 
 ## Stabilność UI i wydajność
 
@@ -168,7 +173,7 @@ ENCYCLOPEDIA = słownik pojęć gracza
 SYSTEM INDEX = zatwierdzona, propagandowa wiedza świata
 ```
 
-Zawartość Knowledge Pack używa schema v2 i stabilnych identyfikatorów rekordów oraz relacji. Dane lore w seedach aplikacji nie stanowią samodzielnego źródła kanonu przed fazą beta.
+Zawartość Knowledge Pack używa schema v3, `stable-id-v2` i jawnej izolacji relacji między rejestrami. Dane lore w seedach aplikacji nie stanowią samodzielnego źródła kanonu przed fazą beta.
 
 ## Testy
 

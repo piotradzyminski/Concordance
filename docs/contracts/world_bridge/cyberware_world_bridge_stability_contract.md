@@ -6,7 +6,7 @@
 Parallel Scope + Cyberware World Bridge Merge 14.0x
 Market Service Fulfillment Fix 4.4x
 World Bridge Operation Recovery 1.0x
-World Time Service Completion Scheduler 1.1x
+World Time Service Completion Scheduler 1.2x
 World Bridge Notifications 2.1x
 ```
 

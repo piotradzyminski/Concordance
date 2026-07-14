@@ -4,38 +4,11 @@ window.WS_APP = window.WS_APP || {};
   const HOUSING_STORAGE_WIDTH = 4;
   const HOUSING_STORAGE_LOCATION = "HOUSING_STORAGE";
   const DEFAULT_STORAGE_UNIT_ID = "housing-storage-main";
-  const HOUSING_MARKET_SOURCE = "HOUSING_MARKET";
-  const HOUSING_MARKET_DELIVERABLE_SHIPMENT_STATUSES = new Set(["PENDING", "PAID", "PACKED", "IN_TRANSIT"]);
-  const HOUSING_SHIPMENT_ACTIVE_STATUSES = new Set(["PENDING", "PAID", "PACKED", "IN_TRANSIT", "HELD"]);
+  const HOUSING_DELIVERY_DEFAULT_DAYS = 1;
   const HOUSING_SHIPMENT_CLOSED_STATUSES = new Set(["DELIVERED", "FAILED", "CANCELLED", "RETURNED"]);
-  const HOUSING_MARKET_DEFAULT_SHIPPING_DAYS = 1;
-  const HOUSING_MARKET_MODES = ["CATALOG", "ORDERS", "DELIVERED"];
-  const HOUSING_MARKET_ORDER_VIEWS = ["ACTIVE", "HISTORY"];
-  const HOUSING_MARKET_ORDER_CLOSED_STATUSES = new Set(["COMPLETED", "REFUNDED", "FAILED", "CANCELLED"]);
-  const HOUSING_MARKET_PAGE_SIZE = 6;
-  const HOUSING_MARKET_DEPARTMENTS = ["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"];
-  const HOUSING_MARKET_PRODUCT_VISUAL_FALLBACKS = Object.freeze({
-    EQUIPMENT: "assets/market/fallback/equipment.svg",
-    CYBERWARE: "assets/market/fallback/cyberware.svg",
-    MEDICAL: "assets/market/fallback/medical.svg",
-    FOOD: "assets/market/fallback/food.svg",
-    HOUSEHOLD: "assets/market/fallback/household.svg",
-    DEFAULT: "assets/market/fallback/product.svg"
-  });
-  const HOUSING_MARKET_SORTS = ["CATEGORY", "PRICE_ASC", "PRICE_DESC", "TIER_ASC", "TIER_DESC", "ETA_ASC", "ETA_DESC", "MANUFACTURER", "NAME"];
-  const HOUSING_MARKET_STATUSES = ["ALL", "BUYABLE", "TOO_EXPENSIVE", "TOO_LARGE", "REQUIRES_SUBSCRIPTION", "NO_STORAGE", "CONTROLLED"];
   const HOUSING_STORAGE_KINDS = ["ALL", "WEAPON", "ARMOR", "MEDICAL", "TOOLS", "CONTAINER", "DOCUMENT", "CYBERWARE_PACKAGE", "MISC"];
   const HOUSING_STORAGE_STATUSES = ["ALL", "AVAILABLE", "STORED", "OVERFLOW"];
   const HOUSING_STORAGE_SORTS = ["CATEGORY", "NAME", "SIZE_DESC", "SIZE_ASC", "STATUS", "VALUE_DESC", "VALUE_ASC"];
-  const HOUSING_MARKET_VENDOR_DEFAULTS = {
-    MEDICAL: { organizationLocationId: "orgloc-trauma-local-medical-supply-n3-a4", vendorId: "vendor-trauma-local-medical" },
-    WEAPON: { organizationLocationId: "orgloc-ws-controlled-armory-n3-a4", vendorId: "vendor-ws-controlled-armory" },
-    ARMOR: { organizationLocationId: "orgloc-ws-controlled-armory-n3-a4", vendorId: "vendor-ws-controlled-armory" },
-    DOCUMENT: { organizationLocationId: "orgloc-system-access-desk-n3-a4", vendorId: "vendor-system-access-desk" },
-    CONTAINER: { organizationLocationId: "orgloc-mass-compression-logistics-n3-b12", vendorId: "vendor-mass-compression-logistics" },
-    TOOLS: { organizationLocationId: "orgloc-factory-commons-utility-depot-n3-c8", vendorId: "vendor-factory-commons-utility" },
-    DEFAULT: { organizationLocationId: "orgloc-habitat-market-fulfillment-n3-b12", vendorId: "vendor-habitat-market" }
-  };
   const HOUSING_STORAGE_PROFILES = [
     { keys: ["HAB_CELL", "HABCELL", "CELL", "CELL_ACCESS", "RENT_ACCESS"], label: "Cell Access", rows: 1 },
     { keys: ["MICRO_UNIT", "MICRO", "MICRO_HAB", "HAB_MICRO"], label: "Micro Unit", rows: 2 },
@@ -180,13 +153,13 @@ window.WS_APP = window.WS_APP || {};
   function getHousingActiveTab(citizenId = "") {
     window.WS_APP.housingActiveTabByCitizen = window.WS_APP.housingActiveTabByCitizen || {};
     const tab = String(window.WS_APP.housingActiveTabByCitizen[citizenId] || "UNIT").toUpperCase();
-    return ["UNIT", "HOUSEHOLD", "STORAGE", "MARKET"].includes(tab) ? tab : "UNIT";
+    return ["UNIT", "HOUSEHOLD", "STORAGE", "DELIVERIES"].includes(tab) ? tab : "UNIT";
   }
 
   function setHousingActiveTab(citizenId = "", tab = "UNIT") {
     window.WS_APP.housingActiveTabByCitizen = window.WS_APP.housingActiveTabByCitizen || {};
     const normalized = String(tab || "UNIT").toUpperCase();
-    window.WS_APP.housingActiveTabByCitizen[citizenId] = ["UNIT", "HOUSEHOLD", "STORAGE", "MARKET"].includes(normalized) ? normalized : "UNIT";
+    window.WS_APP.housingActiveTabByCitizen[citizenId] = ["UNIT", "HOUSEHOLD", "STORAGE", "DELIVERIES"].includes(normalized) ? normalized : "UNIT";
   }
 
   function getHousingActiveRecordId(citizenId = "", records = []) {
@@ -351,149 +324,7 @@ window.WS_APP = window.WS_APP || {};
   } = housingHouseholdRuntime;
 
 
-  let housingMarketRuntime = null;
-  let housingMarketRuntimePromise = null;
-  let housingMarketRuntimeError = null;
-
-  function createHousingMarketRuntimeInstance() {
-    if (housingMarketRuntime) return housingMarketRuntime;
-    const factory = window.WS_APP.createHousingMarketRuntime;
-    if (typeof factory !== "function") throw new Error("HOUSING_MARKET_RUNTIME_FACTORY_UNAVAILABLE");
-    housingMarketRuntime = factory({
-      DEFAULT_STORAGE_UNIT_ID,
-      HOUSING_MARKET_DEFAULT_SHIPPING_DAYS,
-      HOUSING_MARKET_DELIVERABLE_SHIPMENT_STATUSES,
-      HOUSING_MARKET_DEPARTMENTS,
-      HOUSING_MARKET_MODES,
-      HOUSING_MARKET_ORDER_CLOSED_STATUSES,
-      HOUSING_MARKET_ORDER_VIEWS,
-      HOUSING_MARKET_PAGE_SIZE,
-      HOUSING_MARKET_PRODUCT_VISUAL_FALLBACKS,
-      HOUSING_MARKET_SORTS,
-      HOUSING_MARKET_STATUSES,
-      HOUSING_MARKET_VENDOR_DEFAULTS,
-      HOUSING_SHIPMENT_ACTIVE_STATUSES,
-      addDaysIso,
-      clampNumber,
-      compareIsoDates,
-      escapeHtml,
-      formatCredits,
-      formatIsoLabel,
-      getCampaignDateIso,
-      getCitizenEquipmentItems,
-      getCitizenHousingRecords,
-      getCitizenMarketOrders,
-      getCitizenShipments,
-      getEquipmentFootprintSize,
-      getHousingActiveStorageTarget,
-      getHousingShipmentState,
-      getHousingShipmentUnitContext,
-      isIsoDate,
-      normalizeMarketOrder,
-      normalizeShipment,
-      parseCredits,
-      renderHousingFeedback,
-      renderHousingMetric,
-      renderHousingModule,
-      renderHousingShipmentRow,
-      setHousingActiveTab,
-      setHousingFeedback
-    });
-    window.WS_APP.housingMarketRuntime = housingMarketRuntime;
-    return housingMarketRuntime;
-  }
-
-  function ensureHousingMarketRuntime(user = window.WS_APP.currentUser) {
-    if (housingMarketRuntime) return Promise.resolve(housingMarketRuntime);
-    if (housingMarketRuntimePromise) return housingMarketRuntimePromise;
-    housingMarketRuntimeError = null;
-    housingMarketRuntimePromise = Promise.resolve(window.WS_APP.loadModuleBundle?.("housing-market-workspace", user))
-      .then(() => createHousingMarketRuntimeInstance())
-      .catch((error) => {
-        housingMarketRuntimeError = error;
-        throw error;
-      })
-      .finally(() => {
-        housingMarketRuntimePromise = null;
-      });
-    return housingMarketRuntimePromise;
-  }
-
-  function renderHousingMarketWorkspace(citizen = {}, user = window.WS_APP.currentUser) {
-    if (housingMarketRuntime) return housingMarketRuntime.renderHousingMarketTab(citizen);
-    if (!housingMarketRuntimePromise && !housingMarketRuntimeError) {
-      void ensureHousingMarketRuntime(user).then(() => {
-        const activeCitizen = getHousingTargetCitizen(user);
-        if (activeCitizen?.id === citizen.id && getHousingActiveTab(citizen.id) === "MARKET") renderHousingModule(user);
-      }).catch((error) => {
-        console.error("Housing Market runtime failed to load.", error);
-        if (document.querySelector("[data-housing-module]") && getHousingActiveTab(citizen.id) === "MARKET") renderHousingModule(user);
-      });
-    }
-    const message = housingMarketRuntimeError
-      ? `Market workspace failed to load: ${String(housingMarketRuntimeError.message || housingMarketRuntimeError).replace(/_/g, " ")}`
-      : "Loading Market workspace…";
-    return `
-      <section class="housing-module-panel housing-market-runtime-state" data-housing-market-runtime-state="${housingMarketRuntimeError ? "ERROR" : "LOADING"}">
-        <header class="housing-module-panel-head">
-          <div><p class="kicker">HOUSING / MARKET</p><h5>${housingMarketRuntimeError ? "Workspace unavailable" : "Initializing workspace"}</h5></div>
-          <span class="module-status-badge">${housingMarketRuntimeError ? "ERROR" : "LAZY LOAD"}</span>
-        </header>
-        <p class="housing-storage-note">${escapeHtml(message)}</p>
-        ${housingMarketRuntimeError ? '<button class="housing-inline-action" type="button" data-housing-market-runtime-retry>RETRY LOAD</button>' : ""}
-      </section>
-    `;
-  }
-
-  function isHousingMarketEventTarget(target) {
-    let node = target && typeof target === "object" ? target : null;
-    while (node && node !== document) {
-      if (node.hasAttribute?.("data-housing-process-shipments") || node.hasAttribute?.("data-housing-retry-shipment") || node.hasAttribute?.("data-housing-market-runtime-retry")) return true;
-      if (Array.from(node.attributes || []).some((attribute) => String(attribute.name || "").startsWith("data-housing-market-"))) return true;
-      node = node.parentElement;
-    }
-    return false;
-  }
-
-  function delegateHousingMarketEvent(type, event, context = {}) {
-    if (!isHousingMarketEventTarget(event?.target)) return false;
-    const invoke = (runtime) => {
-      if (event?.target?.closest?.("[data-housing-market-runtime-retry]")) {
-        housingMarketRuntimeError = null;
-        renderHousingModule(context.user || window.WS_APP.currentUser);
-        return true;
-      }
-      const handler = runtime?.[type];
-      return typeof handler === "function" ? handler(event, context) : false;
-    };
-    if (housingMarketRuntime) return invoke(housingMarketRuntime);
-    void ensureHousingMarketRuntime(context.user).then((runtime) => invoke(runtime)).catch((error) => {
-      setHousingFeedback(context.citizenId, `Market workspace unavailable: ${String(error?.message || error || "UNKNOWN").replace(/_/g, " ")}.`, "ERROR");
-      renderHousingModule(context.user || window.WS_APP.currentUser);
-    });
-    return true;
-  }
-
-  function resetHousingMarketTransientState(root = null, citizenId = "") {
-    if (housingMarketRuntime?.resetHousingMarketTransientUi) {
-      housingMarketRuntime.resetHousingMarketTransientUi(root, citizenId);
-      return;
-    }
-    window.WS_APP.housingMarketCartOpenByCitizen = window.WS_APP.housingMarketCartOpenByCitizen || {};
-    window.WS_APP.housingMarketSelectedProductByCitizen = window.WS_APP.housingMarketSelectedProductByCitizen || {};
-    window.WS_APP.housingMarketCartOpenByCitizen[citizenId] = false;
-    window.WS_APP.housingMarketSelectedProductByCitizen[citizenId] = "";
-    document.body?.classList?.remove?.("housing-market-modal-open");
-  }
-
-  function handleHousingModuleBack(user = window.WS_APP.currentUser, citizenId = "") {
-    const root = document.querySelector("[data-housing-module]");
-    const targetCitizenId = String(citizenId || root?.getAttribute?.("data-housing-citizen-id") || "").trim();
-    if (targetCitizenId && getHousingActiveTab(targetCitizenId) === "MARKET") {
-      const handled = housingMarketRuntime?.handleHousingMarketBackNavigation?.({ root, citizenId: targetCitizenId, user });
-      if (handled) return;
-    }
-    resetHousingMarketTransientState(root, targetCitizenId);
+  function handleHousingModuleBack(user = window.WS_APP.currentUser) {
     window.WS_APP.renderModules?.(user);
   }
 
@@ -534,18 +365,38 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function getCitizenMarketOrders(citizen = {}) {
-    return Array.isArray(citizen.marketOrders) ? citizen.marketOrders.filter(Boolean).map((order, index) => normalizeMarketOrder(order, index)) : [];
+    const citizenId = String(citizen?.id || "").trim();
+    const canonical = typeof window.WS_APP.getCitizenMarketOrders === "function"
+      ? window.WS_APP.getCitizenMarketOrders(citizenId)
+      : [];
+    const legacy = Array.isArray(citizen.marketOrders) ? citizen.marketOrders.filter(Boolean) : [];
+    const merged = new Map();
+    [...canonical, ...legacy].forEach((order, index) => {
+      const normalized = normalizeMarketOrder(order, index);
+      merged.set(normalized.id, normalized);
+    });
+    return [...merged.values()];
   }
 
   function getCitizenShipments(citizen = {}) {
-    return Array.isArray(citizen.shipments) ? citizen.shipments.filter(Boolean).map((shipment, index) => normalizeShipment(shipment, index)) : [];
+    const citizenId = String(citizen?.id || "").trim();
+    const canonical = typeof window.WS_APP.getMarketShipments === "function"
+      ? window.WS_APP.getMarketShipments().filter((shipment) => String(shipment?.citizenId || "").trim() === citizenId)
+      : [];
+    const legacy = Array.isArray(citizen.shipments) ? citizen.shipments.filter(Boolean) : [];
+    const merged = new Map();
+    [...canonical, ...legacy].forEach((shipment, index) => {
+      const normalized = normalizeShipment(shipment, index);
+      merged.set(normalized.id, normalized);
+    });
+    return [...merged.values()];
   }
 
   function normalizeMarketOrder(order = {}, index = 0) {
     const source = order && typeof order === "object" && !Array.isArray(order) ? order : {};
     return {
       ...source,
-      id: String(source.id || `order-${index + 1}`).trim(),
+      id: String(source.id || source.marketOrderId || `order-${index + 1}`).trim(),
       type: String(source.type || "ITEM_PURCHASE").trim().toUpperCase(),
       catalogId: String(source.catalogId || source.itemCatalogId || source.itemId || "").trim(),
       itemName: String(source.itemName || source.name || "Market item").trim(),
@@ -557,7 +408,7 @@ window.WS_APP = window.WS_APP || {};
       currency: String(source.currency || "CREDITS").trim().toUpperCase(),
       status: normalizeShipmentStatus(source.status || "IN_TRANSIT"),
       placedAtIso: isIsoDate(source.placedAtIso) ? source.placedAtIso : getCampaignDateIso(),
-      etaIso: isIsoDate(source.etaIso) ? source.etaIso : addDaysIso(getCampaignDateIso(), HOUSING_MARKET_DEFAULT_SHIPPING_DAYS),
+      etaIso: isIsoDate(source.etaIso) ? source.etaIso : addDaysIso(getCampaignDateIso(), HOUSING_DELIVERY_DEFAULT_DAYS),
       deliveredAtIso: isIsoDate(source.deliveredAtIso) ? source.deliveredAtIso : "",
       shipmentId: String(source.shipmentId || "").trim(),
       targetHousingId: String(source.targetHousingId || source.destinationHousingId || "").trim(),
@@ -575,7 +426,7 @@ window.WS_APP = window.WS_APP || {};
     const source = shipment && typeof shipment === "object" && !Array.isArray(shipment) ? shipment : {};
     return {
       ...source,
-      id: String(source.id || `ship-${index + 1}`).trim(),
+      id: String(source.id || source.shipmentId || `ship-${index + 1}`).trim(),
       orderId: String(source.orderId || "").trim(),
       sourceInstitutionId: String(source.sourceInstitutionId || source.vendorId || "inst-habitat-market-local").trim(),
       organizationLocationId: String(source.organizationLocationId || source.sourceLocationId || "").trim(),
@@ -587,7 +438,7 @@ window.WS_APP = window.WS_APP || {};
       deliveryType: String(source.deliveryType || "STANDARD").trim().toUpperCase(),
       status: normalizeShipmentStatus(source.status || "IN_TRANSIT"),
       placedAtIso: isIsoDate(source.placedAtIso) ? source.placedAtIso : getCampaignDateIso(),
-      etaIso: isIsoDate(source.etaIso) ? source.etaIso : addDaysIso(getCampaignDateIso(), HOUSING_MARKET_DEFAULT_SHIPPING_DAYS),
+      etaIso: isIsoDate(source.etaIso) ? source.etaIso : addDaysIso(getCampaignDateIso(), HOUSING_DELIVERY_DEFAULT_DAYS),
       deliveredAtIso: isIsoDate(source.deliveredAtIso) ? source.deliveredAtIso : "",
       heldAtIso: isIsoDate(source.heldAtIso) ? source.heldAtIso : "",
       routeClass: String(source.routeClass || "STANDARD_LOCAL").trim().toUpperCase(),
@@ -677,8 +528,7 @@ window.WS_APP = window.WS_APP || {};
   function renderHousingTabs(citizen = {}, records = []) {
     const active = getHousingActiveTab(citizen.id);
     const storageSlots = records.reduce((sum, record) => sum + record.storageUnits.reduce((unitSum, unit) => unitSum + unit.slotCapacity, 0), 0);
-    const marketItems = housingMarketRuntime?.getHousingMarketCatalogItems?.() || [];
-    const activeShipments = getCitizenShipments(citizen).filter((shipment) => !["DELIVERED", "FAILED", "CANCELLED"].includes(shipment.status));
+    const activeShipments = getCitizenShipments(citizen).filter((shipment) => !isHousingShipmentClosed(shipment, {}));
     return `
       <div class="housing-module-tabs system-segment-tabs" role="tablist" aria-label="Housing Sections">
         <button class="housing-module-tab system-segment-tile system-segment-tile--card ${active === "UNIT" ? "is-active" : ""}" type="button" role="tab" aria-selected="${active === "UNIT" ? "true" : "false"}" data-housing-tab="UNIT">
@@ -699,10 +549,10 @@ window.WS_APP = window.WS_APP || {};
             <small class="system-segment-tile__description">STORAGE / ${escapeHtml(storageSlots)} SLOTS</small>
           </span>
         </button>
-        <button class="housing-module-tab system-segment-tile system-segment-tile--card ${active === "MARKET" ? "is-active" : ""}" type="button" role="tab" aria-selected="${active === "MARKET" ? "true" : "false"}" data-housing-tab="MARKET">
+        <button class="housing-module-tab system-segment-tile system-segment-tile--card ${active === "DELIVERIES" ? "is-active" : ""}" type="button" role="tab" aria-selected="${active === "DELIVERIES" ? "true" : "false"}" data-housing-tab="DELIVERIES">
           <span class="system-segment-tile__body">
-            <b class="system-segment-tile__title">MARKET</b>
-            <small class="system-segment-tile__description">MARKET / SHIPPING / ${escapeHtml(activeShipments.length)} ACTIVE / ${housingMarketRuntime ? `${escapeHtml(marketItems.length)} ITEMS` : "LAZY WORKSPACE"}</small>
+            <b class="system-segment-tile__title">DELIVERIES</b>
+            <small class="system-segment-tile__description">INBOUND / ${escapeHtml(activeShipments.length)} ACTIVE / MARKET BRIDGE</small>
           </span>
         </button>
       </div>
@@ -749,6 +599,7 @@ window.WS_APP = window.WS_APP || {};
     const result = String(shipment.deliveryResult || order.deliveryResult || "").trim().toUpperCase();
     const deliveredItemId = shipment.deliveredItemId || order.deliveredItemId || "";
     const canOpenStorage = Boolean(context.record?.id);
+    const marketOrderId = String(order.marketOrderId || order.id || shipment.orderId || "").trim();
     return `
       <article class="housing-shipment-row is-${escapeHtml(statusClass)}">
         <div class="housing-shipment-row-main">
@@ -761,7 +612,8 @@ window.WS_APP = window.WS_APP || {};
         </div>
         <div class="housing-shipment-actions">
           ${canOpenStorage ? `<button class="housing-inline-action" type="button" data-housing-record-id="${escapeHtml(context.record.id)}">OPEN STORAGE</button>` : ""}
-          ${isHeld ? `<button class="housing-inline-action" type="button" data-housing-retry-shipment="${escapeHtml(shipment.id)}">RETRY</button>` : `<span class="module-status-badge">${escapeHtml(formatCredits(order.price || 0))}</span>`}
+          ${marketOrderId ? `<button class="housing-inline-action" type="button" data-housing-open-market-order="${escapeHtml(marketOrderId)}">OPEN MARKET ORDER</button>` : ""}
+          <span class="module-status-badge">${escapeHtml(formatCredits(order.price || 0))}</span>
         </div>
       </article>
     `;
@@ -786,6 +638,60 @@ window.WS_APP = window.WS_APP || {};
           ${tracked.map((shipment) => renderHousingShipmentRow(orderByShipmentId.get(shipment.id) || {}, shipment, citizen)).join("")}
         </div>
       </section>
+    `;
+  }
+
+  function renderHousingDeliveriesTab(citizen = {}) {
+    const records = getCitizenHousingRecords(citizen);
+    const activeRecord = getHousingActiveRecord(citizen, records);
+    const shipments = getCitizenShipments(citizen);
+    const orders = getCitizenMarketOrders(citizen);
+    const orderByShipmentId = new Map(orders.map((order) => [order.shipmentId, order]));
+    const active = shipments.filter((shipment) => !isHousingShipmentClosed(shipment, orderByShipmentId.get(shipment.id) || {}));
+    const history = shipments.filter((shipment) => isHousingShipmentClosed(shipment, orderByShipmentId.get(shipment.id) || {}));
+    const held = active.filter((shipment) => getHousingShipmentState(shipment, orderByShipmentId.get(shipment.id) || {}) === "HELD");
+    return `
+      <div class="housing-deliveries-tab">
+        ${renderHousingFeedback(citizen.id)}
+        <section class="housing-module-panel">
+          <header class="housing-module-panel-head">
+            <div>
+              <p class="kicker">HOUSING / DELIVERIES</p>
+              <h5>${escapeHtml(activeRecord?.title || "No Active Unit")}</h5>
+              <small>Read-only logistics projection. Shopping, checkout and order recovery remain in the global Market module.</small>
+            </div>
+            <button class="housing-inline-action" type="button" data-housing-open-market>OPEN MARKET</button>
+          </header>
+          <div class="housing-summary-unit housing-shipment-summary">
+            ${renderHousingMetric("ACTIVE", active.length)}
+            ${renderHousingMetric("HELD", held.length)}
+            ${renderHousingMetric("HISTORY", history.length)}
+            ${renderHousingMetric("TARGET", activeRecord?.visibleAddress || "UNASSIGNED")}
+          </div>
+        </section>
+        <section class="housing-module-panel housing-shipment-panel">
+          <header class="housing-module-panel-head">
+            <div><p class="kicker">INBOUND QUEUE</p><h5>Active and held shipments</h5></div>
+            <span class="module-status-badge">${escapeHtml(active.length)} ACTIVE</span>
+          </header>
+          <div class="housing-shipment-list">
+            ${active.length
+              ? active.map((shipment) => renderHousingShipmentRow(orderByShipmentId.get(shipment.id) || {}, shipment, citizen)).join("")
+              : '<p class="housing-storage-note">No active deliveries for this citizen.</p>'}
+          </div>
+        </section>
+        <section class="housing-module-panel housing-shipment-panel">
+          <header class="housing-module-panel-head">
+            <div><p class="kicker">DELIVERY HISTORY</p><h5>Recent completed or closed shipments</h5></div>
+            <span class="module-status-badge">${escapeHtml(history.length)} RECORDS</span>
+          </header>
+          <div class="housing-shipment-list is-compact">
+            ${history.length
+              ? history.slice().reverse().slice(0, 12).map((shipment) => renderHousingShipmentRow(orderByShipmentId.get(shipment.id) || {}, shipment, citizen)).join("")
+              : '<p class="housing-storage-note">No delivery history.</p>'}
+          </div>
+        </section>
+      </div>
     `;
   }
 
@@ -835,16 +741,15 @@ window.WS_APP = window.WS_APP || {};
             ? renderHousingHouseholdTab(citizen)
             : activeTab === "STORAGE"
               ? renderHousingStorageTab(citizen)
-              : activeTab === "MARKET"
-                ? renderHousingMarketWorkspace(citizen, user)
+              : activeTab === "DELIVERIES"
+                ? renderHousingDeliveriesTab(citizen)
                 : renderHousingUnitTab(citizen)}
         </div>
       </section>
     `;
 
-    window.WS_APP.bindModuleBackButton?.(user, () => handleHousingModuleBack(user, citizen.id));
+    window.WS_APP.bindModuleBackButton?.(user, () => handleHousingModuleBack(user));
     bindHousingModuleActions(user);
-    housingMarketRuntime?.syncHousingMarketModalState?.(document.querySelector("[data-housing-module]"), citizen.id, { focus: true });
   }
 
   function bindHousingModuleActions(user = window.WS_APP.currentUser) {
@@ -857,7 +762,6 @@ window.WS_APP = window.WS_APP || {};
     root.addEventListener("pointerleave", (event) => handleHousingHouseholdPointerLeave(event, { root, citizenId, user }));
 
     root.querySelector("[data-housing-target-citizen]")?.addEventListener("change", (event) => {
-      resetHousingMarketTransientState(root, citizenId);
       window.WS_APP.housingTargetCitizenId = String(event.target.value || "").trim();
       renderHousingModule(user);
     });
@@ -891,7 +795,6 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
       if (handleHousingHouseholdChange(event, { root, citizenId, user })) return;
-      delegateHousingMarketEvent("handleHousingMarketChange", event, { root, citizenId, user });
     });
 
     root.addEventListener("input", (event) => {
@@ -909,11 +812,6 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
       if (handleHousingHouseholdInput(event, { root, citizenId, user })) return;
-      delegateHousingMarketEvent("handleHousingMarketInput", event, { root, citizenId, user });
-    });
-
-    root.addEventListener("keydown", (event) => {
-      delegateHousingMarketEvent("handleHousingMarketKeydown", event, { root, citizenId, user });
     });
 
     root.addEventListener("click", (event) => {
@@ -924,7 +822,6 @@ window.WS_APP = window.WS_APP || {};
       const tabButton = event.target.closest?.("[data-housing-tab]");
       if (tabButton) {
         const nextTab = String(tabButton.getAttribute("data-housing-tab") || "UNIT").toUpperCase();
-        if (nextTab !== "MARKET") resetHousingMarketTransientState(root, citizenId);
         setHousingActiveTab(citizenId, nextTab);
         setHousingFeedback(citizenId, "");
         renderHousingModule(user);
@@ -932,6 +829,27 @@ window.WS_APP = window.WS_APP || {};
       }
 
       if (handleHousingHouseholdClick(event, { root, citizenId, user })) return;
+
+      const openMarketOrderButton = event.target.closest?.("[data-housing-open-market-order]");
+      if (openMarketOrderButton) {
+        const marketOrderId = String(openMarketOrderButton.getAttribute("data-housing-open-market-order") || "").trim();
+        window.WS_APP.openModule?.("market", user, {
+          citizenId,
+          routeId: "MARKET_ORDER",
+          entityRef: marketOrderId ? { type: "MARKET_ORDER", id: marketOrderId } : null,
+          params: marketOrderId ? { marketOrderId } : {}
+        });
+        return;
+      }
+
+      const openMarketButton = event.target.closest?.("[data-housing-open-market]");
+      if (openMarketButton) {
+        window.WS_APP.openModule?.("market", user, {
+          citizenId,
+          params: { department: "HOUSEHOLD", deliveryHousingId: getHousingActiveRecordId(citizenId, getCitizenHousingRecords(window.WS_APP.getCitizenById?.(citizenId) || {})) }
+        });
+        return;
+      }
 
       const unitSelectButton = event.target.closest?.("[data-housing-select-unit]");
       if (unitSelectButton) {
@@ -1021,8 +939,6 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
 
-      if (delegateHousingMarketEvent("handleHousingMarketClick", event, { root, citizenId, user })) return;
-
       const storeButton = event.target.closest?.("[data-housing-store-item]");
       if (storeButton) {
         storeEquipmentItemInHousing(
@@ -1083,24 +999,18 @@ window.WS_APP = window.WS_APP || {};
     if (!event?.detail?.citizenId || event.detail.citizenId === citizenId) renderHousingModule(window.WS_APP.currentUser);
   });
 
-  window.addEventListener("ws:campaign-date-updated", () => {
-    void ensureHousingMarketRuntime(window.WS_APP.currentUser).then((runtime) => {
-      runtime.processDueHousingMarketShipments({ nowIso: getCampaignDateIso() });
-      if (document.querySelector("[data-housing-module]")) renderHousingModule(window.WS_APP.currentUser);
-    }).catch((error) => console.error("Housing shipment scheduler could not load Market runtime.", error));
-  });
+  const refreshHousingDeliveryProjection = (event) => {
+    const root = document.querySelector("[data-housing-module]");
+    if (!root) return;
+    const citizenId = String(root.getAttribute("data-housing-citizen-id") || "").trim();
+    if (!event?.detail?.citizenId || event.detail.citizenId === citizenId) renderHousingModule(window.WS_APP.currentUser);
+  };
 
-  window.WS_APP.ensureHousingMarketRuntime = ensureHousingMarketRuntime;
-  window.WS_APP.processDueHousingMarketShipments = (...args) => (
-    housingMarketRuntime
-      ? housingMarketRuntime.processDueHousingMarketShipments(...args)
-      : ensureHousingMarketRuntime(window.WS_APP.currentUser).then((runtime) => runtime.processDueHousingMarketShipments(...args))
-  );
-  window.WS_APP.processDueHousingMarketShipmentsForCitizen = (...args) => (
-    housingMarketRuntime
-      ? housingMarketRuntime.processDueHousingMarketShipmentsForCitizen(...args)
-      : ensureHousingMarketRuntime(window.WS_APP.currentUser).then((runtime) => runtime.processDueHousingMarketShipmentsForCitizen(...args))
-  );
+  window.addEventListener("ws:campaign-date-updated", refreshHousingDeliveryProjection);
+  window.addEventListener("ws:market-shipment-updated", refreshHousingDeliveryProjection);
+  window.addEventListener("ws:market-shipment-in-transit", refreshHousingDeliveryProjection);
+  window.addEventListener("ws:market-shipment-delivered", refreshHousingDeliveryProjection);
+
   window.WS_APP.renderHousingModule = renderHousingModule;
   window.WS_APP.getHousingModuleMetric = getHousingModuleMetric;
 })();

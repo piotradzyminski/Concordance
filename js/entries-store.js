@@ -3,7 +3,7 @@ window.WS_APP = window.WS_APP || {};
 (function initEntriesStoreModule() {
   const STORAGE_KEY = "ws_app_entries_v1";
   const STORAGE_SCHEMA_KEY = "ws_app_entries_schema";
-  const STORAGE_SCHEMA_VERSION = "future-noir.knowledge.encyclopedia.v2";
+  const STORAGE_SCHEMA_VERSION = "future-noir.knowledge.encyclopedia.v3";
   let entryStore = [];
   let storageNeedsMigration = false;
 
@@ -80,6 +80,8 @@ window.WS_APP = window.WS_APP || {};
       ? window.WS_APP.normalizeKnowledgeRelationRefs(relatedTerms, "encyclopedia")
       : relatedTerms;
     normalized.related = normalized.relatedTerms;
+    delete normalized.relatedRules;
+    delete normalized.relatedEntries;
     normalized.shortDefinition = String(normalized.shortDefinition || normalized.summary || "").trim();
     normalized.body = String(normalized.body || normalized.publicText || "").trim();
     normalized.summary = normalized.shortDefinition;

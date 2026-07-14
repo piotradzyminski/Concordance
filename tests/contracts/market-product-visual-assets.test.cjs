@@ -53,13 +53,12 @@ test("Equipment Catalog normalization preserves one canonical visualProfile", ()
 });
 
 test("Market cards and Product Inspector resolve local visuals with department fallbacks", () => {
-  const source = `${read("js/housing.js")}
-${read("js/housing-market-runtime.js")}`;
+  const source = `${read("js/market.js")}\n${read("js/housing-market-runtime.js")}`;
   const resolver = getFunctionBlock(source, "getHousingMarketProductVisual", "renderHousingMarketInspectorRows");
   const inspector = getFunctionBlock(source, "renderHousingMarketProductInspectorContent", "renderHousingMarketProductInspectorLayer");
   const card = getFunctionBlock(source, "renderHousingMarketProductCard", "getHousingMarketPagination");
 
-  assert.match(source, /const HOUSING_MARKET_PRODUCT_VISUAL_FALLBACKS = Object\.freeze/);
+  assert.match(source, /const MARKET_PRODUCT_VISUAL_FALLBACKS = Object\.freeze/);
   ["equipment", "cyberware", "medical", "food", "household", "product"].forEach((asset) => {
     assert.match(source, new RegExp(`assets/market/fallback/${asset}\\.svg`));
     assert.ok(fs.existsSync(path.join(ROOT, `assets/market/fallback/${asset}.svg`)));

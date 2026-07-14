@@ -11,7 +11,7 @@ index.html
   Notification event/templates/resolver/policy/API/Market producer: v5 / v2 / v2 / v2 / v3 / v1
   Market offers/store: v4 / v12
   ItemInstance Store: v15
-  shared bundle map: js/modules.js?v=295
+  shared bundle map: js/modules.js?v=297
   player Subscriptions scripts: lazy-only, not eager
 
 js/modules.js
@@ -19,8 +19,8 @@ js/modules.js
   Terminal Inbox: css v4 / runtime v10
   Subscriptions: css v21, runtime/profile v34, workspace v6, action feedback v1
   Equipment: css v127, store v34, actions v55, items v30, containers v39, Cyberware link v19, shell v117, Cyberware Index v1
-  Housing: css v31, Storage runtime v3, Household runtime v1, shell v48
-  Housing Market workspace: Market offers/store v4/v12, runtime v3
+  Housing: css v32, Storage runtime v3, Household runtime v1, shell v49
+  Global Market: Market offers/store v4/v12, runtime v4, module v1
   Admin Subscriptions: css v3 / controller v4
 ```
 
@@ -42,6 +42,7 @@ js/modules.js
 | functional item type registry and schemas | `data/item-type-catalog.js`, `js/item-type-registry.js`, `docs/contracts/equipment/item_type_contract.md` |
 | Equipment/Cyberware catalog identity, consumable package metadata and canonical product visualProfile | `js/equipment-catalog-store.js`, `data/equipment-catalog.js`, `data/body-cyberware-catalog.js`, `assets/market/products/**` |
 | Campaign snapshot and Billing transfer adapter | `js/campaign-data-io-registry.js`, `js/campaign-data-io-adapters.js`, `js/campaign-data-io-v6.js` |
+| Campaign Time timestamp/revision and date compatibility | `js/main.js`, `js/world-time-service-scheduler.js`, `docs/contracts/core/campaign_time_datetime_contract.md` |
 | Organizations and transfer account identity | `js/organization-store.js`, `data/organizations.js`, `data/organization-locations.js` |
 | Notifications, content projection, operation-card policy and Market producer | `js/notification-registry.js`, `data/notification-event-catalog.js`, `data/notification-content-templates.js`, `js/notification-content-resolver.js`, `js/notification-projection-policy.js`, `js/market-notification-producer.js`, `js/notification-api.js` |
 
@@ -58,6 +59,7 @@ js/modules.js
 | audit persistence | `js/admin-audit-store.js` |
 | admin shell/runtime, renderer registry and Billing transfer workspace | `js/admin/admin-shell.js`, `js/admin/admin-workspace-registry.js`, `js/admin/admin-workspace-loader.js`, `js/admin-control.js`, `js/admin/workspaces/admin-workspace-*.js` |
 | Admin Subscriptions index/profile/actions | `js/admin-subscriptions-control.js`, `css/admin-subscriptions.css` |
+| Admin reusable catalog management and Equipment definition authoring | `js/admin-catalog-management.js`, `js/admin-equipment-catalog-authoring.js`, `js/admin/workspaces/admin-workspace-catalog-management.js` |
 
 ## Services, Subscriptions and commerce
 
@@ -73,7 +75,7 @@ js/modules.js
 | offer generation, shared weekly eligibility context and requirements | `js/service-offer-generator.js`, `js/service-requirements.js`, `js/subscription-entitlement.js` |
 | Market offers, carts, checkout, pickup, refunds and selected-instance partial returns | `js/market-store.js`, `data/market-offers.js`, `docs/contracts/commerce/market_partial_return_refund_contract.md` |
 | Housing Unit/Storage runtime | `js/housing-storage-runtime.js`, `js/housing-grid-engine-adapter.js`, public Housing/Equipment APIs |
-| Housing Market storefront, cart navigation, product visuals, fulfillment and returns | `js/housing-market-runtime.js`, `js/market-store.js`, `css/housing.css`, `data/equipment-catalog.js`, `js/equipment-catalog-store.js`, `assets/market/fallback/**`, `docs/contracts/commerce/market_cart_navigation_contract.md` |
+| Global Market storefront, cart navigation, product visuals, fulfillment and returns | `js/market.js`, `js/housing-market-runtime.js`, `js/market-store.js`, `css/housing.css`, `data/equipment-catalog.js`, `js/equipment-catalog-store.js`, `assets/market/fallback/**` |
 | Household furnishing projection and placement workspace | `js/household-store.js`, `js/housing-household-runtime.js`, `docs/contracts/commerce/housing_household_furnishing_workspace_contract.md` |
 | Housing persistence and grid placement | `js/housing-bridge-store.js`, `js/housing-grid-engine-adapter.js` |
 | world time | `js/world-time-service-scheduler.js` |
@@ -139,7 +141,6 @@ tests/e2e/citizen-creator-editor.spec.cjs
 tests/e2e/equipment-bodymap-fast-path.spec.cjs
 tests/contracts/notification-projection-policy.test.cjs
 tests/contracts/housing-storage-runtime-split.test.cjs
-tests/contracts/item-type-effect-resolution.test.cjs
 tests/contracts/admin-record-lifecycle-contract.test.cjs
 tests/unit/admin-record-lifecycle.test.cjs
 tests/e2e/module-cold-entry.spec.cjs
@@ -213,4 +214,26 @@ tests/contracts/housing-household-furnishing-workspace.test.cjs
 tests/contracts/market-cart-navigation-semantics.test.cjs
 tests/contracts/market-notification-producer.test.cjs
 tests/contracts/subscriptions-responsive-accessibility.test.cjs
+```
+
+## Runtime 15.12x additions
+
+| Responsibility | Canonical files |
+|---|---|
+| Housing / Market domain decoupling | `data/modules.js`, `js/market.js`, `js/housing.js`, `js/housing-market-runtime.js`, `docs/contracts/commerce/housing_market_decoupling_contract.md` |
+| Equipment catalog authoring | `js/admin-equipment-catalog-authoring.js`, `js/admin-catalog-management.js`, `js/admin/workspaces/admin-workspace-catalog-management.js`, `js/equipment-catalog-store.js` |
+| Campaign datetime foundation | `js/main.js`, `js/world-time-service-scheduler.js`, `js/campaign-data-io-adapters.js`, `js/campaign-data-io-v6.js` |
+| Knowledge relation isolation without content replacement | `js/knowledge-relations.js`, `js/knowledge-pack-store.js`, `js/entries-store.js`, `js/system-store.js`, `js/system-registry.js`, `css/knowledge-sections.css` |
+
+Tests added or extended in 15.12x:
+
+```text
+tests/contracts/housing-market-decoupling.test.cjs
+tests/contracts/admin-catalog-management.test.cjs
+tests/contracts/admin-equipment-catalog-authoring.test.cjs
+tests/unit/admin-equipment-catalog-authoring.test.cjs
+tests/contracts/knowledge-relation-tabs.test.cjs
+tests/unit/knowledge-relations.test.cjs
+tests/unit/campaign-time.test.cjs
+tests/unit/world-time-scheduler.test.cjs
 ```

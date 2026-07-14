@@ -66,9 +66,9 @@ test("Admin bundle map loads dashboard with the shell and every other renderer t
   for (const workspaceId of WORKSPACES.filter((id) => id !== "dashboard")) {
     assert.match(modules, new RegExp(`"admin-workspace-${workspaceId}":\\s*\\{[\\s\\S]*admin-workspace-${workspaceId}\\.js\\?v=1`));
   }
-  assert.match(modules, /admin-workspace-registry\.js\?v=4/);
+  assert.match(modules, /admin-workspace-registry\.js\?v=5/);
   assert.match(modules, /admin-workspace-loader\.js\?v=2/);
-  assert.match(modules, /admin-control\.js\?v=65/);
+  assert.match(modules, /admin-control\.js\?v=66/);
 
-  assert.match(index, /js\/modules\.js\?v=295/);
+  assert.match(index, /js\/modules\.js\?v=297/);
 });

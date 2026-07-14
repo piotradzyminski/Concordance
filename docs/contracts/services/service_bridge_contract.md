@@ -911,7 +911,7 @@ SERVICE_BILLING_CAPTURE_RECONCILIATION_REQUIRED
 
 The caller must reconcile from the stored Billing transaction reference and must not retry physical mutation.
 
-## World Time Service Completion Scheduler 1.1x integration
+## World Time Service Completion Scheduler 1.2x integration
 
 `js/world-time-service-scheduler.js` remains an external lifecycle consumer of the Service Bridge. It does not become a second Service store.
 

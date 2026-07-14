@@ -4,9 +4,9 @@ window.WS_APP = window.WS_APP || {};
   const app = window.WS_APP;
   const STORAGE_KEY = "ws_world_time_service_scheduler_v1";
   const STORAGE_SCHEMA_KEY = "ws_world_time_service_scheduler_schema";
-  const STORAGE_SCHEMA_VERSION = "world_time_service_completion_scheduler_1_1x";
-  const LEGACY_STORAGE_SCHEMA_VERSIONS = new Set(["world_time_service_scheduler_1_0x"]);
-  const STORE_SCHEMA_VERSION = 2;
+  const STORAGE_SCHEMA_VERSION = "world_time_service_completion_scheduler_1_2x";
+  const LEGACY_STORAGE_SCHEMA_VERSIONS = new Set(["world_time_service_completion_scheduler_1_1x", "world_time_service_scheduler_1_0x"]);
+  const STORE_SCHEMA_VERSION = 3;
   const RECEIPT_LIMIT = 512;
   const SOURCE = "WORLD_TIME_SERVICE_SCHEDULER";
   const START_BLOCKED_REASONS = new Set([
@@ -33,7 +33,7 @@ window.WS_APP = window.WS_APP || {};
   let receiptsByKey = new Map();
   let completionHandlers = new Map();
   let schedulerRevision = 0;
-  let lastProcessedCampaignDateIso = "";
+  let lastProcessedCampaignTimeIso = "";
   let lastSummary = null;
   let persistenceTimer = 0;
   let startProcessing = false;
@@ -73,36 +73,49 @@ window.WS_APP = window.WS_APP || {};
     return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === iso;
   }
 
-  function toWorldDateIso(value = "") {
+  function toWorldTimeIso(value = "") {
     const raw = normalizeId(value);
-    if (isIsoDate(raw)) return raw;
-    const prefix = raw.slice(0, 10);
-    if (isIsoDate(prefix)) return prefix;
+    if (!raw) return "";
+    if (isIsoDate(raw)) return `${raw}T00:00:00.000Z`;
     const parsed = Date.parse(raw);
-    return Number.isFinite(parsed) ? new Date(parsed).toISOString().slice(0, 10) : "";
+    return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
   }
 
-  function getCampaignDateIso() {
-    const value = app.getCampaignDateIso?.() || app.CAMPAIGN_DATE_ISO || "";
-    return toWorldDateIso(value);
+  function toWorldDateIso(value = "") {
+    const timeIso = toWorldTimeIso(value);
+    return timeIso ? timeIso.slice(0, 10) : "";
   }
 
-  function makeReceiptKey(order = {}, campaignDateIso = "", phase = "START") {
+  function getCampaignTimeIso() {
+    const value = app.getCampaignTimeIso?.()
+      || app.CAMPAIGN_TIME_ISO
+      || app.getCampaignDateIso?.()
+      || app.CAMPAIGN_DATE_ISO
+      || "";
+    return toWorldTimeIso(value);
+  }
+
+  function resolveCampaignTimeIso(options = {}) {
+    return toWorldTimeIso(options.campaignTimeIso || options.campaignDateIso) || getCampaignTimeIso();
+  }
+
+  function makeReceiptKey(order = {}, campaignTimeIso = "", phase = "START") {
     const normalizedPhase = normalizeToken(phase, "START");
     const dueAt = normalizedPhase === "COMPLETE"
-      ? toWorldDateIso(order.estimatedEndAt)
-      : toWorldDateIso(order.scheduledStartAt);
+      ? toWorldTimeIso(order.estimatedEndAt)
+      : toWorldTimeIso(order.scheduledStartAt);
     return [
       normalizedPhase,
       normalizeId(order.serviceOrderId),
       Number(order.revision || 0),
       dueAt,
-      toWorldDateIso(campaignDateIso)
+      toWorldDateIso(campaignTimeIso)
     ].join("|");
   }
 
   function normalizeReceipt(source = {}) {
     const phase = normalizeToken(source.phase || (source.estimatedEndAt ? "COMPLETE" : "START"), "START");
+    const campaignTimeIso = toWorldTimeIso(source.campaignTimeIso || source.campaignDateIso);
     const normalized = {
       key: normalizeId(source.key),
       phase,
@@ -114,9 +127,10 @@ window.WS_APP = window.WS_APP || {};
       serviceType: normalizeToken(source.serviceType),
       domain: normalizeToken(source.domain),
       subjectInstanceIds: uniqueStrings(source.subjectInstanceIds),
-      scheduledStartAt: toWorldDateIso(source.scheduledStartAt),
-      estimatedEndAt: toWorldDateIso(source.estimatedEndAt),
-      campaignDateIso: toWorldDateIso(source.campaignDateIso),
+      scheduledStartAt: toWorldTimeIso(source.scheduledStartAt),
+      estimatedEndAt: toWorldTimeIso(source.estimatedEndAt),
+      campaignTimeIso,
+      campaignDateIso: toWorldDateIso(campaignTimeIso),
       status: normalizeToken(source.status, "SKIPPED"),
       reason: normalizeToken(source.reason, "SCHEDULER_RESULT_RECORDED"),
       handlerId: normalizeToken(source.handlerId),
@@ -131,7 +145,7 @@ window.WS_APP = window.WS_APP || {};
         scheduledStartAt: normalized.scheduledStartAt,
         estimatedEndAt: normalized.estimatedEndAt
       };
-      normalized.key = makeReceiptKey(pseudoOrder, normalized.campaignDateIso, normalized.phase);
+      normalized.key = makeReceiptKey(pseudoOrder, normalized.campaignTimeIso, normalized.phase);
     }
     return normalized;
   }
@@ -144,9 +158,9 @@ window.WS_APP = window.WS_APP || {};
     }
   }
 
-  function recordReceipt(order = {}, campaignDateIso = "", phase = "START", status = "SKIPPED", reason = "", detail = {}) {
+  function recordReceipt(order = {}, campaignTimeIso = "", phase = "START", status = "SKIPPED", reason = "", detail = {}) {
     const definition = detail.serviceDefinition || app.getServiceDefinition?.(order.serviceDefinitionId) || null;
-    const key = makeReceiptKey(order, campaignDateIso, phase);
+    const key = makeReceiptKey(order, campaignTimeIso, phase);
     const receipt = normalizeReceipt({
       key,
       phase,
@@ -160,7 +174,8 @@ window.WS_APP = window.WS_APP || {};
       subjectInstanceIds: Array.isArray(order.subjectRefs?.instanceIds) ? order.subjectRefs.instanceIds : [],
       scheduledStartAt: order.scheduledStartAt,
       estimatedEndAt: order.estimatedEndAt,
-      campaignDateIso,
+      campaignTimeIso,
+      campaignDateIso: toWorldDateIso(campaignTimeIso),
       status,
       reason,
       handlerId: detail.handlerId,
@@ -180,7 +195,8 @@ window.WS_APP = window.WS_APP || {};
       schemaVersion: STORE_SCHEMA_VERSION,
       schedulerSchemaVersion: STORAGE_SCHEMA_VERSION,
       revision: schedulerRevision,
-      lastProcessedCampaignDateIso,
+      lastProcessedCampaignTimeIso,
+      lastProcessedCampaignDateIso: toWorldDateIso(lastProcessedCampaignTimeIso),
       lastSummary: clone(lastSummary),
       receipts: Array.from(receiptsByKey.values()).slice(-RECEIPT_LIMIT).map(clone)
     };
@@ -194,7 +210,7 @@ window.WS_APP = window.WS_APP || {};
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== "object") return null;
-      if (![1, STORE_SCHEMA_VERSION].includes(Number(parsed.schemaVersion))) return null;
+      if (![1, 2, STORE_SCHEMA_VERSION].includes(Number(parsed.schemaVersion))) return null;
       return parsed;
     } catch (error) {
       console.warn("W&S world-time service scheduler could not read localStorage.", error);
@@ -211,7 +227,7 @@ window.WS_APP = window.WS_APP || {};
       .slice(-RECEIPT_LIMIT)
       .forEach((receipt) => receiptsByKey.set(receipt.key, receipt));
     schedulerRevision = Math.max(0, Number(source?.revision || 0));
-    lastProcessedCampaignDateIso = toWorldDateIso(source?.lastProcessedCampaignDateIso);
+    lastProcessedCampaignTimeIso = toWorldTimeIso(source?.lastProcessedCampaignTimeIso || source?.lastProcessedCampaignDateIso);
     lastSummary = source?.lastSummary && typeof source.lastSummary === "object" ? clone(source.lastSummary) : null;
     trimReceipts();
     if (options.persist !== false) flushWorldTimeServiceSchedulerPersistence();
@@ -255,7 +271,7 @@ window.WS_APP = window.WS_APP || {};
       serviceDefinitionId: filters.serviceDefinitionId
     })
       .filter((order) => !selectedIds.size || selectedIds.has(normalizeId(order.serviceOrderId)))
-      .sort((left, right) => String(toWorldDateIso(left?.[dateField])).localeCompare(String(toWorldDateIso(right?.[dateField])))
+      .sort((left, right) => String(toWorldTimeIso(left?.[dateField])).localeCompare(String(toWorldTimeIso(right?.[dateField])))
         || String(left.serviceOrderId).localeCompare(String(right.serviceOrderId)));
   }
 
@@ -280,22 +296,22 @@ window.WS_APP = window.WS_APP || {};
     return "FAILED";
   }
 
-  function startDueOrder(order = {}, campaignDateIso = "", options = {}) {
-    const scheduledStartAt = toWorldDateIso(order.scheduledStartAt);
-    const receiptKey = makeReceiptKey(order, campaignDateIso, "START");
+  function startDueOrder(order = {}, campaignTimeIso = "", options = {}) {
+    const scheduledStartAt = toWorldTimeIso(order.scheduledStartAt);
+    const receiptKey = makeReceiptKey(order, campaignTimeIso, "START");
     const existing = receiptsByKey.get(receiptKey) || null;
     if (existing && options.force !== true) {
       return { ok: true, status: "SKIPPED", reason: "SCHEDULER_RECEIPT_REPLAY", order, receipt: clone(existing) };
     }
     if (!scheduledStartAt) {
-      const receipt = recordReceipt(order, campaignDateIso, "START", "BLOCKED", "SCHEDULED_START_INVALID");
+      const receipt = recordReceipt(order, campaignTimeIso, "START", "BLOCKED", "SCHEDULED_START_INVALID");
       return { ok: false, status: "BLOCKED", reason: "SCHEDULED_START_INVALID", order, receipt };
     }
-    if (scheduledStartAt > campaignDateIso) {
+    if (scheduledStartAt > campaignTimeIso) {
       return { ok: true, status: "NOT_DUE", reason: "SERVICE_ORDER_NOT_DUE", order, receipt: null };
     }
     if (typeof app.startServiceOrder !== "function") {
-      const receipt = recordReceipt(order, campaignDateIso, "START", "FAILED", "SERVICE_START_API_UNAVAILABLE");
+      const receipt = recordReceipt(order, campaignTimeIso, "START", "FAILED", "SERVICE_START_API_UNAVAILABLE");
       return { ok: false, status: "FAILED", reason: "SERVICE_START_API_UNAVAILABLE", order, receipt };
     }
 
@@ -303,18 +319,19 @@ window.WS_APP = window.WS_APP || {};
     const result = app.startServiceOrder(order.serviceOrderId, {
       idempotencyKey,
       expectedRevision: Number(order.revision || 0),
-      startedAt: campaignDateIso,
+      startedAt: campaignTimeIso,
       source: SOURCE,
       metadata: {
         schedulerSchemaVersion: STORAGE_SCHEMA_VERSION,
-        schedulerCampaignDateIso: campaignDateIso,
+        schedulerCampaignTimeIso: campaignTimeIso,
+        schedulerCampaignDateIso: toWorldDateIso(campaignTimeIso),
         schedulerReceiptKey: receiptKey
       }
     }) || { ok: false, reason: "SERVICE_START_RESULT_MISSING", order };
 
     const status = result.ok ? "STARTED" : classifyStartFailure(result.reason);
     const resolvedOrder = result.order || order;
-    const receipt = recordReceipt(order, campaignDateIso, "START", status, result.reason || `SERVICE_ORDER_${status}`, {
+    const receipt = recordReceipt(order, campaignTimeIso, "START", status, result.reason || `SERVICE_ORDER_${status}`, {
       resultingOrderRevision: resolvedOrder.revision
     });
     return {
@@ -347,7 +364,7 @@ window.WS_APP = window.WS_APP || {};
       options: normalizeCompletionHandlerOptions(options)
     });
     deferCompletionRun({
-      campaignDateIso: getCampaignDateIso(),
+      campaignTimeIso: getCampaignTimeIso(),
       source: "COMPLETION_HANDLER_REGISTERED",
       forceBlocked: true,
       handlerIds: [normalizedId]
@@ -394,26 +411,26 @@ window.WS_APP = window.WS_APP || {};
     }));
   }
 
-  async function requestDueCompletion(order = {}, campaignDateIso = "", options = {}) {
-    const estimatedEndAt = toWorldDateIso(order.estimatedEndAt);
-    const receiptKey = makeReceiptKey(order, campaignDateIso, "COMPLETE");
+  async function requestDueCompletion(order = {}, campaignTimeIso = "", options = {}) {
+    const estimatedEndAt = toWorldTimeIso(order.estimatedEndAt);
+    const receiptKey = makeReceiptKey(order, campaignTimeIso, "COMPLETE");
     const existing = receiptsByKey.get(receiptKey) || null;
     const replayableBlocked = options.forceBlocked === true && existing && ["BLOCKED", "FAILED", "PENDING"].includes(existing.status);
     if (existing && options.force !== true && !replayableBlocked) {
       return { ok: true, status: "SKIPPED", reason: "SCHEDULER_RECEIPT_REPLAY", order, receipt: clone(existing) };
     }
     if (!estimatedEndAt) {
-      const receipt = recordReceipt(order, campaignDateIso, "COMPLETE", "BLOCKED", "SERVICE_ESTIMATED_END_REQUIRED");
+      const receipt = recordReceipt(order, campaignTimeIso, "COMPLETE", "BLOCKED", "SERVICE_ESTIMATED_END_REQUIRED");
       return { ok: false, status: "BLOCKED", reason: "SERVICE_ESTIMATED_END_REQUIRED", order, receipt };
     }
-    if (estimatedEndAt > campaignDateIso) {
+    if (estimatedEndAt > campaignTimeIso) {
       return { ok: true, status: "NOT_DUE", reason: "SERVICE_COMPLETION_NOT_DUE", order, receipt: null };
     }
 
     const definition = app.getServiceDefinition?.(order.serviceDefinitionId) || {};
     const handlerEntry = resolveCompletionHandler(order, definition, options);
     if (!handlerEntry) {
-      const receipt = recordReceipt(order, campaignDateIso, "COMPLETE", "BLOCKED", "SERVICE_COMPLETION_HANDLER_REQUIRED", {
+      const receipt = recordReceipt(order, campaignTimeIso, "COMPLETE", "BLOCKED", "SERVICE_COMPLETION_HANDLER_REQUIRED", {
         serviceDefinition: definition
       });
       return { ok: false, status: "BLOCKED", reason: "SERVICE_COMPLETION_HANDLER_REQUIRED", order, receipt };
@@ -426,7 +443,8 @@ window.WS_APP = window.WS_APP || {};
       source: SOURCE,
       handlerId: handlerEntry.handlerId,
       schedulerSchemaVersion: STORAGE_SCHEMA_VERSION,
-      schedulerCampaignDateIso: campaignDateIso,
+      schedulerCampaignTimeIso: campaignTimeIso,
+      schedulerCampaignDateIso: toWorldDateIso(campaignTimeIso),
       schedulerReceiptKey: receiptKey,
       expectedRevision: Number(order.revision || 0),
       serviceOrderId: normalizeId(order.serviceOrderId),
@@ -446,7 +464,7 @@ window.WS_APP = window.WS_APP || {};
     try {
       handlerResult = await handlerEntry.handler(clone(request));
     } catch (error) {
-      const receipt = recordReceipt(order, campaignDateIso, "COMPLETE", "FAILED", "SERVICE_COMPLETION_HANDLER_EXCEPTION", {
+      const receipt = recordReceipt(order, campaignTimeIso, "COMPLETE", "FAILED", "SERVICE_COMPLETION_HANDLER_EXCEPTION", {
         serviceDefinition: definition,
         handlerId: handlerEntry.handlerId,
         requestId
@@ -462,7 +480,7 @@ window.WS_APP = window.WS_APP || {};
     }
 
     if (!handlerResult || typeof handlerResult !== "object") {
-      const receipt = recordReceipt(order, campaignDateIso, "COMPLETE", "BLOCKED", "SERVICE_COMPLETION_HANDLER_RESULT_REQUIRED", {
+      const receipt = recordReceipt(order, campaignTimeIso, "COMPLETE", "BLOCKED", "SERVICE_COMPLETION_HANDLER_RESULT_REQUIRED", {
         serviceDefinition: definition,
         handlerId: handlerEntry.handlerId,
         requestId
@@ -478,7 +496,7 @@ window.WS_APP = window.WS_APP || {};
       && (handlerResult.serviceResult || handlerResult.result)
     ) {
       if (typeof app.completeServiceOrder !== "function") {
-        const receipt = recordReceipt(order, campaignDateIso, "COMPLETE", "FAILED", "SERVICE_COMPLETE_API_UNAVAILABLE", {
+        const receipt = recordReceipt(order, campaignTimeIso, "COMPLETE", "FAILED", "SERVICE_COMPLETE_API_UNAVAILABLE", {
           serviceDefinition: definition,
           handlerId: handlerEntry.handlerId,
           requestId
@@ -489,12 +507,13 @@ window.WS_APP = window.WS_APP || {};
         ...(handlerResult.completionOptions || {}),
         idempotencyKey: `world-time-service-complete:${normalizeId(order.serviceOrderId)}:${estimatedEndAt}`,
         expectedRevision: Number(resolvedOrder.revision || order.revision || 0),
-        completedAt: normalizeId(handlerResult.completedAt) || campaignDateIso,
+        completedAt: normalizeId(handlerResult.completedAt) || campaignTimeIso,
         source: SOURCE,
         metadata: {
           ...(handlerResult.completionOptions?.metadata || {}),
           schedulerSchemaVersion: STORAGE_SCHEMA_VERSION,
-          schedulerCampaignDateIso: campaignDateIso,
+          schedulerCampaignTimeIso: campaignTimeIso,
+          schedulerCampaignDateIso: toWorldDateIso(campaignTimeIso),
           schedulerReceiptKey: receiptKey,
           schedulerCompletionHandlerId: handlerEntry.handlerId,
           schedulerCompletionRequestId: requestId
@@ -502,7 +521,7 @@ window.WS_APP = window.WS_APP || {};
       }) || { ok: false, reason: "SERVICE_COMPLETE_RESULT_MISSING", order: resolvedOrder };
       if (!completeResult.ok) {
         const status = classifyCompletionFailure(completeResult.reason, completeResult.status);
-        const receipt = recordReceipt(order, campaignDateIso, "COMPLETE", status, completeResult.reason, {
+        const receipt = recordReceipt(order, campaignTimeIso, "COMPLETE", status, completeResult.reason, {
           serviceDefinition: definition,
           handlerId: handlerEntry.handlerId,
           requestId,
@@ -547,7 +566,7 @@ window.WS_APP = window.WS_APP || {};
       status = classifyCompletionFailure(handlerResult.reason, handlerResult.status);
     }
 
-    const receipt = recordReceipt(order, campaignDateIso, "COMPLETE", status, reason, {
+    const receipt = recordReceipt(order, campaignTimeIso, "COMPLETE", status, reason, {
       serviceDefinition: definition,
       handlerId: handlerEntry.handlerId,
       requestId,
@@ -564,12 +583,13 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
-  function makeStartSummary(campaignDateIso = "", source = "MANUAL") {
+  function makeStartSummary(campaignTimeIso = "", source = "MANUAL") {
     return {
       ok: true,
       phase: "START",
       schedulerVersion: STORAGE_SCHEMA_VERSION,
-      campaignDateIso,
+      campaignTimeIso,
+      campaignDateIso: toWorldDateIso(campaignTimeIso),
       source: normalizeToken(source, "MANUAL"),
       due: 0,
       started: 0,
@@ -583,12 +603,13 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
-  function makeCompletionSummary(campaignDateIso = "", source = "MANUAL") {
+  function makeCompletionSummary(campaignTimeIso = "", source = "MANUAL") {
     return {
       ok: true,
       phase: "COMPLETE",
       schedulerVersion: STORAGE_SCHEMA_VERSION,
-      campaignDateIso,
+      campaignTimeIso,
+      campaignDateIso: toWorldDateIso(campaignTimeIso),
       source: normalizeToken(source, "MANUAL"),
       due: 0,
       completed: 0,
@@ -622,23 +643,24 @@ window.WS_APP = window.WS_APP || {};
       return {
         ok: false,
         reason: "WORLD_TIME_SERVICE_START_SCHEDULER_BUSY",
-        campaignDateIso: toWorldDateIso(options.campaignDateIso) || getCampaignDateIso()
+        campaignTimeIso: resolveCampaignTimeIso(options),
+        campaignDateIso: toWorldDateIso(resolveCampaignTimeIso(options))
       };
     }
-    const campaignDateIso = toWorldDateIso(options.campaignDateIso) || getCampaignDateIso();
-    if (!campaignDateIso) return { ok: false, reason: "CAMPAIGN_DATE_INVALID", campaignDateIso: "" };
+    const campaignTimeIso = resolveCampaignTimeIso(options);
+    if (!campaignTimeIso) return { ok: false, reason: "CAMPAIGN_TIME_INVALID", campaignTimeIso: "", campaignDateIso: "" };
     if (typeof app.getServiceOrders !== "function") {
-      return { ok: false, reason: "SERVICE_ORDER_READ_API_UNAVAILABLE", campaignDateIso };
+      return { ok: false, reason: "SERVICE_ORDER_READ_API_UNAVAILABLE", campaignTimeIso, campaignDateIso: toWorldDateIso(campaignTimeIso) };
     }
 
     startProcessing = true;
     try {
-      const summary = makeStartSummary(campaignDateIso, options.source || "MANUAL");
+      const summary = makeStartSummary(campaignTimeIso, options.source || "MANUAL");
       const scheduledOrders = listScheduledOrders(options);
       for (const order of scheduledOrders) {
-        const scheduledStartAt = toWorldDateIso(order.scheduledStartAt);
-        if (scheduledStartAt && scheduledStartAt <= campaignDateIso) summary.due += 1;
-        const result = startDueOrder(order, campaignDateIso, options);
+        const scheduledStartAt = toWorldTimeIso(order.scheduledStartAt);
+        if (scheduledStartAt && scheduledStartAt <= campaignTimeIso) summary.due += 1;
+        const result = startDueOrder(order, campaignTimeIso, options);
         if (result.status === "STARTED") summary.started += 1;
         else if (result.status === "BLOCKED") summary.blocked += 1;
         else if (result.status === "FAILED") summary.failed += 1;
@@ -656,7 +678,7 @@ window.WS_APP = window.WS_APP || {};
           reason: result.reason
         });
       }
-      lastProcessedCampaignDateIso = campaignDateIso;
+      lastProcessedCampaignTimeIso = campaignTimeIso;
       schedulerRevision += 1;
       summary.schedulerRevision = schedulerRevision;
       lastSummary = clone(summary);
@@ -673,23 +695,24 @@ window.WS_APP = window.WS_APP || {};
       return {
         ok: false,
         reason: "WORLD_TIME_SERVICE_COMPLETION_SCHEDULER_BUSY",
-        campaignDateIso: toWorldDateIso(options.campaignDateIso) || getCampaignDateIso()
+        campaignTimeIso: resolveCampaignTimeIso(options),
+        campaignDateIso: toWorldDateIso(resolveCampaignTimeIso(options))
       };
     }
-    const campaignDateIso = toWorldDateIso(options.campaignDateIso) || getCampaignDateIso();
-    if (!campaignDateIso) return { ok: false, reason: "CAMPAIGN_DATE_INVALID", campaignDateIso: "" };
+    const campaignTimeIso = resolveCampaignTimeIso(options);
+    if (!campaignTimeIso) return { ok: false, reason: "CAMPAIGN_TIME_INVALID", campaignTimeIso: "", campaignDateIso: "" };
     if (typeof app.getServiceOrders !== "function") {
-      return { ok: false, reason: "SERVICE_ORDER_READ_API_UNAVAILABLE", campaignDateIso };
+      return { ok: false, reason: "SERVICE_ORDER_READ_API_UNAVAILABLE", campaignTimeIso, campaignDateIso: toWorldDateIso(campaignTimeIso) };
     }
 
     completionProcessing = true;
     try {
-      const summary = makeCompletionSummary(campaignDateIso, options.source || "MANUAL");
+      const summary = makeCompletionSummary(campaignTimeIso, options.source || "MANUAL");
       const inProgressOrders = listInProgressOrders(options);
       for (const order of inProgressOrders) {
-        const estimatedEndAt = toWorldDateIso(order.estimatedEndAt);
-        if (estimatedEndAt && estimatedEndAt <= campaignDateIso) summary.due += 1;
-        const result = await requestDueCompletion(order, campaignDateIso, options);
+        const estimatedEndAt = toWorldTimeIso(order.estimatedEndAt);
+        if (estimatedEndAt && estimatedEndAt <= campaignTimeIso) summary.due += 1;
+        const result = await requestDueCompletion(order, campaignTimeIso, options);
         if (result.status === "COMPLETED") summary.completed += 1;
         else if (result.status === "TERMINAL_FAILED") summary.terminalFailed += 1;
         else if (result.status === "TERMINAL_CANCELLED") summary.terminalCancelled += 1;
@@ -711,7 +734,7 @@ window.WS_APP = window.WS_APP || {};
           reason: result.reason
         });
       }
-      lastProcessedCampaignDateIso = campaignDateIso;
+      lastProcessedCampaignTimeIso = campaignTimeIso;
       schedulerRevision += 1;
       summary.schedulerRevision = schedulerRevision;
       lastSummary = clone(summary);
@@ -728,7 +751,8 @@ window.WS_APP = window.WS_APP || {};
       return {
         ok: false,
         reason: "WORLD_TIME_SERVICE_LIFECYCLE_BUSY",
-        campaignDateIso: toWorldDateIso(options.campaignDateIso) || getCampaignDateIso()
+        campaignTimeIso: resolveCampaignTimeIso(options),
+        campaignDateIso: toWorldDateIso(resolveCampaignTimeIso(options))
       };
     }
     lifecycleProcessing = true;
@@ -738,7 +762,8 @@ window.WS_APP = window.WS_APP || {};
       const summary = {
         ok: starts?.ok !== false && completions?.ok !== false,
         schedulerVersion: STORAGE_SCHEMA_VERSION,
-        campaignDateIso: completions?.campaignDateIso || starts?.campaignDateIso || toWorldDateIso(options.campaignDateIso) || getCampaignDateIso(),
+        campaignTimeIso: completions?.campaignTimeIso || starts?.campaignTimeIso || resolveCampaignTimeIso(options),
+        campaignDateIso: completions?.campaignDateIso || starts?.campaignDateIso || toWorldDateIso(resolveCampaignTimeIso(options)),
         source: normalizeToken(options.source, "MANUAL"),
         starts: clone(starts),
         completions: clone(completions),
@@ -790,7 +815,8 @@ window.WS_APP = window.WS_APP || {};
     const result = replaceState(source, { persist: options.persist !== false });
     if (options.reconcile === true) {
       deferSchedulerRun({
-        campaignDateIso: toWorldDateIso(options.campaignDateIso) || getCampaignDateIso(),
+        campaignTimeIso: resolveCampaignTimeIso(options),
+        campaignDateIso: toWorldDateIso(resolveCampaignTimeIso(options)),
         source: "SCHEDULER_IMPORT_RECONCILIATION"
       });
     }
@@ -827,12 +853,14 @@ window.WS_APP = window.WS_APP || {};
       serviceOrderReadApi: typeof app.getServiceOrders === "function",
       serviceOrderStartApi: typeof app.startServiceOrder === "function",
       serviceOrderCompleteApi: typeof app.completeServiceOrder === "function",
+      campaignTimeApi: typeof app.getCampaignTimeIso === "function" || Boolean(app.CAMPAIGN_TIME_ISO),
       campaignDateApi: typeof app.getCampaignDateIso === "function" || Boolean(app.CAMPAIGN_DATE_ISO),
       startProcessing,
       completionProcessing,
       lifecycleProcessing,
       schedulerRevision,
-      lastProcessedCampaignDateIso,
+      lastProcessedCampaignTimeIso,
+      lastProcessedCampaignDateIso: toWorldDateIso(lastProcessedCampaignTimeIso),
       receiptCount: receipts.length,
       receiptCountsByStatus: counts.byStatus,
       receiptCountsByPhase: counts.byPhase,
@@ -845,7 +873,7 @@ window.WS_APP = window.WS_APP || {};
   function resetWorldTimeServiceSchedulerRuntime(options = {}) {
     receiptsByKey = new Map();
     schedulerRevision += 1;
-    lastProcessedCampaignDateIso = "";
+    lastProcessedCampaignTimeIso = "";
     lastSummary = null;
     if (options.persist !== false) flushWorldTimeServiceSchedulerPersistence();
     return getWorldTimeServiceSchedulerDiagnostics();
@@ -867,10 +895,18 @@ window.WS_APP = window.WS_APP || {};
     }, 0);
   }
 
-  function handleCampaignDateUpdated(event) {
+  function handleCampaignTimeUpdated(event) {
     deferSchedulerRun({
-      campaignDateIso: event?.detail?.iso || event?.detail?.campaignDateIso,
-      source: "CAMPAIGN_DATE_UPDATED"
+      campaignTimeIso: event?.detail?.currentTimeIso || event?.detail?.campaignTimeIso || event?.detail?.timeIso,
+      source: "CAMPAIGN_TIME_UPDATED"
+    });
+  }
+
+  function handleCampaignDateUpdated(event) {
+    if (event?.detail?.campaignTimeEventDispatched === true) return;
+    deferSchedulerRun({
+      campaignTimeIso: event?.detail?.campaignTimeIso || event?.detail?.timeIso || event?.detail?.iso || event?.detail?.campaignDateIso,
+      source: "CAMPAIGN_DATE_UPDATED_COMPAT"
     });
   }
 
@@ -879,7 +915,7 @@ window.WS_APP = window.WS_APP || {};
     const status = normalizeToken(detail.status);
     if (status === "SCHEDULED") {
       deferSchedulerRun({
-        campaignDateIso: getCampaignDateIso(),
+        campaignTimeIso: getCampaignTimeIso(),
         serviceOrderIds: [detail.serviceOrderId],
         source: "SERVICE_ORDER_SCHEDULED"
       });
@@ -887,7 +923,7 @@ window.WS_APP = window.WS_APP || {};
     }
     if (status === "IN_PROGRESS") {
       deferCompletionRun({
-        campaignDateIso: getCampaignDateIso(),
+        campaignTimeIso: getCampaignTimeIso(),
         serviceOrderIds: [detail.serviceOrderId],
         source: "SERVICE_ORDER_IN_PROGRESS"
       });
@@ -896,6 +932,7 @@ window.WS_APP = window.WS_APP || {};
 
   function installListeners() {
     if (app.__worldTimeServiceSchedulerInstalled === true) return false;
+    window.addEventListener?.("ws:campaign-time-updated", handleCampaignTimeUpdated);
     window.addEventListener?.("ws:campaign-date-updated", handleCampaignDateUpdated);
     window.addEventListener?.("ws:service-order-updated", handleServiceOrderEvent);
     window.addEventListener?.("ws:service-order-created", handleServiceOrderEvent);

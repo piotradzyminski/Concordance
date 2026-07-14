@@ -1,4 +1,4 @@
-# World Time Service Completion Scheduler Contract 1.1x
+# World Time Service Completion Scheduler Contract 1.2x
 
 ## Canonical owner
 
@@ -6,7 +6,7 @@
 js/world-time-service-scheduler.js
 ```
 
-The scheduler connects day-precision Campaign Time to the canonical `ServiceOrder` lifecycle.
+The scheduler connects timestamp-precision Campaign Time to the canonical `ServiceOrder` lifecycle.
 
 Owned automatic transitions and requests:
 
@@ -26,13 +26,21 @@ The scheduler is not a Service store, Billing owner, ItemInstance owner, World B
 
 ## Time precision
 
-Current Campaign Time is compared at UTC calendar-date precision:
+Current Campaign Time is compared as a normalized UTC timestamp:
 
 ```text
-YYYY-MM-DD
+YYYY-MM-DDTHH:mm:ss.sssZ
 ```
 
-Sources:
+Primary sources:
+
+```text
+WS_APP.getCampaignTimeIso()
+WS_APP.CAMPAIGN_TIME_ISO
+ws:campaign-time-updated
+```
+
+Compatibility sources:
 
 ```text
 WS_APP.getCampaignDateIso()
@@ -40,7 +48,7 @@ WS_APP.CAMPAIGN_DATE_ISO
 ws:campaign-date-updated
 ```
 
-`scheduledStartAt` and `estimatedEndAt` may contain full ISO timestamps. Scheduler due checks normalize them to the first valid UTC date.
+A date-only value is interpreted as `00:00:00.000Z`. Full `scheduledStartAt` and `estimatedEndAt` timestamps retain their hour and minute precision. The compatibility date event is ignored when the same mutation already emitted `ws:campaign-time-updated`.
 
 ## Indexed reads
 
@@ -62,7 +70,7 @@ Due condition:
 ```text
 order.status === SCHEDULED
 scheduledStartAt is valid
-scheduledStartAt <= campaignDateIso
+scheduledStartAt <= campaignTimeIso
 ```
 
 Command:
@@ -71,10 +79,11 @@ Command:
 startServiceOrder(serviceOrderId, {
   idempotencyKey: `world-time-service-start:${serviceOrderId}:${scheduledStartAt}`,
   expectedRevision: order.revision,
-  startedAt: campaignDateIso,
+  startedAt: campaignTimeIso,
   source: "WORLD_TIME_SERVICE_SCHEDULER",
   metadata: {
     schedulerSchemaVersion,
+    schedulerCampaignTimeIso,
     schedulerCampaignDateIso,
     schedulerReceiptKey
   }
@@ -90,7 +99,7 @@ Due condition:
 ```text
 order.status === IN_PROGRESS
 estimatedEndAt is valid
-estimatedEndAt <= campaignDateIso
+estimatedEndAt <= campaignTimeIso
 ```
 
 An invalid or missing `estimatedEndAt` does not complete the order. It creates:
@@ -158,6 +167,7 @@ Handler input:
   source: "WORLD_TIME_SERVICE_SCHEDULER",
   handlerId,
   schedulerSchemaVersion,
+  schedulerCampaignTimeIso,
   schedulerCampaignDateIso,
   schedulerReceiptKey,
   expectedRevision,
@@ -340,16 +350,17 @@ ws_world_time_service_scheduler_schema
 Schema marker:
 
 ```text
-world_time_service_completion_scheduler_1_1x
+world_time_service_completion_scheduler_1_2x
 ```
 
 Store schema:
 
 ```js
 {
-  schemaVersion: 2,
+  schemaVersion: 3,
   schedulerSchemaVersion,
   revision,
+  lastProcessedCampaignTimeIso,
   lastProcessedCampaignDateIso,
   lastSummary,
   receipts: []
@@ -363,7 +374,7 @@ START
 COMPLETE
 ```
 
-Receipt retention is bounded to 512 records. Legacy 1.0x receipts are migrated in memory to `phase: START`; the existing storage key is reused.
+Receipt retention is bounded to 512 records. Legacy 1.0x and 1.1x receipts are migrated in memory; date-only receipt fields become midnight timestamps and the existing storage key is reused.
 
 Individual writes are deferred. A scheduler batch flushes once at its boundary.
 
@@ -395,7 +406,8 @@ The shared Campaign Data I/O patch may consume these adapters. This patch does n
 
 ```text
 DOMContentLoaded / startup reconciliation
-ws:campaign-date-updated
+ws:campaign-time-updated
+ws:campaign-date-updated compatibility fallback
 ws:service-order-created
 ws:service-order-updated
 ws:service-order-started

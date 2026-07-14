@@ -23,10 +23,16 @@ window.WS_APP = window.WS_APP || {};
 
   registerStorage({
     domainId: "campaign-clock",
-    schemaVersion: "1",
+    schemaVersion: "2",
     classification: C.CAMPAIGN_PERSISTENT,
     required: true,
-    storageKeys: [text("ws_app_campaign_date_iso_v1"), text("ws_app_next_settlement_period_iso_v1")]
+    storageKeys: [
+      text("ws_app_campaign_time_iso_v1"),
+      text("ws_app_campaign_time_revision_v1"),
+      json("ws_app_campaign_time_receipts_v1"),
+      text("ws_app_campaign_date_iso_v1"),
+      text("ws_app_next_settlement_period_iso_v1")
+    ]
   });
 
   registerStorage({
@@ -165,7 +171,7 @@ window.WS_APP = window.WS_APP || {};
 
   registerStorage({
     domainId: "world-time-scheduler",
-    schemaVersion: "world_time_service_completion_scheduler_1_1x",
+    schemaVersion: "world_time_service_completion_scheduler_1_2x",
     classification: C.CAMPAIGN_PERSISTENT,
     required: true,
     storageKeys: [

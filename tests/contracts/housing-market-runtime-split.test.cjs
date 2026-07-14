@@ -9,7 +9,7 @@ const vm = require("node:vm");
 const ROOT = path.resolve(__dirname, "../..");
 const read = (relativePath) => fs.readFileSync(path.join(ROOT, relativePath), "utf8");
 
-test("Housing Market runtime is a factory-owned workspace with deterministic local UI state", () => {
+test("Market runtime remains a factory-owned workspace with deterministic local UI state", () => {
   const source = read("js/housing-market-runtime.js");
   const context = {
     window: { WS_APP: {} },
@@ -68,7 +68,8 @@ test("Housing Market runtime is a factory-owned workspace with deterministic loc
     renderHousingModule: noop,
     renderHousingShipmentRow: () => "",
     setHousingActiveTab: noop,
-    setHousingFeedback: noop
+    setHousingFeedback: noop,
+    rootSelector: "[data-market-module]"
   });
 
   const filters = runtime.normalizeHousingMarketFilters({ type: "ALL", category: "MEDICAL", sort: "INVALID", page: 9 });
@@ -85,14 +86,26 @@ test("Housing Market runtime is a factory-owned workspace with deterministic loc
   assert.equal(typeof runtime.renderHousingMarketTab, "function");
   assert.equal(typeof runtime.handleHousingMarketClick, "function");
   assert.equal(runtime.renderHousingStorageTab, undefined);
+  assert.match(source, /rootSelector = "\[data-housing-module\]"/);
+  assert.match(source, /document\.querySelector\(rootSelector\)/);
 });
 
-test("Housing shell delegates Market rendering and actions without owning Market implementation", () => {
-  const shell = read("js/housing.js");
-  assert.match(shell, /loadModuleBundle\?\.\("housing-market-workspace"/);
-  assert.match(shell, /renderHousingMarketWorkspace/);
-  assert.match(shell, /delegateHousingMarketEvent/);
-  assert.doesNotMatch(shell, /function renderHousingMarketTab\(/);
-  assert.doesNotMatch(shell, /function addHousingMarketOfferToCart\(/);
-  assert.doesNotMatch(shell, /function renderCanonicalMarketOrderDetails\(/);
+test("Global Market shell owns storefront rendering and Housing owns only delivery projection", () => {
+  const market = read("js/market.js");
+  const housing = read("js/housing.js");
+
+  assert.match(market, /function renderMarketModule\(/);
+  assert.match(market, /createHousingMarketRuntime/);
+  assert.match(market, /runtime\.renderHousingMarketTab\(citizen\)/);
+  assert.match(market, /marketRuntime\.handleHousingMarketClick\?\./);
+  assert.match(market, /data-market-module/);
+
+  assert.match(housing, /function renderHousingDeliveriesTab\(/);
+  assert.match(housing, /data-housing-open-market/);
+  assert.match(housing, /"UNIT", "HOUSEHOLD", "STORAGE", "DELIVERIES"/);
+  assert.doesNotMatch(housing, /housing-market-workspace/);
+  assert.doesNotMatch(housing, /renderHousingMarketWorkspace/);
+  assert.doesNotMatch(housing, /delegateHousingMarketEvent/);
+  assert.doesNotMatch(housing, /function renderHousingMarketTab\(/);
+  assert.doesNotMatch(housing, /function addHousingMarketOfferToCart\(/);
 });

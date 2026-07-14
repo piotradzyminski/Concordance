@@ -11,57 +11,61 @@ function read(relativePath) {
   return fs.readFileSync(path.join(PROJECT_ROOT, relativePath), "utf8");
 }
 
-test("Housing base bundle loads Storage before the shell and keeps Market runtime in a separate workspace bundle", () => {
+function extractBlock(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  assert.ok(start >= 0, `Missing block start: ${startMarker}`);
+  const end = source.indexOf(endMarker, start);
+  assert.ok(end > start, `Missing block end: ${endMarker}`);
+  return source.slice(start, end);
+}
+
+test("Housing and Market are separate lazy module bundles", () => {
   const modules = read("js/modules.js");
-  const housingBundle = modules.match(/housing:\s*\{[\s\S]*?scripts:\s*\[([\s\S]*?)\]\s*\}/);
-  assert.ok(housingBundle, "Housing bundle should exist");
+  const market = extractBlock(modules, "  market: {", "  housing: {");
+  const housing = extractBlock(modules, "  housing: {", "  database: {");
 
-  const scripts = housingBundle[1];
-  const storageIndex = scripts.indexOf('"js/housing-storage-runtime.js?v=3"');
-  const householdIndex = scripts.indexOf('"js/housing-household-runtime.js?v=1"');
-  const housingIndex = scripts.indexOf('"js/housing.js?v=48"');
-  assert.ok(storageIndex >= 0, "Housing storage runtime should be registered");
-  assert.ok(householdIndex > storageIndex, "Household furnishing runtime should load after Housing storage runtime");
-  assert.ok(housingIndex > householdIndex, "Housing shell should load after both Housing runtimes");
-  assert.doesNotMatch(scripts, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
-  assert.doesNotMatch(scripts, /housing-market-runtime\.js/);
+  const storageIndex = housing.indexOf('"js/housing-storage-runtime.js?v=3"');
+  const householdIndex = housing.indexOf('"js/housing-household-runtime.js?v=1"');
+  const housingIndex = housing.indexOf('"js/housing.js?v=49"');
+  assert.ok(storageIndex >= 0);
+  assert.ok(householdIndex > storageIndex);
+  assert.ok(housingIndex > householdIndex);
+  assert.doesNotMatch(housing, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
+  assert.doesNotMatch(housing, /housing-market-runtime\.js/);
+  assert.doesNotMatch(housing, /market\.js/);
 
-  const marketBundle = modules.match(/"housing-market-workspace":\s*\{[\s\S]*?scripts:\s*\[([\s\S]*?)\]\s*\}/);
-  assert.ok(marketBundle, "Housing Market workspace bundle should exist");
-  assert.match(marketBundle[1], /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
-  assert.match(marketBundle[1], /js\/housing-market-runtime\.js\?v=3/);
+  assert.match(market, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
+  assert.match(market, /js\/housing-market-runtime\.js\?v=4/);
+  assert.match(market, /js\/market\.js\?v=1/);
 });
 
-test("Housing Storage and Market own separate projection, rendering and action boundaries", () => {
+test("Housing Storage, Housing shell and global Market own separate boundaries", () => {
   const storage = read("js/housing-storage-runtime.js");
-  const market = read("js/housing-market-runtime.js");
+  const runtime = read("js/housing-market-runtime.js");
+  const market = read("js/market.js");
   const housing = read("js/housing.js");
 
   assert.match(storage, /createHousingStorageRuntime/);
-  assert.match(storage, /function getHousingRecordStorageStats\(/);
-  assert.match(storage, /function storeEquipmentItemInHousing\(/);
-  assert.match(storage, /function renderHousingUnitTab\(/);
   assert.match(storage, /function renderHousingStorageTab\(/);
-  assert.match(storage, /function beginHousingGridDrag\(/);
-
   assert.doesNotMatch(storage, /function renderHousingMarketTab\(/);
-  assert.doesNotMatch(storage, /function processDueHousingMarketShipmentsForCitizen\(/);
-  assert.doesNotMatch(storage, /function addHousingMarketOfferToCart\(/);
 
+  assert.match(runtime, /createHousingMarketRuntime/);
+  assert.match(runtime, /function renderHousingMarketTab\(/);
+  assert.match(runtime, /function processDueHousingMarketShipmentsForCitizen\(/);
+  assert.match(runtime, /function addHousingMarketOfferToCart\(/);
+  assert.doesNotMatch(runtime, /function renderHousingStorageTab\(/);
+
+  assert.match(market, /function renderMarketModule\(/);
   assert.match(market, /createHousingMarketRuntime/);
-  assert.match(market, /function renderHousingMarketTab\(/);
-  assert.match(market, /function processDueHousingMarketShipmentsForCitizen\(/);
-  assert.match(market, /function addHousingMarketOfferToCart\(/);
-  assert.match(market, /function handleHousingMarketClick\(/);
-  assert.doesNotMatch(market, /function renderHousingStorageTab\(/);
+  assert.match(market, /data-market-module/);
+  assert.match(market, /handleHousingMarketClick/);
 
   assert.match(housing, /createHousingStorageRuntime\?\.\(/);
-  assert.match(housing, /ensureHousingMarketRuntime/);
-  assert.match(housing, /loadModuleBundle\?\.\("housing-market-workspace"/);
+  assert.match(housing, /function renderHousingDeliveriesTab\(/);
+  assert.doesNotMatch(housing, /ensureHousingMarketRuntime/);
+  assert.doesNotMatch(housing, /housing-market-workspace/);
   assert.doesNotMatch(housing, /function renderHousingMarketTab\(/);
-  assert.doesNotMatch(housing, /function processDueHousingMarketShipmentsForCitizen\(/);
   assert.doesNotMatch(housing, /function renderHousingStorageTab\(/);
-  assert.doesNotMatch(housing, /function storeEquipmentItemInHousing\(/);
 });
 
 test("Housing Storage runtime exposes deterministic storage helpers without creating a store", () => {

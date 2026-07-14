@@ -162,7 +162,7 @@ test("standalone Market order creates one player-facing card with resolved conte
   assert.equal(entries[0].eventCode, "MARKET.ORDER.COMPLETED");
   assert.equal(entries[0].dedupeKey, "market-order:market-order-1");
   assert.equal(entries[0].links[0].routeId, "MARKET_ORDER");
-  assert.equal(entries[0].links[0].module, "housing");
+  assert.equal(entries[0].links[0].module, "market");
   assert.equal(entries[0].links[0].entityRef.type, "MARKET_ORDER");
 
   const visible = visibleText(entries[0]);
@@ -258,7 +258,7 @@ test("Market event linked to World Bridge is projected to the parent operation",
   assert.equal(entries.length, 0);
 });
 
-test("Market producer exposes readiness and Housing route selects Market order", () => {
+test("Market producer exposes readiness and global Market route selects the order", () => {
   const { runtime } = makeRuntime();
   const readiness = runtime.window.WS_APP.validateMarketNotificationProducer();
   assert.equal(readiness.ready, true);
@@ -266,6 +266,6 @@ test("Market producer exposes readiness and Housing route selects Market order",
 
   const modulesSource = fs.readFileSync(path.resolve(__dirname, "../../js/modules.js"), "utf8");
   assert.match(modulesSource, /routeId === "MARKET_ORDER"/);
-  assert.match(modulesSource, /housingActiveTabByCitizen\[targetCitizenId\] = "MARKET"/);
+  assert.match(modulesSource, /housingMarketModeByCitizen\[targetCitizenId\] = "ORDERS"/);
   assert.match(modulesSource, /housingSelectedMarketOrderByCitizen\[targetCitizenId\] = marketOrderId/);
 });

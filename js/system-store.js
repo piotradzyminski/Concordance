@@ -3,7 +3,7 @@ window.WS_APP = window.WS_APP || {};
 (function initSystemStoreModule() {
   const STORAGE_KEY = "ws_app_system_records_v1";
   const STORAGE_SCHEMA_KEY = "ws_app_system_records_schema";
-  const STORAGE_SCHEMA_VERSION = "future-noir.knowledge.system-records.v2";
+  const STORAGE_SCHEMA_VERSION = "future-noir.knowledge.system-records.v3";
   const SKILLS_ABILITIES_RECORD_ID = "system-skills-abilities";
   const SUBSCRIPTION_CATALOG_RECORD_ID = "system-subscription-catalog";
   let systemStore = [];
@@ -261,7 +261,16 @@ window.WS_APP = window.WS_APP || {};
     normalized.relatedEntries = typeof window.WS_APP.normalizeKnowledgeRelationRefs === "function"
       ? window.WS_APP.normalizeKnowledgeRelationRefs(relatedEntries, "system-index")
       : relatedEntries;
-    normalized.related = normalized.relatedTerms;
+
+    if (normalized.registry === "system-index") {
+      normalized.relatedTerms = [];
+      normalized.related = [];
+      normalized.relatedRules = [];
+    } else {
+      normalized.related = normalized.relatedTerms;
+      normalized.relatedEntries = [];
+    }
+
     normalized.archived = normalized.archived === true;
     normalized.updatedAt = normalized.updatedAt || now;
     normalized.createdAt = normalized.createdAt || normalized.updatedAt;

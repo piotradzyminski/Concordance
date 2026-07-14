@@ -41,6 +41,7 @@ test("large module navigation uses the Command Line card contract", () => {
     "js/service.js",
     "js/equipment.js",
     "js/housing.js",
+    "js/market.js",
     "js/subscriptions-workspace.js",
     "js/subscriptions.js"
   ].map(read).join("\n");
@@ -51,6 +52,7 @@ test("large module navigation uses the Command Line card contract", () => {
   assert.match(read("js/service.js"), /service-tab system-segment-tile system-segment-tile--card/);
   assert.match(read("js/equipment.js"), /equipment-workspace-tab/);
   assert.match(read("js/housing.js"), /housing-module-tab system-segment-tile system-segment-tile--card/);
+  assert.match(read("js/housing-market-runtime.js"), /system-segment-tile system-segment-tile--card/);
   assert.match(read("js/subscriptions-workspace.js"), /subscription-workspace-nav__item system-segment-tile system-segment-tile--card/);
 });
 

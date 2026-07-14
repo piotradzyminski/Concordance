@@ -9,7 +9,7 @@ Compensation 14.2x installed
 Market-Service Fulfillment 4.4x installed
 World Bridge Operation Recovery 1.0x installed
 Firmware Registry 1.0x installed
-World Time Service Completion Scheduler 1.1x installed
+World Time Service Completion Scheduler 1.2x installed
 Campaign Data I/O v6 installed
 Project Test Harness 1.0x installed
 ```

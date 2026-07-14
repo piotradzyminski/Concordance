@@ -166,13 +166,23 @@ const MODULE_BUNDLES = {
       "js/equipment.js?v=117"
     ]
   },
+  market: {
+    styles: ["css/housing.css?v=32"],
+    scripts: [
+      ...CYBERWARE_MARKET_PROJECTION_SCRIPTS,
+      "data/market-offers.js?v=4",
+      "js/market-store.js?v=12",
+      "js/housing-market-runtime.js?v=4",
+      "js/market.js?v=1"
+    ]
+  },
   housing: {
-    styles: ["css/housing.css?v=31"],
+    styles: ["css/housing.css?v=32"],
     scripts: [
       "data/item-type-catalog.js?v=4",
       "data/equipment-catalog.js?v=25",
       "js/item-type-registry.js?v=2",
-      "js/equipment-catalog-store.js?v=13",
+      "js/equipment-catalog-store.js?v=14",
       "js/equipment-render-utils.js?v=1",
       "js/equipment-store.js?v=34",
       "js/equipment-inventory.js?v=20",
@@ -181,15 +191,7 @@ const MODULE_BUNDLES = {
       "js/housing-grid-engine-adapter.js?v=4",
       "js/housing-storage-runtime.js?v=3",
       "js/housing-household-runtime.js?v=1",
-      "js/housing.js?v=48"
-    ]
-  },
-  "housing-market-workspace": {
-    scripts: [
-      ...CYBERWARE_MARKET_PROJECTION_SCRIPTS,
-      "data/market-offers.js?v=4",
-      "js/market-store.js?v=12",
-      "js/housing-market-runtime.js?v=3"
+      "js/housing.js?v=49"
     ]
   },
   database: {
@@ -227,9 +229,9 @@ const MODULE_BUNDLES = {
     styles: ["css/admin-control.css?v=34"],
     scripts: [
       "js/admin/admin-shell.js?v=1",
-      "js/admin/admin-workspace-registry.js?v=4",
+      "js/admin/admin-workspace-registry.js?v=5",
       "js/admin/admin-workspace-loader.js?v=2",
-      "js/admin-control.js?v=65",
+      "js/admin-control.js?v=66",
       "js/admin/workspaces/admin-workspace-dashboard.js?v=1"
     ]
   },
@@ -239,12 +241,20 @@ const MODULE_BUNDLES = {
       "js/admin/workspaces/admin-workspace-operations.js?v=1"
     ]
   },
+  "admin-workspace-catalog-management": {
+    scripts: [
+      ...CYBERWARE_CATALOG_DATA_SCRIPTS,
+      "js/admin-equipment-catalog-authoring.js?v=1",
+      "js/admin-catalog-management.js?v=2",
+      "js/admin/workspaces/admin-workspace-catalog-management.js?v=2"
+    ]
+  },
   "admin-workspace-citizens": {
     scripts: [
       "data/item-type-catalog.js?v=4",
       "data/equipment-catalog.js?v=25",
       "js/item-type-registry.js?v=2",
-      "js/equipment-catalog-store.js?v=13",
+      "js/equipment-catalog-store.js?v=14",
       "js/equipment-render-utils.js?v=1",
       "js/equipment-store.js?v=34",
       "js/equipment-inventory.js?v=20",
@@ -645,6 +655,7 @@ function getModuleCardMetric(module = {}, user = {}) {
     if (id === "subscriptions") return getSubscriptionsModuleMetric(user);
     if (id === "service") return getServiceModuleMetric(user);
     if (id === "equipment") return getEquipmentModuleMetric(user);
+    if (id === "market") return window.WS_APP.getMarketModuleMetric?.(user) || getMarketModuleMetric(user);
     if (id === "housing") return window.WS_APP.getHousingModuleMetric?.(user) || getHousingModuleMetric(user);
     if (id === "citizen-card") return { label: "", empty: !user?.citizenId };
     if (id === "citizen-cards") {
@@ -764,6 +775,18 @@ function getEquipmentModuleMetric(user = {}) {
   const itemCount = Math.max(0, Number(summary?.itemCount) || 0);
   const equippedCount = Math.max(0, Number(summary?.equippedCount) || 0);
   return { label: `${itemCount} ITEM${itemCount === 1 ? "" : "S"} / ${equippedCount} EQUIPPED`, empty: itemCount === 0 };
+}
+
+function getMarketModuleMetric(user = {}) {
+  const citizens = getVisibleCitizensForMetrics(user);
+  let orders = 0;
+  let active = 0;
+  citizens.forEach((citizen) => {
+    const rows = window.WS_APP.getCitizenMarketOrders?.(citizen.id) || [];
+    orders += rows.length;
+    active += rows.filter((order) => !["COMPLETED", "REFUNDED", "FAILED", "CANCELLED"].includes(String(order?.status || "").toUpperCase())).length;
+  });
+  return { label: `${active} ACTIVE / ${orders} ORDER${orders === 1 ? "" : "S"}`, empty: orders === 0 };
 }
 
 function getHousingModuleMetric(user = {}) {
@@ -1024,22 +1047,48 @@ async function renderModuleDirect(moduleId, user, module = getModuleDefinition(m
       return;
     }
 
-    if (moduleId === "housing") {
+    if (moduleId === "market") {
       const targetCitizenId = String(options.citizenId || "").trim();
       const routeId = String(options.routeId || "").trim().toUpperCase();
       const entityRef = options.entityRef && typeof options.entityRef === "object" ? options.entityRef : null;
       const params = options.params && typeof options.params === "object" ? options.params : {};
-      if (targetCitizenId) window.WS_APP.housingTargetCitizenId = targetCitizenId;
+      if (targetCitizenId) window.WS_APP.marketTargetCitizenId = targetCitizenId;
+      if (targetCitizenId && params.deliveryHousingId) {
+        window.WS_APP.marketDeliveryHousingByCitizen = window.WS_APP.marketDeliveryHousingByCitizen || {};
+        window.WS_APP.marketDeliveryHousingByCitizen[targetCitizenId] = String(params.deliveryHousingId || "").trim();
+      }
+      if (targetCitizenId && params.department) {
+        window.WS_APP.housingMarketFiltersByCitizen = window.WS_APP.housingMarketFiltersByCitizen || {};
+        window.WS_APP.housingMarketFiltersByCitizen[targetCitizenId] = {
+          ...(window.WS_APP.housingMarketFiltersByCitizen[targetCitizenId] || {}),
+          type: String(params.department || "ALL").trim().toUpperCase(),
+          category: "ALL",
+          page: 1
+        };
+      }
       if (routeId === "MARKET_ORDER") {
         const marketOrderId = entityRef?.type === "MARKET_ORDER"
           ? String(entityRef.id || "").trim()
           : String(params.marketOrderId || "").trim();
         if (targetCitizenId) {
-          window.WS_APP.housingActiveTabByCitizen = window.WS_APP.housingActiveTabByCitizen || {};
-          window.WS_APP.housingActiveTabByCitizen[targetCitizenId] = "MARKET";
+          window.WS_APP.housingMarketModeByCitizen = window.WS_APP.housingMarketModeByCitizen || {};
+          window.WS_APP.housingMarketModeByCitizen[targetCitizenId] = "ORDERS";
           window.WS_APP.housingSelectedMarketOrderByCitizen = window.WS_APP.housingSelectedMarketOrderByCitizen || {};
           if (marketOrderId) window.WS_APP.housingSelectedMarketOrderByCitizen[targetCitizenId] = marketOrderId;
         }
+      }
+      if (window.WS_APP.renderMarketModule) window.WS_APP.renderMarketModule(user);
+      else renderModulePlaceholder(user, module);
+      return;
+    }
+
+    if (moduleId === "housing") {
+      const targetCitizenId = String(options.citizenId || "").trim();
+      const section = String(options.section || options.params?.housingTab || "").trim().toUpperCase();
+      if (targetCitizenId) window.WS_APP.housingTargetCitizenId = targetCitizenId;
+      if (targetCitizenId && ["UNIT", "HOUSEHOLD", "STORAGE", "DELIVERIES"].includes(section)) {
+        window.WS_APP.housingActiveTabByCitizen = window.WS_APP.housingActiveTabByCitizen || {};
+        window.WS_APP.housingActiveTabByCitizen[targetCitizenId] = section;
       }
       if (window.WS_APP.renderHousingModule) window.WS_APP.renderHousingModule(user);
       else renderModulePlaceholder(user, module);

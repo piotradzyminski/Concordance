@@ -3,19 +3,19 @@
 ## Active runtime
 
 ```text
-patch: Knowledge Content Pack Rebase 1.2x
-runtime baseline: Parallel Scope Merge 14.4x
+patch: Knowledge Relation Tabs and Registry Separation 1.1x
+runtime baseline: Parallel Scope Merge 15.12x
 campaign transport: Campaign Snapshot schema v6
-knowledge transport: future-noir.knowledge-pack v1
+knowledge transport: future-noir.knowledge-pack v3
 ```
 
-This document is the canonical content-pack contract after the rebase.
+This document is the canonical content-pack contract. Runtime schema migration does not replace current Knowledge records or establish lore canon.
 
 ## Contract
 
 ```text
 schema: future-noir.knowledge-pack
-schemaVersion: 1
+schemaVersion: 3
 ```
 
 The Knowledge Pack is a content-only transport and persistence boundary for:
@@ -50,7 +50,8 @@ users/access control
 ```json
 {
   "schema": "future-noir.knowledge-pack",
-  "schemaVersion": 1,
+  "schemaVersion": 3,
+  "relationSchema": "stable-id-v2",
   "packId": "future-noir-main",
   "packVersion": "1.0.0-local",
   "updatedAt": "2026-07-12T00:00:00.000Z",
@@ -117,13 +118,46 @@ application/cache version
 != packVersion
 ```
 
-`schemaVersion` defines payload compatibility. Runtime supports version `1`.
+`schemaVersion` defines payload compatibility. Runtime supports version `3`.
 
 `packVersion` is author-controlled content metadata. It does not gate application startup.
 
 Newer unsupported `schemaVersion` values are rejected without modifying runtime data.
 
-Version `0`/legacy payloads with recognizable `entries`, `systemRecords`, `system`, or `systemIndex` arrays are migrated in memory to version `1` before validation.
+Versions `0`–`2` and legacy payloads with recognizable `entries`, `systemRecords`, `system`, or `systemIndex` arrays are migrated in memory to version `3` before validation. During migration, forbidden cross-registry relations are removed and reported before preview.
+
+## Relation ownership and registry isolation
+
+Canonical relation schema:
+
+```text
+relationSchema: stable-id-v2
+```
+
+Allowed relation fields:
+
+```text
+Encyclopedia.relatedTerms -> Encyclopedia
+System.relatedTerms       -> Encyclopedia
+System.relatedRules       -> System
+SystemIndex.relatedEntries -> System Index
+```
+
+Forbidden relations:
+
+```text
+System Index -> Encyclopedia
+Encyclopedia -> System Index
+System -> System Index
+```
+
+The importer and runtime stores remove forbidden fields instead of preserving a hidden cross-registry edge. Legacy System Index `relatedTerms` / `related` values are discarded during migration and reported as:
+
+```text
+PACK_CROSS_REGISTRY_RELATIONS_REMOVED_<count>
+```
+
+The separation is semantic, not only visual. System Index remains an approved civic narrative with links only to other System Index records. Encyclopedia remains a player-facing glossary with links only to other glossary terms.
 
 ## Import modes
 
@@ -218,8 +252,8 @@ ws_app_system_records_v1
 Schema marker values are stable content contracts:
 
 ```text
-future-noir.knowledge.encyclopedia.v1
-future-noir.knowledge.system-records.v1
+future-noir.knowledge.encyclopedia.v3
+future-noir.knowledge.system-records.v3
 ```
 
 Store startup reads valid legacy arrays even when the previous schema marker contains an application patch identifier. The data is normalized and the marker is migrated in place. Patch version changes no longer discard valid Knowledge records.

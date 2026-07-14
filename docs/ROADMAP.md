@@ -3,7 +3,7 @@
 ## Baseline
 
 ```text
-runtime: Parallel Scope Merge 15.10x
+runtime: Parallel Scope Merge 15.12x
 phase: pre-alpha
 ```
 
@@ -185,6 +185,36 @@ Equipment Cleanup 1.0x
 ```
 
 A corrective patch is appropriate only for a reproduced browser, accessibility, navigation, notification or furnishing-placement failure.
+
+## Installed scope verification — 15.12x
+
+```text
+Housing / Market Decoupling 2.2x
+  Market opens as a separate module and lazy bundle
+  Housing remains Unit / Household / Storage / Deliveries only
+  Market notifications route to Market instead of reopening Housing
+
+Admin Equipment Catalog Authoring 1.0x
+  drafts remain outside the canonical catalog until publish
+  preview does not persist ItemInstance
+  stable IDs, revision and idempotency guards remain enforced
+
+Item Type Effect Removal 1.3.1x cleanup
+  retired effect/status runtime and contract are physically removed after cleanup
+  consumable use remains quantity mutation plus Campaign-Day log only
+
+Knowledge Relation Tabs / Registry Separation 1.1x — adapted
+  System Index persists only relatedEntries
+  Encyclopedia persists only relatedTerms
+  current seed content and approved lore remain unchanged
+
+Campaign Time Datetime Foundation 2.0x
+  canonical time is a revisioned UTC timestamp
+  date-only APIs remain compatibility projections
+  schedulers compare full timestamps without taking ownership of domain records
+```
+
+A corrective patch is appropriate only for a reproduced browser, import/migration, time-scheduler or authoring failure.
 
 ## Gate A — browser regression verification
 

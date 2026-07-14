@@ -298,6 +298,14 @@ function bindSystemRegistry(user, registry) {
 }
 
 function systemSearchBlob(record) {
+  const registry = record?.registry === "system-index" ? "system-index" : "system";
+  const relationLabels = registry === "system-index"
+    ? (window.WS_APP.getKnowledgeRelationLabels?.(record.relatedEntries || [], "system-index") || record.relatedEntries || [])
+    : [
+        ...(window.WS_APP.getKnowledgeRelationLabels?.(record.relatedTerms || [], "encyclopedia") || record.relatedTerms || []),
+        ...(window.WS_APP.getKnowledgeRelationLabels?.(record.relatedRules || [], "system") || record.relatedRules || [])
+      ];
+
   return [
     record.title,
     record.localTitle,
@@ -307,9 +315,7 @@ function systemSearchBlob(record) {
     record.officialSummary,
     ...(record.tags || []),
     ...(record.slogans || []),
-    ...(window.WS_APP.getKnowledgeRelationLabels?.(record.relatedTerms || [], "encyclopedia") || record.relatedTerms || []),
-    ...(window.WS_APP.getKnowledgeRelationLabels?.(record.relatedRules || [], "system") || record.relatedRules || []),
-    ...(window.WS_APP.getKnowledgeRelationLabels?.(record.relatedEntries || [], "system-index") || record.relatedEntries || []),
+    ...relationLabels,
     ...(record.sections || []).map((section) => `${section.title} ${section.body}`),
     ...systemDefinitionSearchParts(record)
   ].join(" ");
@@ -401,7 +407,7 @@ function renderSystemRelatedBlocks(article, user, registry) {
   const entryRefs = Array.isArray(article.relatedEntries) ? article.relatedEntries : [];
   const blocks = [];
 
-  if (termRefs.length) blocks.push(renderSystemRelatedTermBlock(termRefs, user));
+  if (registry !== "system-index" && termRefs.length) blocks.push(renderSystemRelatedTermBlock(termRefs, user));
   if (registry === "system-index" && entryRefs.length) blocks.push(renderSystemRelatedRecordBlock("RELATED INDEX ENTRIES", entryRefs, user, "system-index"));
   if (registry !== "system-index" && ruleRefs.length) blocks.push(renderSystemRelatedRecordBlock("RELATED RULES", ruleRefs, user, "system"));
 
@@ -687,7 +693,7 @@ function renderSystemForm(user, registry = "system", articleId = null) {
           ${normalizedRegistry === "system-index" ? renderEntryInput("officialSummary", "Official summary", draft.officialSummary || draft.summary || "", "is-wide") : ""}
           ${normalizedRegistry === "system-index" ? renderEntryTextarea("slogans", "Slogans, comma separated", (draft.slogans || []).join(", "), "is-wide", 3) : ""}
           ${renderEntryTextarea("sections", "Sections. Format: title line, then body. Separate sections with --- on its own line.", sectionsToText(draft.sections || []), "is-wide", 12)}
-          ${renderEntryTextarea("relatedTerms", "Related Encyclopedia terms, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedTerms || draft.related || [], "encyclopedia") || draft.relatedTerms || draft.related || []).join(", "), "is-wide", 3)}
+          ${normalizedRegistry !== "system-index" ? renderEntryTextarea("relatedTerms", "Related Encyclopedia terms, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedTerms || draft.related || [], "encyclopedia") || draft.relatedTerms || draft.related || []).join(", "), "is-wide", 3) : ""}
           ${normalizedRegistry === "system-index" ? renderEntryTextarea("relatedEntries", "Related System Index entries, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedEntries || [], "system-index") || draft.relatedEntries || []).join(", "), "is-wide", 3) : renderEntryTextarea("relatedRules", "Related System rules, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedRules || [], "system") || draft.relatedRules || []).join(", "), "is-wide", 3)}
         </div>
         ${typeof window.WS_APP.renderSystemDefinitionEditor === "function" ? window.WS_APP.renderSystemDefinitionEditor(draft) : ""}
@@ -771,15 +777,21 @@ function collectSystemForm(form, registry) {
     officialSummary: String(data.get("officialSummary") || "").trim(),
     slogans: parseRegistryList(data.get("slogans")),
     sections: parseSystemSections(data.get("sections")),
-    relatedTerms: typeof window.WS_APP.normalizeKnowledgeRelationRefs === "function"
-      ? window.WS_APP.normalizeKnowledgeRelationRefs(parsePlainReferenceList(data.get("relatedTerms")), "encyclopedia")
-      : parsePlainReferenceList(data.get("relatedTerms")),
-    relatedRules: typeof window.WS_APP.normalizeKnowledgeRelationRefs === "function"
-      ? window.WS_APP.normalizeKnowledgeRelationRefs(parsePlainReferenceList(data.get("relatedRules")), "system")
-      : parsePlainReferenceList(data.get("relatedRules")),
-    relatedEntries: typeof window.WS_APP.normalizeKnowledgeRelationRefs === "function"
-      ? window.WS_APP.normalizeKnowledgeRelationRefs(parsePlainReferenceList(data.get("relatedEntries")), "system-index")
-      : parsePlainReferenceList(data.get("relatedEntries"))
+    relatedTerms: registry === "system-index"
+      ? []
+      : (typeof window.WS_APP.normalizeKnowledgeRelationRefs === "function"
+        ? window.WS_APP.normalizeKnowledgeRelationRefs(parsePlainReferenceList(data.get("relatedTerms")), "encyclopedia")
+        : parsePlainReferenceList(data.get("relatedTerms"))),
+    relatedRules: registry === "system-index"
+      ? []
+      : (typeof window.WS_APP.normalizeKnowledgeRelationRefs === "function"
+        ? window.WS_APP.normalizeKnowledgeRelationRefs(parsePlainReferenceList(data.get("relatedRules")), "system")
+        : parsePlainReferenceList(data.get("relatedRules"))),
+    relatedEntries: registry === "system-index"
+      ? (typeof window.WS_APP.normalizeKnowledgeRelationRefs === "function"
+        ? window.WS_APP.normalizeKnowledgeRelationRefs(parsePlainReferenceList(data.get("relatedEntries")), "system-index")
+        : parsePlainReferenceList(data.get("relatedEntries")))
+      : []
   };
 
   if (form.dataset.definitionEditor === "skills-abilities") payload.definitions = collectSystemDefinitions(form);

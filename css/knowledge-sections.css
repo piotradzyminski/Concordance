@@ -414,27 +414,65 @@
 }
 
 .knowledge-related-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
-  align-items: center;
+  align-items: stretch;
+  margin-left: -14px;
+  padding-left: 18px;
+  overflow: visible;
   white-space: normal;
 }
 
 .knowledge-related-link,
 .knowledge-related-missing {
-  min-height: 24px;
-  border: 1px solid rgba(143, 189, 180, 0.14);
-  background: rgba(0, 0, 0, 0.08);
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(4, 8, 8, 0.72);
   color: var(--muted);
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  padding: 3px 6px;
+  justify-content: flex-start;
+  padding: 7px 12px 7px 18px;
   font-family: var(--font-display);
   font-size: var(--type-micro);
-  line-height: 1.2;
+  line-height: 1.25;
   letter-spacing: var(--tracking-wide);
+  text-align: left;
   text-transform: uppercase;
+  box-shadow:
+    inset 3px 0 0 rgba(143, 189, 180, 0.055),
+    0 1px 0 rgba(0, 0, 0, 0.42);
+}
+
+.knowledge-related-link::before,
+.knowledge-related-missing::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -18px;
+  top: 7px;
+  bottom: 7px;
+  width: 18px;
+  border: 1px solid rgba(143, 189, 180, 0.18);
+  border-right: 0;
+  background: rgba(4, 8, 8, 0.88);
+  box-shadow: -3px 3px 0 rgba(0, 0, 0, 0.24);
+}
+
+.knowledge-related-link::after,
+.knowledge-related-missing::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border: 1px solid rgba(143, 189, 180, 0.34);
+  transform: translateY(-50%) rotate(45deg);
 }
 
 .knowledge-related-link {
@@ -444,9 +482,16 @@
 .knowledge-related-link:hover,
 .knowledge-related-link:focus-visible {
   border-color: var(--line-hard);
-  background: transparent;
+  background: rgba(8, 14, 14, 0.86);
   color: var(--text);
   outline: none;
+  transform: translateX(-2px);
+}
+
+.knowledge-related-link:hover::before,
+.knowledge-related-link:focus-visible::before {
+  border-color: var(--line-hard);
+  background: rgba(8, 14, 14, 0.94);
 }
 
 .knowledge-related-missing {
@@ -597,4 +642,16 @@
     justify-items: start;
     justify-content: start;
   }
+
+  .knowledge-related-list {
+    margin-left: -8px;
+    padding-left: 12px;
+  }
+
+  .knowledge-related-link::before,
+  .knowledge-related-missing::before {
+    left: -12px;
+    width: 12px;
+  }
 }
+

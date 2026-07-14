@@ -39,6 +39,7 @@ window.WS_APP = window.WS_APP || {};
       renderHousingMetric,
       renderHousingModule,
       renderHousingShipmentRow,
+      rootSelector = "[data-housing-module]",
       setHousingActiveTab,
       setHousingFeedback,
     } = config;
@@ -2353,7 +2354,7 @@ window.WS_APP = window.WS_APP || {};
     }
 
     function handleHousingMarketInput(event, context = {}) {
-      const root = context.root || document.querySelector("[data-housing-module]");
+      const root = context.root || document.querySelector(rootSelector);
       const citizenId = String(context.citizenId || "").trim();
       const user = context.user || window.WS_APP.currentUser;
       const inspectorQuantity = event?.target?.closest?.("[data-housing-market-product-inspector-quantity]");
@@ -2375,7 +2376,7 @@ window.WS_APP = window.WS_APP || {};
     }
 
     function handleHousingMarketKeydown(event, context = {}) {
-      const root = context.root || document.querySelector("[data-housing-module]");
+      const root = context.root || document.querySelector(rootSelector);
       const citizenId = String(context.citizenId || "").trim();
       const inspectorLayer = root?.querySelector?.("[data-housing-market-product-inspector-layer]");
       const cartLayer = root?.querySelector?.("[data-housing-market-cart-layer]");
@@ -2401,7 +2402,7 @@ window.WS_APP = window.WS_APP || {};
     }
 
     function handleHousingMarketBackNavigation(context = {}) {
-      const root = context.root || document.querySelector("[data-housing-module]");
+      const root = context.root || document.querySelector(rootSelector);
       const citizenId = String(context.citizenId || "").trim();
       const user = context.user || window.WS_APP.currentUser;
       const inspectorLayer = root?.querySelector?.("[data-housing-market-product-inspector-layer]");
@@ -2426,7 +2427,7 @@ window.WS_APP = window.WS_APP || {};
     }
 
     function handleHousingMarketClick(event, context = {}) {
-      const root = context.root || document.querySelector("[data-housing-module]");
+      const root = context.root || document.querySelector(rootSelector);
       const citizenId = String(context.citizenId || "").trim();
       const user = context.user || window.WS_APP.currentUser;
       const marketModeButton = event.target.closest?.("[data-housing-market-mode]");
