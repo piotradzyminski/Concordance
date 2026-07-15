@@ -10,7 +10,7 @@ function createDeliveryHarness() {
   const housingReservations = new Map();
   const audits = [];
   const state = {
-    campaignDateIso: "2109-02-13",
+    campaignTimeIso: "2109-02-13T12:00:00.000Z",
     storageFull: false,
     billingIntent: null
   };
@@ -27,7 +27,7 @@ function createDeliveryHarness() {
   };
 
   const wsApp = {
-    getCampaignDateIso: () => state.campaignDateIso,
+    getCampaignTimeIso: () => state.campaignTimeIso,
     getEquipmentCatalogItems: () => [product],
     getEquipmentCatalogItemById: (id) => id === product.id ? product : null,
     getCitizenById: (id) => id === "citizen-a" ? {
@@ -184,12 +184,15 @@ function checkoutDelivery(harness, idempotencyKey = "market-delivery-runtime-tes
 test("Market delivery keeps one ItemInstance in vendor custody until Campaign Time reaches ETA", () => {
   const harness = createDeliveryHarness();
   const api = harness.runtime.window.WS_APP;
+  assert.equal(api.normalizeMarketWorldTimeIso("2109-02-13"), "2109-02-13T00:00:00.000Z");
   const checkout = checkoutDelivery(harness);
   assert.equal(checkout.ok, true, checkout.reason);
   assert.equal(checkout.operation, "DELIVERY_IN_TRANSIT");
   assert.equal(checkout.order.status, "FULFILLING");
   assert.equal(checkout.shipment.status, "IN_TRANSIT");
   assert.equal(checkout.order.deliveryFulfillment.status, "IN_TRANSIT");
+  assert.equal(checkout.shipment.shippingDays, 1);
+  assert.equal(checkout.shipment.etaAt, "2109-02-14T12:00:00.000Z");
   assert.equal(harness.housingReservations.size, 0, "Housing is reserved only when the shipment is processed.");
 
   const instanceId = checkout.createdItemInstanceIds[0];
@@ -205,8 +208,8 @@ test("Market delivery keeps one ItemInstance in vendor custody until Campaign Ti
   assert.equal(untrustedForce.reason, "MARKET_SHIPMENT_NOT_DUE");
   assert.equal(harness.items.get(instanceId).location.type, "VENDOR");
 
-  harness.state.campaignDateIso = checkout.shipment.etaAt;
-  const reconciliation = api.reconcileMarketShipments({ nowIso: harness.state.campaignDateIso });
+  harness.state.campaignTimeIso = checkout.shipment.etaAt;
+  const reconciliation = api.reconcileMarketShipments({ nowIso: harness.state.campaignTimeIso });
   assert.equal(reconciliation.ok, true);
   assert.equal(reconciliation.delivered, 1);
 

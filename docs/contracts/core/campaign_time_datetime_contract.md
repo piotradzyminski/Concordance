@@ -180,10 +180,19 @@ The resolver consumes the canonical `previousTimeIso` and `currentTimeIso` field
 
 Campaign Time does not persist the resolved event time. Terminal, Market, Services or another owning domain must save the returned timestamp on its own record and reuse it during reload/reconciliation. Terminal Inbox now persists resolved message timestamps through `TerminalNotifications.emitDuringCampaignAdvance()`; deferred future windows remain owned by the source domain.
 
+Exact future events may be persisted through the campaign-persistent queue:
+
+```text
+js/world-time-scheduled-events.js
+```
+
+The queue observes the committed `(previousTimeIso, currentTimeIso]` interval and dispatches registered domain handlers chronologically. Campaign Time still does not own domain records or business mutation.
+
 See:
 
 ```text
 docs/contracts/core/world_time_event_windows_contract.md
+docs/contracts/core/world_time_scheduled_events_contract.md
 ```
 
 ## Day phases
@@ -235,4 +244,4 @@ Household
 Citizen records
 ```
 
-Domain schedulers observe Campaign Time and commit through their own public APIs.
+Domain schedulers and Scheduled Event handlers observe Campaign Time and commit through their own public APIs.

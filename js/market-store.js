@@ -4,13 +4,14 @@ window.WS_APP = window.WS_APP || {};
   const CART_STORAGE_KEY = "ws_market_carts_v1";
   const ORDER_STORAGE_KEY = "ws_market_orders_v1";
   const STOCK_STORAGE_KEY = "ws_market_stock_v1";
-  const MARKET_OFFER_SCHEMA_VERSION = 2;
-  const MARKET_CART_SCHEMA_VERSION = 1;
-  const MARKET_ORDER_SCHEMA_VERSION = 6;
-  const MARKET_SHIPMENT_SCHEMA_VERSION = 1;
+  const MARKET_OFFER_SCHEMA_VERSION = 3;
+  const MARKET_CART_SCHEMA_VERSION = 2;
+  const MARKET_ORDER_SCHEMA_VERSION = 7;
+  const MARKET_SHIPMENT_SCHEMA_VERSION = 2;
   const MARKET_DELIVERY_FULFILLMENT_SCHEMA_VERSION = "market_delivery_fulfillment_6_3x";
   const MARKET_SERVICE_FULFILLMENT_SCHEMA_VERSION = "market_service_fulfillment_4_3x";
   const MARKET_PICKUP_FULFILLMENT_SCHEMA_VERSION = "market_pickup_fulfillment_6_0x";
+  const MARKET_DATETIME_SCHEMA_VERSION = "market_datetime_scheduler_6_5x";
   const AVAILABILITY_STATUSES = new Set(["AVAILABLE", "LIMITED", "RESTRICTED", "OUT_OF_STOCK", "UNAVAILABLE", "BLOCKED"]);
   const FULFILLMENT_MODES = new Set(["DELIVER_TO_HOUSING", "PICKUP", "PURCHASE_WITH_SERVICE"]);
   const CART_STATUSES = new Set(["DRAFT", "CHECKOUT_PENDING", "CHECKED_OUT", "CANCELLED", "EXPIRED"]);
@@ -100,8 +101,22 @@ window.WS_APP = window.WS_APP || {};
     return Math.max(min, Math.min(max, Math.round(number)));
   }
 
+  function normalizeWorldTimeIso(value = "", fallback = "") {
+    const raw = normalizeId(value || fallback);
+    if (!raw) return "";
+    const source = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00.000Z` : raw;
+    const parsed = Date.parse(source);
+    return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+  }
+
   function getWorldTime() {
-    return String(window.WS_APP.getCampaignDateIso?.() || window.WS_APP.CAMPAIGN_DATE_ISO || "2109-02-13").trim();
+    return normalizeWorldTimeIso(
+      window.WS_APP.getCampaignTimeIso?.()
+        || window.WS_APP.CAMPAIGN_TIME_ISO
+        || window.WS_APP.getCampaignDateIso?.()
+        || window.WS_APP.CAMPAIGN_DATE_ISO,
+      "2109-02-13T00:00:00.000Z"
+    );
   }
 
   function makeRuntimeId(prefix = "market") {
@@ -212,22 +227,15 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function addWorldDays(value = "", days = 0) {
-    const normalized = normalizeId(value) || getWorldTime();
-    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(normalized);
-    const parsed = Date.parse(dateOnly ? `${normalized}T00:00:00.000Z` : normalized);
-    if (!Number.isFinite(parsed)) return normalized;
-    const next = new Date(parsed + clampInteger(days, 0, 3650) * 86400000);
-    return dateOnly ? next.toISOString().slice(0, 10) : next.toISOString();
+    const normalized = normalizeWorldTimeIso(value, getWorldTime());
+    const parsed = Date.parse(normalized);
+    if (!Number.isFinite(parsed)) return getWorldTime();
+    return new Date(parsed + clampInteger(days, 0, 3650) * 86400000).toISOString();
   }
 
   function compareWorldTimes(left = "", right = "") {
-    const parse = (value) => {
-      const normalized = normalizeId(value);
-      if (!normalized) return Number.NaN;
-      return Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(normalized) ? `${normalized}T00:00:00.000Z` : normalized);
-    };
-    const leftTime = parse(left);
-    const rightTime = parse(right);
+    const leftTime = Date.parse(normalizeWorldTimeIso(left));
+    const rightTime = Date.parse(normalizeWorldTimeIso(right));
     if (!Number.isFinite(leftTime) || !Number.isFinite(rightTime)) return String(left || "").localeCompare(String(right || ""));
     return leftTime - rightTime;
   }
@@ -298,8 +306,8 @@ window.WS_APP = window.WS_APP || {};
       providerId,
       targetCharacterId: normalizeId(source.targetCharacterId),
       targetBodySlots: [...new Set((configuredTargetBodySlots.length ? configuredTargetBodySlots : catalogTargetBodySlots).map(normalizeId).filter(Boolean))],
-      scheduledStartAt: normalizeId(source.scheduledStartAt || source.startAt),
-      estimatedEndAt: normalizeId(source.estimatedEndAt || source.endAt),
+      scheduledStartAt: normalizeWorldTimeIso(source.scheduledStartAt || source.startAt),
+      estimatedEndAt: normalizeWorldTimeIso(source.estimatedEndAt || source.endAt),
       coverageAuthorizations: [...new Set((Array.isArray(source.coverageAuthorizations || source.authorizationCodes) ? (source.coverageAuthorizations || source.authorizationCodes) : []).map(normalizeId).filter(Boolean))]
     };
   }
@@ -449,8 +457,8 @@ window.WS_APP = window.WS_APP || {};
       fulfillmentOptions: fulfillmentOptions.length ? fulfillmentOptions : ["DELIVER_TO_HOUSING"],
       linkedServiceDefinitionIds: serviceLinkage.serviceDefinitionIds,
       linkedServiceProviderIds: serviceLinkage.providerIds,
-      activeFrom: normalizeId(override.activeFrom) || null,
-      expiresAt: normalizeId(override.expiresAt) || null,
+      activeFrom: normalizeWorldTimeIso(override.activeFrom) || null,
+      expiresAt: normalizeWorldTimeIso(override.expiresAt) || null,
       active: override.active !== false && product.archived !== true,
       revision: clampInteger(override.revision || 1, 1, 999999),
       catalogItem: clone(product),
@@ -581,8 +589,8 @@ window.WS_APP = window.WS_APP || {};
     const activeWorldTime = getWorldTime();
     return clone(source.filter((offer) => {
       if (!includeInactive && !offer.active) return false;
-      if (!includeInactive && offer.activeFrom && offer.activeFrom > activeWorldTime) return false;
-      if (!includeInactive && offer.expiresAt && offer.expiresAt < activeWorldTime) return false;
+      if (!includeInactive && offer.activeFrom && compareWorldTimes(activeWorldTime, offer.activeFrom) < 0) return false;
+      if (!includeInactive && offer.expiresAt && compareWorldTimes(activeWorldTime, offer.expiresAt) >= 0) return false;
       if (providerId && offer.vendorProviderId !== providerId) return false;
       if (catalogItemId && offer.catalogItemId !== catalogItemId) return false;
       if (category && normalizeToken(offer.catalogItem?.category) !== category) return false;
@@ -762,9 +770,9 @@ window.WS_APP = window.WS_APP || {};
       idempotencyKey: normalizeId(source.idempotencyKey),
       recoveryIdempotencyKey: normalizeId(source.recoveryIdempotencyKey),
       attemptCount: clampInteger(source.attemptCount, 0, 999999),
-      requestedAt: normalizeId(source.requestedAt) || null,
-      lastAttemptAt: normalizeId(source.lastAttemptAt) || null,
-      completedAt: normalizeId(source.completedAt) || null,
+      requestedAt: normalizeWorldTimeIso(source.requestedAt) || null,
+      lastAttemptAt: normalizeWorldTimeIso(source.lastAttemptAt) || null,
+      completedAt: normalizeWorldTimeIso(source.completedAt) || null,
       errors: Array.isArray(source.errors) ? source.errors.map(normalizeId).filter(Boolean) : []
     };
   }
@@ -785,12 +793,12 @@ window.WS_APP = window.WS_APP || {};
       executionIdempotencyKey: normalizeId(source.executionIdempotencyKey),
       itemTransactionId: normalizeId(source.itemTransactionId),
       billingRefundTransactionId: normalizeId(source.billingRefundTransactionId),
-      processingAt: normalizeId(source.processingAt) || null,
-      completedAt: normalizeId(source.completedAt) || null,
+      processingAt: normalizeWorldTimeIso(source.processingAt) || null,
+      completedAt: normalizeWorldTimeIso(source.completedAt) || null,
       errors: Array.isArray(source.errors) ? source.errors.map(normalizeId).filter(Boolean) : [],
-      requestedAt: normalizeId(source.requestedAt) || null,
-      withdrawnAt: normalizeId(source.withdrawnAt) || null,
-      updatedAt: normalizeId(source.updatedAt) || null
+      requestedAt: normalizeWorldTimeIso(source.requestedAt) || null,
+      withdrawnAt: normalizeWorldTimeIso(source.withdrawnAt) || null,
+      updatedAt: normalizeWorldTimeIso(source.updatedAt) || null
     };
   }
 
@@ -825,11 +833,11 @@ window.WS_APP = window.WS_APP || {};
       itemTransactionId: normalizeId(source.itemTransactionId),
       billingRefundTransactionId: normalizeId(source.billingRefundTransactionId),
       errors: Array.isArray(source.errors) ? source.errors.map(normalizeId).filter(Boolean) : [],
-      requestedAt: normalizeId(source.requestedAt) || null,
-      withdrawnAt: normalizeId(source.withdrawnAt) || null,
-      processingAt: normalizeId(source.processingAt) || null,
-      completedAt: normalizeId(source.completedAt) || null,
-      updatedAt: normalizeId(source.updatedAt) || null
+      requestedAt: normalizeWorldTimeIso(source.requestedAt) || null,
+      withdrawnAt: normalizeWorldTimeIso(source.withdrawnAt) || null,
+      processingAt: normalizeWorldTimeIso(source.processingAt) || null,
+      completedAt: normalizeWorldTimeIso(source.completedAt) || null,
+      updatedAt: normalizeWorldTimeIso(source.updatedAt) || null
     };
   }
 
@@ -842,11 +850,11 @@ window.WS_APP = window.WS_APP || {};
       sourceAddress: normalizeId(source.sourceAddress),
       vendorDisplayName: normalizeId(source.vendorDisplayName),
       reservationDays: clampInteger(source.reservationDays || getPickupReservationDays(), 1, 3650),
-      readyAt: normalizeId(source.readyAt) || null,
-      expiresAt: normalizeId(source.expiresAt) || null,
-      processingAt: normalizeId(source.processingAt) || null,
-      completedAt: normalizeId(source.completedAt) || null,
-      expiredAt: normalizeId(source.expiredAt) || null,
+      readyAt: normalizeWorldTimeIso(source.readyAt) || null,
+      expiresAt: normalizeWorldTimeIso(source.expiresAt) || null,
+      processingAt: normalizeWorldTimeIso(source.processingAt) || null,
+      completedAt: normalizeWorldTimeIso(source.completedAt) || null,
+      expiredAt: normalizeWorldTimeIso(source.expiredAt) || null,
       completionIdempotencyKey: normalizeId(source.completionIdempotencyKey),
       itemTransactionId: normalizeId(source.itemTransactionId),
       recoveryRequired: source.recoveryRequired === true,
@@ -859,7 +867,7 @@ window.WS_APP = window.WS_APP || {};
     return {
       status: normalizeToken(source.status || "NOT_REQUIRED"),
       shipmentId: normalizeId(source.shipmentId),
-      etaAt: normalizeId(source.etaAt || source.etaIso) || null,
+      etaAt: normalizeWorldTimeIso(source.etaAt || source.etaIso) || null,
       routeClass: normalizeToken(source.routeClass || ""),
       lastErrorCode: normalizeToken(source.lastErrorCode || ""),
       recoveryRequired: source.recoveryRequired === true
@@ -903,19 +911,19 @@ window.WS_APP = window.WS_APP || {};
       deliveryItemTransactionId: normalizeId(source.deliveryItemTransactionId),
       currentAttemptKey: normalizeId(source.currentAttemptKey),
       deliveryAttemptCount: clampInteger(source.deliveryAttemptCount, 0, 999999),
-      packedAt: normalizeId(source.packedAt) || null,
-      inTransitAt: normalizeId(source.inTransitAt) || null,
-      etaAt: normalizeId(source.etaAt || source.etaIso) || null,
-      processingAt: normalizeId(source.processingAt) || null,
-      heldAt: normalizeId(source.heldAt) || null,
-      deliveredAt: normalizeId(source.deliveredAt) || null,
-      cancelledAt: normalizeId(source.cancelledAt) || null,
+      packedAt: normalizeWorldTimeIso(source.packedAt) || null,
+      inTransitAt: normalizeWorldTimeIso(source.inTransitAt) || null,
+      etaAt: normalizeWorldTimeIso(source.etaAt || source.etaIso) || null,
+      processingAt: normalizeWorldTimeIso(source.processingAt) || null,
+      heldAt: normalizeWorldTimeIso(source.heldAt) || null,
+      deliveredAt: normalizeWorldTimeIso(source.deliveredAt) || null,
+      cancelledAt: normalizeWorldTimeIso(source.cancelledAt) || null,
       holdReason: normalizeToken(source.holdReason || ""),
       lastErrorCode: normalizeToken(source.lastErrorCode || ""),
       recoveryRequired: source.recoveryRequired === true,
       lastAdminAction: source.lastAdminAction && typeof source.lastAdminAction === "object" ? clone(source.lastAdminAction) : null,
-      createdAt: normalizeId(source.createdAt) || getWorldTime(),
-      updatedAt: normalizeId(source.updatedAt) || getWorldTime(),
+      createdAt: normalizeWorldTimeIso(source.createdAt) || getWorldTime(),
+      updatedAt: normalizeWorldTimeIso(source.updatedAt) || getWorldTime(),
       revision: clampInteger(source.revision || 1, 1, 999999)
     };
   }
@@ -943,9 +951,9 @@ window.WS_APP = window.WS_APP || {};
       serviceFulfillment: source.serviceFulfillment && typeof source.serviceFulfillment === "object"
         ? {
             status: normalizeToken(source.serviceFulfillment.status || "NOT_REQUIRED"),
-            startedAt: normalizeId(source.serviceFulfillment.startedAt) || null,
-            completedAt: normalizeId(source.serviceFulfillment.completedAt) || null,
-            failedAt: normalizeId(source.serviceFulfillment.failedAt) || null,
+            startedAt: normalizeWorldTimeIso(source.serviceFulfillment.startedAt) || null,
+            completedAt: normalizeWorldTimeIso(source.serviceFulfillment.completedAt) || null,
+            failedAt: normalizeWorldTimeIso(source.serviceFulfillment.failedAt) || null,
             lastServiceOrderId: normalizeId(source.serviceFulfillment.lastServiceOrderId),
             lastServiceStatus: normalizeToken(source.serviceFulfillment.lastServiceStatus || ""),
             recoveryRequired: source.serviceFulfillment.recoveryRequired === true,
@@ -959,9 +967,9 @@ window.WS_APP = window.WS_APP || {};
       cancellation: normalizeMarketCancellation(source.cancellation),
       refundRequest: normalizeMarketRefundRequest(source.refundRequest),
       partialReturns: (Array.isArray(source.partialReturns) ? source.partialReturns : []).map(normalizeMarketPartialReturn),
-      createdAt: normalizeId(source.createdAt) || getWorldTime(),
-      completedAt: normalizeId(source.completedAt) || null,
-      updatedAt: normalizeId(source.updatedAt) || getWorldTime(),
+      createdAt: normalizeWorldTimeIso(source.createdAt) || getWorldTime(),
+      completedAt: normalizeWorldTimeIso(source.completedAt) || null,
+      updatedAt: normalizeWorldTimeIso(source.updatedAt) || getWorldTime(),
       revision: clampInteger(source.revision || 1, 1, 999999)
     };
   }
@@ -1446,7 +1454,7 @@ window.WS_APP = window.WS_APP || {};
     if (!["READY", "PROCESSING", "RECOVERY_REQUIRED"].includes(pickupStatus)) pickupCompletionBlockers.push("MARKET_ORDER_PICKUP_NOT_READY");
     if (!committedInstanceIds.length) pickupCompletionBlockers.push("MARKET_ORDER_PICKUP_INSTANCES_REQUIRED");
     if (committedInstanceIds.length && !pendingPickupCustodyOnly && pickupStatus !== "PROCESSING") pickupCompletionBlockers.push("MARKET_ORDER_PICKUP_VENDOR_CUSTODY_REQUIRED");
-    if (order.pickupFulfillment?.expiresAt && compareWorldTimes(getWorldTime(), order.pickupFulfillment.expiresAt) > 0) pickupCompletionBlockers.push("MARKET_ORDER_PICKUP_EXPIRED");
+    if (order.pickupFulfillment?.expiresAt && compareWorldTimes(getWorldTime(), order.pickupFulfillment.expiresAt) >= 0) pickupCompletionBlockers.push("MARKET_ORDER_PICKUP_EXPIRED");
     const pickupRetryBlockers = [];
     if (!isPickupOrder(order)) pickupRetryBlockers.push("MARKET_ORDER_PICKUP_NOT_REQUIRED");
     if (pickupStatus !== "RECOVERY_REQUIRED") pickupRetryBlockers.push("MARKET_ORDER_PICKUP_RECOVERY_NOT_REQUIRED");
@@ -2741,8 +2749,8 @@ window.WS_APP = window.WS_APP || {};
       citizenId: normalizeId(source.citizenId),
       status: CART_STATUSES.has(status) ? status : "DRAFT",
       lines,
-      createdAt: normalizeId(source.createdAt) || getWorldTime(),
-      updatedAt: normalizeId(source.updatedAt) || getWorldTime(),
+      createdAt: normalizeWorldTimeIso(source.createdAt) || getWorldTime(),
+      updatedAt: normalizeWorldTimeIso(source.updatedAt) || getWorldTime(),
       revision: clampInteger(source.revision || 1, 1, 999999)
     };
   }
@@ -4359,7 +4367,7 @@ window.WS_APP = window.WS_APP || {};
     }
     const revisionConflict = validateExpectedMarketOrderRevision(order, input);
     if (revisionConflict) return revisionConflict;
-    if (order.pickupFulfillment?.expiresAt && compareWorldTimes(getWorldTime(), order.pickupFulfillment.expiresAt) > 0) {
+    if (order.pickupFulfillment?.expiresAt && compareWorldTimes(getWorldTime(), order.pickupFulfillment.expiresAt) >= 0) {
       return { ok: false, reason: "MARKET_ORDER_PICKUP_EXPIRED", order };
     }
     const actionState = getMarketOrderActionState(order);
@@ -4474,7 +4482,7 @@ window.WS_APP = window.WS_APP || {};
         if (result.ok || result.recoveryRequired) reconciled += 1;
         return;
       }
-      if (pickupStatus === "READY" && order.pickupFulfillment?.expiresAt && compareWorldTimes(nowIso, order.pickupFulfillment.expiresAt) > 0) {
+      if (pickupStatus === "READY" && order.pickupFulfillment?.expiresAt && compareWorldTimes(nowIso, order.pickupFulfillment.expiresAt) >= 0) {
         const result = cancelMarketOrder(order.marketOrderId, {
           expectedRevision: order.revision,
           idempotencyKey: `${order.idempotencyKey}:pickup-expiry`,
@@ -4533,6 +4541,50 @@ window.WS_APP = window.WS_APP || {};
     rebuildMarketOrderIndexes();
     marketBridgeDiagnostics.interruptedCancellationsReconciled += reconciled;
     return { ok: true, reconciled };
+  }
+
+  function normalizeMarketStockRuntimeTimestamps() {
+    const next = {};
+    Object.entries(stockRuntimeByOfferId || {}).forEach(([marketOfferId, rawRuntime]) => {
+      const runtime = rawRuntime && typeof rawRuntime === "object" && !Array.isArray(rawRuntime) ? clone(rawRuntime) : {};
+      const reservations = runtime.reservations && typeof runtime.reservations === "object" && !Array.isArray(runtime.reservations)
+        ? runtime.reservations
+        : {};
+      Object.values(reservations).forEach((reservation) => {
+        if (!reservation || typeof reservation !== "object") return;
+        ["createdAt", "committedAt", "releasedAt", "returnedAt"].forEach((field) => {
+          if (reservation[field]) reservation[field] = normalizeWorldTimeIso(reservation[field]) || null;
+        });
+      });
+      runtime.reservations = reservations;
+      next[marketOfferId] = runtime;
+    });
+    return next;
+  }
+
+  function migrateMarketDatetimeState(options = {}) {
+    const previous = JSON.stringify({ cartsById, marketOrdersById, marketShipmentsById, stockRuntimeByOfferId });
+    cartsById = Object.fromEntries(Object.values(cartsById || {}).map(normalizeCart).filter((cart) => cart.cartId).map((cart) => [cart.cartId, cart]));
+    marketOrdersById = Object.fromEntries(Object.values(marketOrdersById || {}).map(normalizeMarketOrder).filter((order) => order.marketOrderId).map((order) => [order.marketOrderId, order]));
+    marketShipmentsById = Object.fromEntries(Object.values(marketShipmentsById || {}).map(normalizeMarketShipment).filter((shipment) => shipment.shipmentId).map((shipment) => [shipment.shipmentId, shipment]));
+    stockRuntimeByOfferId = normalizeMarketStockRuntimeTimestamps();
+    rebuildMarketOrderIndexes();
+    const changed = previous !== JSON.stringify({ cartsById, marketOrdersById, marketShipmentsById, stockRuntimeByOfferId });
+    const persisted = options.persist === false || !changed
+      ? true
+      : flushMarketCartPersistence() && flushMarketOrderPersistence();
+    return {
+      ok: persisted,
+      reason: persisted ? (changed ? "MARKET_DATETIME_MIGRATED" : "MARKET_DATETIME_ALREADY_CANONICAL") : "MARKET_DATETIME_MIGRATION_PERSISTENCE_FAILED",
+      changed,
+      schemaVersion: MARKET_DATETIME_SCHEMA_VERSION,
+      counts: {
+        carts: Object.keys(cartsById).length,
+        orders: Object.keys(marketOrdersById).length,
+        shipments: Object.keys(marketShipmentsById).length,
+        stockOffers: Object.keys(stockRuntimeByOfferId).length
+      }
+    };
   }
 
   function validateMarketBridgeReadiness() {
@@ -4678,6 +4730,7 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
+  migrateMarketDatetimeState();
   rebuildMarketOrderIndexes();
   reconcileInterruptedMarketOrderOperations();
   reconcileInterruptedMarketRefunds();
@@ -4694,11 +4747,6 @@ window.WS_APP = window.WS_APP || {};
   window.addEventListener?.("ws:service-order-completed", handleLinkedServiceOrderEvent);
   window.addEventListener?.("ws:service-order-failed", handleLinkedServiceOrderEvent);
   window.addEventListener?.("ws:service-order-cancelled", handleLinkedServiceOrderEvent);
-  window.addEventListener?.("ws:campaign-date-updated", (event) => {
-    const nowIso = event?.detail?.iso || event?.detail?.campaignDateIso || event?.detail?.dateIso || getWorldTime();
-    reconcileMarketPickupFulfillment({ nowIso });
-    reconcileMarketShipments({ nowIso });
-  });
   window.addEventListener?.("pagehide", () => {
     if (window.WS_APP.CAMPAIGN_DATA_IO_RELOAD_PENDING === true) return;
     flushMarketCartPersistence();
@@ -4721,6 +4769,10 @@ window.WS_APP = window.WS_APP || {};
     MARKET_DELIVERY_FULFILLMENT_SCHEMA_VERSION,
     MARKET_SERVICE_FULFILLMENT_SCHEMA_VERSION,
     MARKET_PICKUP_FULFILLMENT_SCHEMA_VERSION,
+    MARKET_DATETIME_SCHEMA_VERSION,
+    normalizeMarketWorldTimeIso: normalizeWorldTimeIso,
+    compareMarketWorldTimes: compareWorldTimes,
+    migrateMarketDatetimeState,
     rebuildMarketOfferIndex,
     invalidateMarketOffers,
     getMarketOfferRevision,

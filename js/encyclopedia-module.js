@@ -365,10 +365,10 @@ function renderEntryRelated(entry, user) {
 
 function renderEntryRelatedLink(reference, user) {
   const entry = window.WS_APP.resolveEntryRef?.(reference, { includeArchived: user?.role === "admin" });
-  if (!entry) return `<span class="knowledge-related-missing">${escapeHtml(reference)}</span>`;
+  if (!entry) return `<span class="knowledge-related-missing"><span class="knowledge-related-link__label">${escapeHtml(reference)}</span></span>`;
   return `
     <button class="knowledge-related-link" type="button" data-related-entry-id="${escapeHtml(entry.id)}" title="Open ${escapeHtml(entry.term || entry.title || entry.id)}">
-      ${escapeHtml(entry.term || entry.title || reference)}
+      <span class="knowledge-related-link__label">${escapeHtml(entry.term || entry.title || reference)}</span>
     </button>
   `;
 }

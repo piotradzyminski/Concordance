@@ -830,6 +830,7 @@
     if (item.archived === true) return false;
     const category = String(item.category || "").trim().toUpperCase();
     const subtype = String(item.subtype || item.itemType || "").trim().toUpperCase();
+    if (subtype === "CYBERWARE_MODULE" || String(item.catalogDomain || "").trim().toUpperCase() === "CYBERWARE_MODULE") return false;
     const processorRole = String(item.processorRole || item.role || "").trim().toUpperCase();
     const tags = Array.isArray(item.tags) ? item.tags.map((tag) => String(tag).trim().toUpperCase()) : [];
     if (item.cyberwareCandidate === true || item.isCyberware === true) return true;

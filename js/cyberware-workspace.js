@@ -152,6 +152,9 @@ window.WS_APP = window.WS_APP || {};
       activeView: "OVERVIEW",
       selectedInstanceId: "",
       bodymapView: "front",
+      bodymapRegion: "BODY",
+      bodymapOrientationByRegion: {},
+      selectedAnchorId: "",
       operationsInspectorRole: "AUTO",
       historyFilter: "ALL",
       sectionViews: Object.fromEntries(CYBERWARE_UI_SECTIONS.map((section) => [section.key, section.defaultView]))
@@ -163,6 +166,7 @@ window.WS_APP = window.WS_APP || {};
     state.activeSection = getCyberwareUiSectionForView(state.activeView);
     state.selectedInstanceId = String(state.selectedInstanceId || "").trim();
     state.bodymapView = normalizeCyberwareBodymapView(state.bodymapView);
+    app.cyberwareAnatomyBodymap?.ensureState?.(state);
     state.operationsInspectorRole = normalizeCyberwareOperationsInspectorRole(state.operationsInspectorRole);
     state.historyFilter = normalizeCyberwareHistoryFilter(state.historyFilter);
     if (!state.sectionViews || typeof state.sectionViews !== "object") state.sectionViews = {};
@@ -1288,6 +1292,8 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function getCyberwareBodymapEntry(item = {}) {
+    const anatomyEntry = app.cyberwareAnatomyBodymap?.locateItem?.(item);
+    if (anatomyEntry) return anatomyEntry;
     const rawSlots = Array.isArray(item.slots) && item.slots.length
       ? item.slots
       : [item.primarySlot || item.slot].filter(Boolean);
@@ -1296,7 +1302,7 @@ window.WS_APP = window.WS_APP || {};
       : rawSlots;
     const slot = slots.find((entry) => getBodymapPoint(entry)) || slots[0] || "";
     const point = getBodymapPoint(slot);
-    return point ? { item, slot, x: point[0], y: point[1], view: normalizeCyberwareBodymapView(point[2]) } : null;
+    return point ? { item, slot, x: point[0], y: point[1], view: normalizeCyberwareBodymapView(point[2]), pathLabel: normalizeCyberwareBodymapView(point[2]).toUpperCase() } : null;
   }
 
   function getCyberwareBodymapMarkers(runtime = {}) {
@@ -1314,7 +1320,10 @@ window.WS_APP = window.WS_APP || {};
       const initialEntry = state.selectedInstanceId
         ? getCyberwareBodymapEntry(installed.find((item) => getItemId(item) === state.selectedInstanceId) || {})
         : null;
-      if (initialEntry) state.bodymapView = initialEntry.view;
+      if (initialEntry) {
+        state.bodymapView = initialEntry.view;
+        app.cyberwareAnatomyBodymap?.locateStateForItem?.(state, installed.find((item) => getItemId(item) === state.selectedInstanceId) || {});
+      }
     }
     const selected = installed.find((item) => getItemId(item) === state.selectedInstanceId) || null;
     return { state, installed, selected, marker: selected ? getCyberwareBodymapEntry(selected) : null };
@@ -1374,7 +1383,7 @@ window.WS_APP = window.WS_APP || {};
       <div class="cyberware-inspector__head"><div><p class="kicker">${escapeHtml(options.contextLabel || "CYBERWARE / INSPECTOR")}</p><h5>${escapeHtml(item.name || itemId || "Cyberware")}</h5><small>${escapeHtml([modelName, item.manufacturer || item.provider].filter(Boolean).join(" / ") || "ITEMINSTANCE")}</small></div><span class="equipment-panel-badge is-${escapeHtml(state.toLowerCase())}">${escapeHtml(formatToken(state))}</span></div>
       <div class="cyberware-inspector__meta">
         ${renderCyberwareInspectorMeta("Location", slots.length ? slots.map(formatToken).join(" + ") : formatToken(item.locationType || "BODY"), { wide: true })}
-        ${renderCyberwareInspectorMeta("View", bodymapEntry ? bodymapEntry.view.toUpperCase() : "UNMAPPED")}
+        ${renderCyberwareInspectorMeta("Bodymap", bodymapEntry ? (bodymapEntry.pathLabel || bodymapEntry.view || "MAPPED") : "UNMAPPED", { wide: true })}
         ${renderCyberwareInspectorMeta("Condition", condition === null ? "UNKNOWN" : `${condition}%`, { tone: conditionTone })}
         ${renderCyberwareInspectorMeta("Grade / Scale", [item.gradeLabel || item.grade, item.scaleLabel || item.scale].filter(Boolean).map(formatToken).join(" / ") || "N/A")}
         ${renderCyberwareInspectorMeta("Type", formatToken(typeLabel))}
@@ -1398,6 +1407,7 @@ window.WS_APP = window.WS_APP || {};
         ${renderCyberwareInspectorMeta("Firmware records", String(installedFirmware.length))}
         ${renderCyberwareInspectorMeta("Last service", lastService?.occurredAt || lastService?.completedAt || lastService?.createdAt || lastService?.date || "NO RECORD", { wide: true })}
       </section>
+      ${typeof app.renderCyberwareUpgradePanel === "function" ? app.renderCyberwareUpgradePanel(item, citizen) : ""}
       ${renameControl}
       <details class="cyberware-inspector__technical"><summary>Technical identity</summary><div>
         ${renderCyberwareInspectorMeta("Instance ID", itemId, { wide: true })}
@@ -1407,6 +1417,7 @@ window.WS_APP = window.WS_APP || {};
         ${renderCyberwareInspectorMeta("Protocols", protocols.length ? protocols.map(formatToken).join(" / ") : "NONE", { wide: true })}
       </div></details>
       ${options.showActions === false ? "" : `<div class="cyberware-inspector__actions">
+        ${bodymapEntry ? `<button class="secondary-action is-compact" type="button" data-cyberware-locate-instance="${escapeHtml(itemId)}">Locate on Bodymap</button>` : ""}
         <button class="secondary-action is-compact" type="button" data-cyberware-planner-action="select-target" data-item-id="${escapeHtml(itemId)}">Plan Removal</button>
         <button class="secondary-action is-compact" type="button" data-cyberware-planner-action="replace-target" data-item-id="${escapeHtml(itemId)}">Plan Replace</button>
         <button class="secondary-action is-compact" type="button" data-cyberware-maintenance-action="open" data-item-id="${escapeHtml(itemId)}">Open Maintenance</button>
@@ -1422,7 +1433,7 @@ window.WS_APP = window.WS_APP || {};
       const itemId = getItemId(item);
       const selected = itemId === selectedId;
       const entry = getCyberwareBodymapEntry(item);
-      return `<button class="cyberware-bodymap-index-row ${selected ? "is-selected" : ""}" type="button" data-cyberware-select-item="${escapeHtml(itemId)}" aria-pressed="${selected ? "true" : "false"}"><span>${escapeHtml(entry ? `${entry.view.toUpperCase()} / ${formatToken(entry.slot)}` : "UNMAPPED")}</span><b>${escapeHtml(item.name || itemId || "Cyberware")}</b><small>${escapeHtml(formatToken(item.operationalState || item.runtimeStatus || item.status || "UNKNOWN"))}</small></button>`;
+      return `<button class="cyberware-bodymap-index-row ${selected ? "is-selected" : ""}" type="button" data-cyberware-select-item="${escapeHtml(itemId)}" aria-pressed="${selected ? "true" : "false"}"><span>${escapeHtml(entry ? `${entry.pathLabel || formatToken(entry.view)} / ${formatToken(entry.slot)}` : "UNMAPPED")}</span><b>${escapeHtml(item.name || itemId || "Cyberware")}</b><small>${escapeHtml(formatToken(item.operationalState || item.runtimeStatus || item.status || "UNKNOWN"))}</small></button>`;
     }).join("");
   }
 
@@ -1445,24 +1456,16 @@ window.WS_APP = window.WS_APP || {};
 
   function renderCyberwareBodymapPanel(runtime = {}, citizen = {}) {
     const selection = resolveCyberwareUiSelection(citizen?.id, runtime);
-    const markers = getCyberwareBodymapMarkers(runtime);
-    const activeView = normalizeCyberwareBodymapView(selection.state.bodymapView);
-    const renderFigure = (view) => {
-      const selected = activeView === view;
-      const viewMarkers = markers.filter((entry) => entry.view === view);
-      return `<figure class="cyberware-bodymap-figure ${selected ? "is-active" : ""}" data-cyberware-bodymap-frame="${view}" ${selected ? "" : 'hidden aria-hidden="true" inert'}><figcaption><span>${view.toUpperCase()}</span><b>${viewMarkers.length} NODES</b></figcaption><div class="cyberware-bodymap-canvas"><img src="${CYBERWARE_BODYMAP_ASSETS[view]}" alt="Cyberware Bodymap ${view} view" loading="eager" decoding="async">${viewMarkers.map((entry) => {
-        const itemId = getItemId(entry.item);
-        const isSelected = itemId === selection.state.selectedInstanceId;
-        return `<button class="cyberware-bodymap-marker is-${escapeHtml(String(entry.item.operationalState || entry.item.status || "enabled").toLowerCase())} ${isSelected ? "is-selected" : ""}" type="button" data-cyberware-select-item="${escapeHtml(itemId)}" data-cyberware-marker-view="${view}" aria-pressed="${isSelected ? "true" : "false"}" title="${escapeHtml(entry.item.name || itemId)} / ${escapeHtml(formatToken(entry.slot))}" style="--cw-x:${entry.x}%;--cw-y:${entry.y}%;"><i></i><span>${escapeHtml(entry.item.name || "SYSTEM")}</span></button>`;
-      }).join("")}</div></figure>`;
-    };
-    return `<section class="equipment-shell-panel cyberware-bodymap-panel" data-cyberware-bodymap-host><div class="equipment-shell-panel__head cyberware-ui-section-head"><div><p class="kicker">CYBERWARE / BODYMAP</p><h5>Installed Anatomy Map</h5></div><span class="equipment-panel-badge">${markers.length} MAPPED</span></div>
-      <div class="cyberware-bodymap-workspace">
-        <section class="cyberware-bodymap-index"><div class="cyberware-bodymap-local-head"><div><span>INSTALLED SYSTEMS</span><b>Bodymap Index</b></div><small>${selection.installed.length} RECORDS</small></div><div class="cyberware-bodymap-index-list">${renderCyberwareSelectionList(selection.installed, selection.state.selectedInstanceId)}</div></section>
-        <section class="cyberware-bodymap-stage"><div class="cyberware-bodymap-view-switch" role="group" aria-label="Cyberware Bodymap view"><button type="button" data-cyberware-bodymap-view="front" class="${activeView === "front" ? "is-active" : ""}" aria-pressed="${activeView === "front" ? "true" : "false"}">FRONT</button><button type="button" data-cyberware-bodymap-view="back" class="${activeView === "back" ? "is-active" : ""}" aria-pressed="${activeView === "back" ? "true" : "false"}">BACK</button></div><div class="cyberware-bodymap-view-stack">${renderFigure("front")}${renderFigure("back")}</div>${markers.length ? "" : '<p class="file-empty">No installed cyberware nodes available.</p>'}</section>
-        <div class="cyberware-inspector-host" data-cyberware-inspector-host>${renderCyberwareInspector(selection.selected, citizen)}</div>
-      </div>
-    </section>`;
+    const renderer = app.cyberwareAnatomyBodymap?.renderPanel;
+    if (typeof renderer === "function") {
+      return renderer({
+        runtimeState: runtime,
+        citizen,
+        state: selection.state,
+        renderInspector: renderCyberwareInspector
+      });
+    }
+    return `<section class="equipment-shell-panel cyberware-bodymap-panel" data-cyberware-bodymap-host><p class="file-empty">Cyberware anatomy Bodymap runtime unavailable.</p></section>`;
   }
 
   function syncCyberwareBodymapWorkspace(citizenId = "", options = {}) {
@@ -1473,19 +1476,9 @@ window.WS_APP = window.WS_APP || {};
     if (!workspace || !citizen) return false;
     const runtime = options.runtime || getCyberwareWorkspaceRuntime(citizen);
     const selection = resolveCyberwareUiSelection(id, runtime);
-    const activeView = normalizeCyberwareBodymapView(selection.state.bodymapView);
-    workspace.querySelectorAll("[data-cyberware-bodymap-view]").forEach((button) => {
-      const selected = normalizeCyberwareBodymapView(button.dataset.cyberwareBodymapView) === activeView;
-      button.classList.toggle("is-active", selected);
-      button.setAttribute("aria-pressed", selected ? "true" : "false");
-    });
-    workspace.querySelectorAll("[data-cyberware-bodymap-frame]").forEach((frame) => {
-      const selected = normalizeCyberwareBodymapView(frame.dataset.cyberwareBodymapFrame) === activeView;
-      frame.hidden = !selected;
-      frame.setAttribute("aria-hidden", selected ? "false" : "true");
-      if (selected) frame.removeAttribute("inert"); else frame.setAttribute("inert", "");
-      frame.classList.toggle("is-active", selected);
-    });
+    const currentBodymap = workspace.querySelector("[data-cyberware-bodymap-host]");
+    const nextBodymap = currentBodymap ? createMarkupNode(renderCyberwareBodymapPanel(runtime, citizen)) : null;
+    if (currentBodymap && nextBodymap) currentBodymap.replaceWith(nextBodymap);
     workspace.querySelectorAll("[data-cyberware-select-item]").forEach((control) => {
       const selected = String(control.dataset.cyberwareSelectItem || "").trim() === selection.state.selectedInstanceId;
       control.classList.toggle("is-selected", selected);
@@ -1493,6 +1486,7 @@ window.WS_APP = window.WS_APP || {};
       control.closest?.("[data-cyberware-system-card]")?.classList.toggle("is-selected", selected);
     });
     workspace.querySelectorAll("[data-cyberware-inspector-host]").forEach((host) => {
+      if (host.closest?.("[data-cyberware-bodymap-host]")) return;
       host.innerHTML = renderCyberwareInspector(selection.selected, citizen);
     });
     return true;
@@ -1501,9 +1495,47 @@ window.WS_APP = window.WS_APP || {};
   function setCyberwareBodymapView(citizenId = "", view = "front", options = {}) {
     const id = String(citizenId || "").trim();
     const state = getCyberwareUiState(id);
+    const orientation = String(view || "front").trim().toUpperCase();
+    app.cyberwareAnatomyBodymap?.orientState?.(state, orientation);
     state.bodymapView = normalizeCyberwareBodymapView(view);
     syncCyberwareBodymapWorkspace(id, options);
-    return state.bodymapView;
+    return state.bodymapOrientationByRegion?.[state.bodymapRegion] || orientation;
+  }
+
+  function openCyberwareBodymapView(citizenId = "", regionId = "BODY", options = {}) {
+    const id = String(citizenId || "").trim();
+    const state = getCyberwareUiState(id);
+    const changed = app.cyberwareAnatomyBodymap?.navigateState?.(state, regionId, options);
+    if (!changed) return false;
+    syncCyberwareBodymapWorkspace(id, options);
+    return true;
+  }
+
+  function setCyberwareBodymapOrientation(citizenId = "", orientation = "FRONT", options = {}) {
+    const id = String(citizenId || "").trim();
+    const state = getCyberwareUiState(id);
+    const changed = app.cyberwareAnatomyBodymap?.orientState?.(state, orientation);
+    if (!changed) return false;
+    syncCyberwareBodymapWorkspace(id, options);
+    return true;
+  }
+
+  function selectCyberwareBodymapAnchor(citizenId = "", anchorId = "", options = {}) {
+    const id = String(citizenId || "").trim();
+    const citizen = options.citizen || getCitizen(id);
+    const runtime = options.runtime || (citizen ? getCyberwareWorkspaceRuntime(citizen) : { installed: [] });
+    const state = getCyberwareUiState(id);
+    const result = app.cyberwareAnatomyBodymap?.selectAnchorState?.(state, anchorId, runtime.installed || []);
+    if (!result?.ok) return result || { ok: false, reason: "ANCHOR_NOT_FOUND" };
+    syncCyberwareBodymapWorkspace(id, { ...options, citizen, runtime });
+    if (Array.isArray(result.items) && result.items.length === 1) {
+      const root = options.root || getCyberwareWorkspaceRoot(id);
+      const currentHistory = root?.querySelector?.('[data-cyberware-ui-panel="HISTORY"] [data-cyberware-history-host]') || null;
+      const nextHistory = currentHistory ? createMarkupNode(renderCyberwareHistoryPanel(runtime, citizen, { embedded: true })) : null;
+      if (currentHistory && nextHistory) currentHistory.replaceWith(nextHistory);
+      refreshCyberwareOperationsContext(id, { ...options, root, citizen, runtime });
+    }
+    return result;
   }
 
   function setCyberwareSelectedInstance(citizenId = "", instanceId = "", options = {}) {
@@ -1516,14 +1548,17 @@ window.WS_APP = window.WS_APP || {};
     const state = getCyberwareUiState(id);
     state.selectedInstanceId = selected ? getItemId(selected) : "";
     const marker = selected ? getCyberwareBodymapEntry(selected) : null;
-    if (marker && options.syncView !== false) state.bodymapView = marker.view;
+    if (marker && options.syncView !== false) {
+      state.bodymapView = marker.view;
+      app.cyberwareAnatomyBodymap?.locateStateForItem?.(state, selected);
+    }
     syncCyberwareBodymapWorkspace(id, { ...options, citizen, runtime });
     const root = options.root || getCyberwareWorkspaceRoot(id);
     const currentHistory = root?.querySelector?.('[data-cyberware-ui-panel="HISTORY"] [data-cyberware-history-host]') || null;
     const nextHistory = currentHistory ? createMarkupNode(renderCyberwareHistoryPanel(runtime, citizen, { embedded: true })) : null;
     if (currentHistory && nextHistory) currentHistory.replaceWith(nextHistory);
     refreshCyberwareOperationsContext(id, { ...options, root, citizen, runtime });
-    return { selectedInstanceId: state.selectedInstanceId, bodymapView: state.bodymapView, item: selected };
+    return { selectedInstanceId: state.selectedInstanceId, bodymapView: state.bodymapView, bodymapRegion: state.bodymapRegion, item: selected };
   }
 
   function getCyberwareOperationReferenceIds(operation = {}) {
@@ -2030,6 +2065,9 @@ window.WS_APP = window.WS_APP || {};
     renderCyberwareInspector,
     getCyberwareBodymapMarkers,
     setCyberwareBodymapView,
+    openCyberwareBodymapView,
+    setCyberwareBodymapOrientation,
+    selectCyberwareBodymapAnchor,
     setCyberwareSelectedInstance,
     syncCyberwareBodymapWorkspace,
     buildCyberwareOperationsProjection,
@@ -2074,6 +2112,14 @@ window.WS_APP = window.WS_APP || {};
   app.renderCyberwareInspector = renderCyberwareInspector;
   app.getCyberwareBodymapMarkers = getCyberwareBodymapMarkers;
   app.setCyberwareBodymapView = setCyberwareBodymapView;
+  app.openCyberwareBodymapView = openCyberwareBodymapView;
+  app.setCyberwareBodymapOrientation = setCyberwareBodymapOrientation;
+  app.selectCyberwareBodymapAnchor = selectCyberwareBodymapAnchor;
+  app.openCyberwareBodymapForInstance = (citizenId = "", instanceId = "", options = {}) => {
+    setCyberwareUiView(citizenId, "BODYMAP", { mount: false });
+    return setCyberwareSelectedInstance(citizenId, instanceId, { ...options, syncView: true });
+  };
+  app.getCyberwareBodymapState = (citizenId = "") => getCyberwareUiState(citizenId);
   app.setCyberwareSelectedInstance = setCyberwareSelectedInstance;
   app.syncCyberwareBodymapWorkspace = syncCyberwareBodymapWorkspace;
   app.buildCyberwareOperationsProjection = buildCyberwareOperationsProjection;

@@ -13,10 +13,12 @@ This contract defines `PICKUP` fulfillment for Market checkout. It extends the c
 | payment intent, capture and refund | Billing Store |
 | physical purchased unit and custody location | ItemInstance Store / ItemInstance Transaction Store |
 | vendor and pickup location identity | Organization Store / Organization Locations |
-| player controls and projections | Housing Market UI |
-| campaign date | World Time |
+| player controls and projections | Market Workspace / Housing delivery projection |
+| campaign timestamp | Campaign Time |
+| exact event envelope and receipt | World Time Scheduled Events |
+| Market event mapping and handler | Market Time Scheduler |
 
-Housing UI is a read/command projection. It may not mutate pickup state, ItemInstance location, stock or Billing directly.
+Market and Housing UI are read/command projections. It may not mutate pickup state, ItemInstance location, stock or Billing directly.
 
 ## Offer requirements
 
@@ -103,15 +105,13 @@ Housing placement remains a later explicit ItemInstance/Housing operation.
 
 ## Expiration
 
-`READY` pickup remains valid through its `expiresAt` Campaign date. It expires only when current Campaign time is later than `expiresAt`.
-
-Reconciliation runs:
+`READY` pickup stores a full `expiresAt` Campaign timestamp. It expires at the exact boundary:
 
 ```text
-on Market Store startup
-on ws:campaign-date-updated
-on explicit reconcileMarketPickupFulfillment()
+current Campaign Time >= expiresAt
 ```
+
+`js/market-time-scheduler.js` schedules `MARKET_PICKUP_EXPIRES` through the shared persistent World Time queue. Startup and explicit `reconcileMarketPickupFulfillment()` remain recovery paths. Market Store does not depend on `ws:campaign-date-updated`.
 
 Expired pickup must use the canonical Market cancellation path with reason:
 
@@ -146,7 +146,7 @@ Failed confirmation sets pickup state to `RECOVERY_REQUIRED`. Recovery uses:
 retryMarketPickupCompletion(marketOrderId, input)
 ```
 
-Startup/date reconciliation may complete an already committed transaction receipt or expire a stale READY reservation.
+Startup reconciliation may complete an already committed transaction receipt or expire a stale READY reservation whose exact timestamp was crossed before load.
 
 ## Public API
 
@@ -175,7 +175,7 @@ all write paths are idempotent and revision-aware
 
 ## UI contract
 
-Housing Market may expose:
+Market Workspace may expose:
 
 ```text
 ADD FOR PICKUP

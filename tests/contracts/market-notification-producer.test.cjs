@@ -266,6 +266,6 @@ test("Market producer exposes readiness and global Market route selects the orde
 
   const modulesSource = fs.readFileSync(path.resolve(__dirname, "../../js/modules.js"), "utf8");
   assert.match(modulesSource, /routeId === "MARKET_ORDER"/);
-  assert.match(modulesSource, /housingMarketModeByCitizen\[targetCitizenId\] = "ORDERS"/);
-  assert.match(modulesSource, /housingSelectedMarketOrderByCitizen\[targetCitizenId\] = marketOrderId/);
+  assert.match(modulesSource, /marketModeByCitizen\[targetCitizenId\] = "ORDERS"/);
+  assert.match(modulesSource, /marketSelectedOrderByCitizen\[targetCitizenId\] = marketOrderId/);
 });

@@ -82,7 +82,7 @@ test("Subscriptions Actions & Feedback 4.3 preserves one filtered contract index
   const runtime = createRuntime();
   const control = runtime.window.WS_APP.AdminSubscriptionsControl;
 
-  assert.equal(control.version, "subscriptions_responsive_accessibility_4_5");
+  assert.equal(control.version, "subscriptions_entitlement_projection_4_6");
   assert.equal(control.normalizeSearchText("ŁUCJA / Ochrona"), "lucja ochrona");
 
   const rows = control.buildContractRows();
@@ -117,7 +117,7 @@ test("Admin subscription workspace renders aligned filters, profile sections and
   assert.match(html, /ADMIN \/ SUBSCRIPTION CONTROL/);
   assert.match(html, /Citizen, provider, product or contract ID/);
   assert.match(html, /CONTRACT STATUS/);
-  assert.match(html, /ACTIVE ENTITLEMENTS/);
+  assert.match(html, /ENTITLEMENT RESOLUTION/);
   assert.match(html, /COVERAGE TARGET/);
   assert.match(html, /ADMINISTRATIVE ACTIONS/);
   assert.match(html, /data-admin-subscriptions-action-form="TIER"/);
@@ -138,7 +138,7 @@ test("Admin workspace registry, lazy bundle and cache versions are canonical", (
   const index = read("index.html");
 
   assert.match(registry, /id: "subscriptions"[\s\S]*bundleId: "admin-workspace-subscriptions"/);
-  assert.match(modules, /"admin-workspace-subscriptions":\s*\{[\s\S]*css\/subscription-action-feedback\.css\?v=1[\s\S]*css\/admin-subscriptions\.css\?v=3[\s\S]*js\/subscription-action-feedback\.js\?v=1[\s\S]*js\/admin-subscriptions-control\.js\?v=4/);
+  assert.match(modules, /"admin-workspace-subscriptions":\s*\{[\s\S]*css\/subscription-action-feedback\.css\?v=1[\s\S]*css\/admin-subscriptions\.css\?v=3[\s\S]*js\/subscription-action-feedback\.js\?v=1[\s\S]*js\/admin-subscriptions-control\.js\?v=5/);
   assert.match(modules, /js\/admin\/admin-workspace-registry\.js\?v=5/);
   assert.match(modules, /js\/admin-control\.js\?v=66/);
   assert.match(subscriptionRenderer, /controller\?\.renderWorkspace/);
@@ -150,5 +150,6 @@ test("Admin workspace registry, lazy bundle and cache versions are canonical", (
   assert.match(css, /Subscriptions Admin UI Stability 4\.2\.1/);
   assert.match(read("js/admin-subscriptions-control.js"), /captureScrollPosition[\s\S]*restoreScrollPosition/);
   assert.match(read("js/admin-subscriptions-control.js"), /getCommandPreview[\s\S]*confirmAction/);
-  assert.match(index, /js\/modules\.js\?v=302/);
+  assert.match(index, /js\/modules\.js\?v=309/);
+
 });

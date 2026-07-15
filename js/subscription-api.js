@@ -1409,11 +1409,16 @@ window.WS_APP = window.WS_APP || {};
     });
   }
 
-  function handleCampaignDateUpdate(event) {
+  function handleCampaignTimeUpdate(event) {
     reconcileObservedEntitlements({
       reasonCode: "WORLD_TIME_ADVANCED",
       command: "WORLD_TIME_ADVANCED",
-      atTime: event?.detail?.dateIso || event?.detail?.campaignDateIso || ""
+      atTime: event?.detail?.campaignTimeIso
+        || event?.detail?.timeIso
+        || event?.detail?.currentTimeIso
+        || event?.detail?.dateIso
+        || event?.detail?.campaignDateIso
+        || ""
     });
   }
 
@@ -1491,7 +1496,7 @@ window.WS_APP = window.WS_APP || {};
   window.addEventListener?.("ws:citizens-updated", handleCitizenStoreUpdate);
   window.addEventListener?.("ws:item-instances-updated", handleItemInstancesUpdate);
   window.addEventListener?.("ws:subscription-catalog-updated", handleSubscriptionCatalogUpdate);
-  window.addEventListener?.("ws:campaign-date-updated", handleCampaignDateUpdate);
+  window.addEventListener?.("ws:campaign-time-updated", handleCampaignTimeUpdate);
   invalidateIndexes();
   resetObservedContracts();
 })();

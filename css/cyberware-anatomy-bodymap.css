@@ -1,0 +1,127 @@
+/* Cyberware Anatomy Bodymap 16.0x — asset-driven regional navigation.
+   Visual anchor language follows Equipment Bodymap while data/layout stay independent. */
+.cyberware-anatomy-panel,
+.cyberware-anatomy-workspace,
+.cyberware-anatomy-sidebar,
+.cyberware-anatomy-stage,
+.cyberware-anatomy-figure,
+.cyberware-anatomy-canvas { min-width: 0; }
+
+.cyberware-anatomy-workspace {
+  display: grid;
+  grid-template-columns: minmax(190px, .48fr) minmax(460px, 1.34fr) minmax(290px, .68fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.cyberware-anatomy-sidebar,
+.cyberware-anatomy-stage,
+.cyberware-anatomy-panel .cyberware-inspector {
+  border: 1px solid rgba(143, 189, 180, .18);
+  background: rgba(5, 7, 7, .82);
+}
+
+.cyberware-anatomy-sidebar { display: grid; align-content: start; min-height: 0; }
+.cyberware-anatomy-region-list { display: grid; gap: 1px; max-height: 560px; overflow: auto; scrollbar-width: thin; scrollbar-color: rgba(143, 189, 180, .42) rgba(3, 5, 6, .8); }
+.cyberware-anatomy-region-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; padding: 9px 10px; border: 0; border-left: 2px solid transparent; border-bottom: 1px solid rgba(143, 189, 180, .1); background: rgba(3, 5, 6, .66); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cyberware-anatomy-region-row:hover,
+.cyberware-anatomy-region-row:focus-visible { background: rgba(143, 189, 180, .08); outline: none; }
+.cyberware-anatomy-region-row.is-selected { border-left-color: #a9c3c1; background: rgba(143, 189, 180, .13); }
+.cyberware-anatomy-region-row > span { grid-column: 1 / -1; color: #667774; font-size: 7px; letter-spacing: .1em; text-transform: uppercase; }
+.cyberware-anatomy-region-row > b { overflow: hidden; color: #d6dedc; font-size: 10px; font-weight: 500; letter-spacing: .05em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.cyberware-anatomy-region-row > small { color: #7d8f8c; font-size: 8px; letter-spacing: .07em; text-transform: uppercase; }
+.cyberware-anatomy-region-row.is-warning > small { color: #c8ad7d; }
+.cyberware-anatomy-region-row.is-blocked > small { color: #d3a0a7; }
+
+.cyberware-anatomy-unmapped,
+.cyberware-anatomy-stack { display: grid; gap: 5px; padding: 10px; border-top: 1px solid rgba(143, 189, 180, .14); }
+.cyberware-anatomy-unmapped > span,
+.cyberware-anatomy-stack > div > span { color: #7d8f8c; font-size: 8px; letter-spacing: .09em; text-transform: uppercase; }
+.cyberware-anatomy-unmapped > b,
+.cyberware-anatomy-stack > div > b { color: #a9c3c1; font-size: 11px; }
+.cyberware-anatomy-stack > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; }
+.cyberware-anatomy-stack > div > span { grid-column: 1 / -1; }
+.cyberware-anatomy-stack > div > small { color: #7d8f8c; font-size: 8px; }
+.cyberware-anatomy-unmapped button,
+.cyberware-anatomy-stack button { min-width: 0; display: grid; gap: 3px; padding: 7px 8px; border: 1px solid rgba(143, 189, 180, .13); background: rgba(3, 5, 6, .58); color: #d6dedc; font: inherit; font-size: 9px; text-align: left; cursor: pointer; }
+.cyberware-anatomy-stack button small { color: #7d8f8c; font-size: 8px; }
+.cyberware-anatomy-unmapped button:hover,
+.cyberware-anatomy-stack button:hover { border-color: rgba(169, 195, 193, .42); background: rgba(143, 189, 180, .075); }
+
+.cyberware-anatomy-stage { display: grid; overflow: hidden; }
+.cyberware-anatomy-stage__toolbar { display: flex; align-items: stretch; justify-content: space-between; gap: 8px; padding: 1px; border-bottom: 1px solid rgba(143, 189, 180, .14); background: rgba(143, 189, 180, .07); }
+.cyberware-anatomy-breadcrumb { min-width: 0; display: flex; align-items: center; gap: 3px; padding: 0 7px; overflow: auto; }
+.cyberware-anatomy-breadcrumb button { min-height: 34px; padding: 0 7px; border: 0; background: transparent; color: #7d8f8c; font: inherit; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
+.cyberware-anatomy-breadcrumb button:hover,
+.cyberware-anatomy-breadcrumb button:focus-visible,
+.cyberware-anatomy-breadcrumb button[aria-current="page"] { color: #d0f1ed; outline: none; }
+.cyberware-anatomy-breadcrumb > span { color: rgba(143, 189, 180, .32); font-size: 9px; }
+.cyberware-anatomy-orientation { flex: 0 0 auto; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(74px, 1fr); gap: 1px; }
+.cyberware-anatomy-orientation button { min-height: 36px; padding: 0 12px; border: 0; background: #080c0d; color: #7d8f8c; font: inherit; font-size: 9px; letter-spacing: .1em; cursor: pointer; }
+.cyberware-anatomy-orientation button:hover,
+.cyberware-anatomy-orientation button:focus-visible { background: rgba(143, 189, 180, .1); color: #d6dedc; outline: none; }
+.cyberware-anatomy-orientation button.is-active { background: rgba(143, 189, 180, .16); color: #d0f1ed; box-shadow: inset 0 -2px 0 rgba(169, 195, 193, .72); }
+
+.cyberware-anatomy-figure { margin: 0; background: #030506; }
+.cyberware-anatomy-figure figcaption { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; border-bottom: 1px solid rgba(143, 189, 180, .13); color: #7d8f8c; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
+.cyberware-anatomy-figure figcaption b { color: #a9c3c1; font-weight: 500; }
+.cyberware-anatomy-canvas { position: relative; min-height: 720px; overflow: hidden; background: radial-gradient(circle at 50% 42%, rgba(32, 52, 52, .2), transparent 48%), #030506; }
+.cyberware-anatomy-canvas > img { display: block; width: 100%; height: 100%; min-height: 720px; object-fit: contain; opacity: .9; filter: saturate(.62) contrast(1.04); user-select: none; -webkit-user-drag: none; }
+
+.cyberware-anatomy-anchor {
+  --bodymap-line: rgba(95, 116, 115, .44);
+  --bodymap-card-border: rgba(143, 189, 180, .24);
+  --bodymap-card-bg: rgba(3, 5, 6, .9);
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.cyberware-anatomy-anchor.is-occupied { --bodymap-line: rgba(136, 160, 158, .66); --bodymap-card-border: rgba(136, 160, 158, .5); }
+.cyberware-anatomy-anchor.is-warning { --bodymap-line: rgba(185, 154, 107, .66); --bodymap-card-border: rgba(185, 154, 107, .58); }
+.cyberware-anatomy-anchor.is-blocked { --bodymap-line: rgba(184, 92, 102, .76); --bodymap-card-border: rgba(184, 92, 102, .72); --bodymap-card-bg: rgba(38, 10, 14, .9); }
+.cyberware-anatomy-anchor.is-selected { z-index: 10; --bodymap-line: rgba(208, 241, 237, .9); --bodymap-card-border: rgba(208, 241, 237, .78); --bodymap-card-bg: rgba(10, 17, 18, .96); }
+.cyberware-anatomy-anchor:has(button:hover),
+.cyberware-anatomy-anchor:focus-within { z-index: 11; --bodymap-line: rgba(169, 195, 193, .8); --bodymap-card-border: rgba(169, 195, 193, .68); --bodymap-card-bg: rgba(10, 17, 18, .96); }
+
+.cyberware-anatomy-anchor__leader { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.cyberware-anatomy-anchor__leader path { vector-effect: non-scaling-stroke; fill: none; stroke: var(--bodymap-line); stroke-width: 1; stroke-linecap: square; opacity: .36; transition: opacity .14s ease; }
+.cyberware-anatomy-anchor:has(button:hover) .cyberware-anatomy-anchor__leader path,
+.cyberware-anatomy-anchor:focus-within .cyberware-anatomy-anchor__leader path,
+.cyberware-anatomy-anchor.is-selected .cyberware-anatomy-anchor__leader path { opacity: 1; }
+
+.cyberware-anatomy-anchor__point { pointer-events: auto; }
+.cyberware-anatomy-anchor__point > b { position: absolute; left: 50%; top: -11px; min-width: 15px; padding: 1px 3px; border: 1px solid var(--bodymap-card-border); background: #030506; color: #d0f1ed; font-size: 7px; line-height: 1.2; transform: translateX(-50%); }
+.cyberware-anatomy-anchor.is-selected .cyberware-anatomy-anchor__point { border-color: rgba(208, 241, 237, .95); background: rgba(95, 116, 115, .7); box-shadow: 0 0 0 1px rgba(3, 5, 6, .64), 0 0 12px rgba(208, 241, 237, .28); }
+.cyberware-anatomy-anchor.is-blocked .cyberware-anatomy-anchor__point { border-color: rgba(211, 160, 167, .86); background: rgba(184, 92, 102, .48); }
+.cyberware-anatomy-anchor.is-warning .cyberware-anatomy-anchor__point { border-color: rgba(200, 173, 125, .86); background: rgba(185, 154, 107, .44); }
+
+.cyberware-anatomy-anchor__card { position: absolute; left: var(--cw-label-x); top: var(--cw-label-y); z-index: 3; width: clamp(104px, 12vw, 150px); min-height: 34px; display: grid; align-content: center; gap: 3px; padding: 6px 9px; border: 1px solid var(--bodymap-card-border); background: linear-gradient(90deg, rgba(143, 189, 180, .045), transparent 42%), var(--bodymap-card-bg); color: #d8e4e1; font: inherit; text-align: left; text-transform: uppercase; transform: translateY(-50%); pointer-events: auto; cursor: pointer; }
+.cyberware-anatomy-anchor__card::before { content: ""; position: absolute; left: 3px; top: 5px; bottom: 5px; width: 2px; background: var(--bodymap-line); opacity: .8; }
+.cyberware-anatomy-anchor__card small { color: rgba(143, 165, 161, .8); font-size: 7px; letter-spacing: .08em; }
+.cyberware-anatomy-anchor__card b { overflow: hidden; color: inherit; font-size: 9px; font-weight: 600; letter-spacing: .07em; text-overflow: ellipsis; white-space: nowrap; }
+.cyberware-anatomy-anchor__card:hover,
+.cyberware-anatomy-anchor__card:focus-visible { outline: none; background: linear-gradient(90deg, rgba(169, 195, 193, .08), transparent 46%), var(--bodymap-card-bg); box-shadow: inset 0 0 0 1px rgba(208, 241, 237, .055), 0 0 16px rgba(143, 189, 180, .08); }
+.cyberware-anatomy-anchor.is-navigation .cyberware-anatomy-anchor__card small { color: #a9c3c1; }
+
+@media (max-width: 1420px) {
+  .cyberware-anatomy-workspace { grid-template-columns: minmax(190px, .45fr) minmax(460px, 1.3fr); }
+  .cyberware-anatomy-workspace > .cyberware-inspector-host { grid-column: 1 / -1; }
+  .cyberware-anatomy-workspace > .cyberware-inspector-host .cyberware-inspector { position: static; max-height: none; }
+}
+
+@media (max-width: 980px) {
+  .cyberware-anatomy-workspace { grid-template-columns: minmax(0, 1fr); }
+  .cyberware-anatomy-region-list { max-height: 300px; }
+  .cyberware-anatomy-canvas,
+  .cyberware-anatomy-canvas > img { min-height: 620px; }
+}
+
+@media (max-width: 680px) {
+  .cyberware-anatomy-stage__toolbar { align-items: stretch; flex-direction: column; }
+  .cyberware-anatomy-orientation { grid-auto-columns: minmax(0, 1fr); }
+  .cyberware-anatomy-canvas,
+  .cyberware-anatomy-canvas > img { min-height: 520px; }
+  .cyberware-anatomy-anchor__card { width: 96px; padding: 5px 7px; }
+  .cyberware-anatomy-anchor__card small { display: none; }
+}

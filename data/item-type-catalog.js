@@ -122,6 +122,18 @@ window.APP_DATA.itemTypeCatalog = [
     stateFields: []
   },
   {
+    id: "CYBERWARE_MODULE",
+    label: "Cyberware Module",
+    family: "CYBERWARE",
+    capabilities: ["CYBERWARE_MODULE", "INSTALLABLE_IN_ITEM"],
+    matches: { subtypes: ["CYBERWARE_MODULE"], tags: ["CYBERWARE_MODULE"] },
+    profileFields: [
+      { key: "slotType", type: "TOKEN", default: "UTILITY" },
+      { key: "upgradeCapacityCost", type: "INTEGER", default: 1, min: 1, max: 16 }
+    ],
+    stateFields: []
+  },
+  {
     id: "CONTAINER",
     label: "Container",
     family: "CARRY",

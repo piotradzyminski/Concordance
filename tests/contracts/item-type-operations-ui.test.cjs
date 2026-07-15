@@ -228,7 +228,8 @@ test("Equipment Inspector and delegated actions are wired to the Item Operations
   assert.match(modules, /js\/item-type-operations-ui\.js\?v=3/);
   assert.match(modules, /css\/equipment\.css\?v=129/);
   assert.match(index, /js\/item-type-operations\.js\?v=3/);
-  assert.match(index, /js\/modules\.js\?v=302/);
+  assert.match(index, /js\/modules\.js\?v=309/);
+
   assert.match(css, /Item type operation controls 1\.2x/);
   assert.match(css, /\.item-type-operation-status-grid/);
 });

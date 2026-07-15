@@ -352,7 +352,8 @@ window.WS_APP = window.WS_APP || {};
     const items = window.WS_APP.getCitizenEquipmentItemInstances?.(ownerId) || [];
     return items.reduce((rows, instance) => {
       const profile = getHouseholdItemProfile(instance);
-      if (!profile.placeable) return rows;
+      const lifecycle = window.WS_APP.getHousingFurnishingLifecycleProjection?.(instance, record) || null;
+      if (!profile.placeable && !lifecycle) return rows;
       const location = instance.location || {};
       const locationType = normalizeToken(location.type);
       const storedHere = locationType === "HOUSING_STORAGE" && storageUnitIds.has(normalizeId(location.storageUnitId));
@@ -361,6 +362,7 @@ window.WS_APP = window.WS_APP || {};
       rows.push({
         instance: clone(instance),
         profile,
+        lifecycle,
         scope: placedHere ? "PLACED" : "STORAGE",
         housingRecordId: record.id,
         roomId: placedHere ? normalizeId(location.roomId) : "",
@@ -393,14 +395,21 @@ window.WS_APP = window.WS_APP || {};
     const placeable = profile.placeable === true
       || ["FURNITURE", "APPLIANCE", "FIXTURE", "HOUSEHOLD_FURNISHING"].includes(itemType)
       || tags.some((tag) => ["FURNITURE", "APPLIANCE", "FIXTURE", "HOUSEHOLD_PLACEABLE"].includes(tag));
+    const lifecycle = window.WS_APP.getHousingFurnishingLifecycleProjection?.(instance) || null;
     return {
       definitionId: normalizeId(instance.definitionId),
-      placeable,
+      placeable: lifecycle ? lifecycle.movable === true : placeable,
+      movable: lifecycle ? lifecycle.movable === true : placeable,
+      nonBlocking: lifecycle?.nonBlocking === true,
       itemType,
       category,
       tags,
       footprint,
-      capabilities: normalizeStringList(profile.capabilities || []),
+      capabilities: lifecycle ? normalizeStringList(lifecycle.capabilities || []) : normalizeStringList(profile.capabilities || []),
+      ownershipType: lifecycle?.ownershipType || "",
+      grade: lifecycle?.grade || "",
+      condition: lifecycle?.condition ?? null,
+      conditionState: lifecycle?.conditionState || "",
       allowedRoomTypes: normalizeStringList(profile.allowedRoomTypes || []),
       blockedRoomTypes: normalizeStringList(profile.blockedRoomTypes || [])
     };
@@ -430,11 +439,13 @@ window.WS_APP = window.WS_APP || {};
     const roomId = normalizeId(input.roomId);
     const room = getHouseholdRoom(citizenId, housingRecordId, roomId);
     if (!room) return { ok: false, reason: "HOUSEHOLD_ROOM_NOT_FOUND", citizenId, housingRecordId, roomId };
-    const excludeInstanceId = normalizeId(input.excludeInstanceId);
+    const excludeInstanceIds = new Set([normalizeId(input.excludeInstanceId), ...(Array.isArray(input.excludeInstanceIds) ? input.excludeInstanceIds.map(normalizeId) : [])].filter(Boolean));
     const cells = new Map();
     const entries = [];
     getHouseholdPlacedItems(citizenId, housingRecordId, roomId).forEach((instance) => {
-      if (excludeInstanceId && instance.instanceId === excludeInstanceId) return;
+      if (excludeInstanceIds.has(instance.instanceId)) return;
+      const profile = getHouseholdItemProfile(instance);
+      if (profile.nonBlocking) return;
       const location = instance.location || {};
       const footprint = getHouseholdItemFootprint(instance, location.rotation);
       const placement = {
@@ -495,7 +506,7 @@ window.WS_APP = window.WS_APP || {};
         }
       }
     }
-    const occupancy = getHouseholdRoomOccupancy({ citizenId, housingRecordId, roomId, excludeInstanceId: instanceId });
+    const occupancy = getHouseholdRoomOccupancy({ citizenId, housingRecordId, roomId, excludeInstanceId: instanceId, excludeInstanceIds: input.excludeInstanceIds });
     const occupied = new Map((occupancy.occupiedCells || []).map((entry) => [entry.cell, entry.instanceId]));
     const collisions = new Set();
     for (let row = placement.row; row <= endRow; row += 1) {

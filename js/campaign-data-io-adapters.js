@@ -128,13 +128,16 @@ window.WS_APP = window.WS_APP || {};
 
   registerStorage({
     domainId: "market",
-    schemaVersion: "market_service_fulfillment_fix_4_4x",
+    schemaVersion: "market_secondary_listing_wishlist_7_0x",
     classification: C.CAMPAIGN_PERSISTENT,
     required: true,
     storageKeys: [
       json("ws_market_carts_v1", ["carts"]),
       json("ws_market_orders_v1", ["orders"]),
-      json("ws_market_stock_v1", ["reservations", "stockReservations", "stock"])
+      json("ws_market_stock_v1", ["reservations", "stockReservations", "stock"]),
+      json("ws_market_secondary_listings_v1", ["listings"]),
+      text("ws_market_secondary_listings_schema"),
+      json("ws_market_wishlists_v1", ["wishlists"])
     ]
   });
 
@@ -167,6 +170,17 @@ window.WS_APP = window.WS_APP || {};
         activeOperationIds: active.map((operation) => String(operation?.operationId || "")).filter(Boolean)
       };
     }
+  });
+
+  registerStorage({
+    domainId: "world-time-scheduled-events",
+    schemaVersion: "world_time_scheduled_events_2_3x",
+    classification: C.CAMPAIGN_PERSISTENT,
+    required: true,
+    storageKeys: [
+      json("ws_world_time_scheduled_events_v1", ["events", "receipts"]),
+      text("ws_world_time_scheduled_events_schema")
+    ]
   });
 
   registerStorage({

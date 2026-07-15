@@ -7,6 +7,8 @@ const { readProjectFile } = require("../helpers/source-contract.cjs");
 
 function createRuntime() {
   const runtime = createBrowserRuntime();
+  runtime.load("data/cyberware-bodymap-layouts.js");
+  runtime.load("js/cyberware-anatomy-bodymap.js");
   runtime.load("js/cyberware-workspace.js");
   return runtime;
 }
@@ -78,24 +80,27 @@ function installAuthorization(app) {
   };
 }
 
-test("Cyberware Bodymap uses canonical assets and consistent FRONT/BACK views", () => {
+test("Cyberware Bodymap uses clean AVIF anatomy assets and hierarchical regions", () => {
   const runtime = createRuntime();
   const app = runtime.window.WS_APP;
   installAuthorization(app);
 
+  const state = app.getCyberwareUiState(citizen.id);
+  app.cyberwareAnatomyBodymap.navigateState(state, "BODY", { orientation: "FRONT" });
+  state.selectedInstanceId = frontItem.instanceId;
   const markup = app.renderCyberwareBodymapPanel(runtimeState, citizen);
 
-  assert.match(markup, /src="assets\/bodymap_front\.jpg"/);
-  assert.match(markup, /src="assets\/bodymap_back\.jpg"/);
-  assert.doesNotMatch(markup, /bodymap_front_x2\.webp/);
-  assert.match(markup, /data-cyberware-bodymap-view="front"[^>]*>FRONT</);
-  assert.match(markup, /data-cyberware-bodymap-view="back"[^>]*>BACK</);
-  assert.doesNotMatch(markup, /ANTERIOR|POSTERIOR/);
-  assert.match(markup, /data-cyberware-bodymap-frame="front"/);
-  assert.match(markup, /data-cyberware-bodymap-frame="back"[^>]*hidden/);
+  assert.match(markup, /src="assets\/bodymap\/bodymap_front\.avif"/);
+  assert.doesNotMatch(markup, /_anchor\.avif/);
+  assert.match(markup, /data-cyberware-anatomy-region="HEAD"/);
+  assert.match(markup, /data-cyberware-anatomy-region="TORSO"/);
+  assert.match(markup, /data-cyberware-anatomy-region="LEFT_ARM"/);
+  assert.match(markup, /data-cyberware-anatomy-orientation="FRONT"/);
+  assert.match(markup, /data-cyberware-anatomy-orientation="BACK"/);
+  assert.match(markup, /Anatomy Navigation/);
 });
 
-test("Cyberware selection is shared by list, marker and Inspector and switches to the mapped view", () => {
+test("Cyberware selection locates the ItemInstance in the deepest anatomy region", () => {
   const runtime = createRuntime();
   const app = runtime.window.WS_APP;
   installAuthorization(app);
@@ -108,14 +113,12 @@ test("Cyberware selection is shared by list, marker and Inspector and switches t
   const markup = app.renderCyberwareBodymapPanel(runtimeState, citizen);
 
   assert.equal(result.selectedInstanceId, backItem.instanceId);
-  assert.equal(result.bodymapView, "back");
   assert.equal(state.selectedInstanceId, backItem.instanceId);
-  assert.equal(state.bodymapView, "back");
-  assert.match(markup, /data-cyberware-select-item="implant-back-1"[^>]*aria-pressed="true"/);
-  assert.match(markup, /data-cyberware-bodymap-frame="front"[^>]*hidden/);
-  assert.match(markup, /data-cyberware-bodymap-frame="back"(?![^>]*hidden)/);
+  assert.equal(state.bodymapRegion, "NEURAL");
+  assert.match(markup, /src="assets\/bodymap\/brain\.avif"/);
   assert.match(markup, /data-cyberware-inspector-item="implant-back-1"/);
   assert.match(markup, /Torii Interface/);
+  assert.match(markup, /Bodymap \/ Head \/ Neural/);
 });
 
 test("Cyberware Inspector exposes ItemInstance, runtime, authorization, firmware and operation controls", () => {
@@ -138,6 +141,7 @@ test("Cyberware Inspector exposes ItemInstance, runtime, authorization, firmware
   assert.match(markup, /implant-front-1/);
   assert.match(markup, /Serial number/);
   assert.match(markup, /VD-2209-A/);
+  assert.match(markup, /data-cyberware-locate-instance="implant-front-1"/);
   assert.match(markup, /data-cyberware-planner-action="select-target"/);
   assert.match(markup, /data-cyberware-planner-action="replace-target"/);
   assert.match(markup, /data-cyberware-maintenance-action="open" data-item-id="implant-front-1"/);
@@ -153,7 +157,8 @@ test("Installed Systems cards use the same local selection and Inspector contrac
   const bodymap = app.renderCyberwareBodymapPanel(runtimeState, citizen);
   const fullWorkspace = app.renderCyberwareWorkspace(citizen, { activeView: "SYSTEMS" });
 
-  assert.match(bodymap, /Bodymap Index/);
+  assert.match(bodymap, /ANATOMY INDEX/);
+  assert.match(bodymap, /Direct Regions/);
   assert.match(fullWorkspace, /data-cyberware-system-card="implant-front-1"/);
   assert.match(fullWorkspace, /equipment-cyberware-card is-selected/);
   assert.match(fullWorkspace, /data-cyberware-inspector-item="implant-front-1"/);
@@ -162,8 +167,12 @@ test("Installed Systems cards use the same local selection and Inspector contrac
 test("standalone Cyberware actions expose local Bodymap view and selection fast paths", () => {
   const source = readProjectFile("js/cyberware-module.js");
 
-  assert.match(source, /data-cyberware-bodymap-view/);
-  assert.match(source, /setCyberwareBodymapView/);
+  assert.match(source, /data-cyberware-anatomy-region/);
+  assert.match(source, /openCyberwareBodymapView/);
+  assert.match(source, /data-cyberware-anatomy-orientation/);
+  assert.match(source, /setCyberwareBodymapOrientation/);
+  assert.match(source, /data-cyberware-anatomy-anchor/);
+  assert.match(source, /selectCyberwareBodymapAnchor/);
   assert.match(source, /data-cyberware-select-item/);
   assert.match(source, /setCyberwareSelectedInstance/);
   assert.match(source, /setCyberwareMaintenanceSelection/);

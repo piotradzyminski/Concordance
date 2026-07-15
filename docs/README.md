@@ -95,7 +95,10 @@ docs/contracts/commerce/market_cart_navigation_contract.md
 docs/contracts/commerce/housing_household_foundation_contract.md
 docs/contracts/commerce/housing_household_furnishing_workspace_contract.md
 docs/contracts/commerce/market_partial_return_refund_contract.md
-docs/contracts/commerce/market_product_visual_assets_contract.md
+docs/contracts/commerce/market_datetime_scheduler_contract.md
+docs/contracts/commerce/market_secondary_listing_contract.md
+docs/contracts/commerce/market_wishlist_contract.md
+docs/contracts/commerce/housing_household_hub_contract.md
 docs/contracts/commerce/housing_bridge_contract.md
 docs/contracts/commerce/housing_grid_engine_unification_contract.md
 docs/contracts/commerce/housing_rent_standards_catalog_contract.md
@@ -127,6 +130,7 @@ docs/contracts/cyberware/cyberware_planner_performance_contract.md
 docs/contracts/cyberware/cyberware_interaction_performance_contract.md
 docs/contracts/cyberware/cyberware_ui_contract.md
 docs/contracts/cyberware/cyberware_module_extraction_contract.md
+docs/contracts/cyberware/cyberware_upgrade_system_contract.md
 ```
 
 ### World Bridge
@@ -146,6 +150,7 @@ docs/contracts/world_bridge/cyberware_performance_equipment_contract.md
 
 ```text
 docs/contracts/knowledge/knowledge_pack_schema.md
+docs/contracts/knowledge/knowledge_relations_contract.md
 docs/contracts/quality/project_test_harness_contract.md
 docs/contracts/quality/ui_tabs_component_contract.md
 ```
@@ -180,7 +185,6 @@ Admin workspace renderers are documented in the existing `docs/contracts/admin/a
 
 ```text
 docs/contracts/admin/admin_record_lifecycle_contract.md
-docs/contracts/commerce/market_product_visual_assets_contract.md
 ```
 
 Notification projection policy extends the existing Terminal Notifications contract. Housing Storage Runtime Split, Runtime Cold Entry Dependencies and Subscriptions Actions & Feedback update their existing domain contracts instead of creating competing ownership documents.
@@ -242,3 +246,27 @@ docs/contracts/commerce/housing_rent_subscription_bridge_contract.md
 ```
 
 Knowledge Relation Sidecar Layering extends the existing Knowledge Relations contract. It does not introduce a new content source or replace current Knowledge records.
+
+
+## Active additions in 15.16x
+
+```text
+docs/contracts/cyberware/cyberware_anatomy_bodymap_contract.md
+docs/contracts/commerce/housing_rent_relocation_runtime_contract.md
+docs/contracts/commerce/market_card_ui_contract.md
+docs/contracts/core/world_time_scheduled_events_contract.md
+```
+
+Knowledge Article Index Tabs extends the existing Knowledge Relations contract only. It does not introduce a new content source or modify approved Knowledge records.
+
+## Active additions in 15.19x
+
+```text
+docs/contracts/commerce/market_datetime_scheduler_contract.md
+docs/contracts/commerce/market_secondary_listing_contract.md
+docs/contracts/commerce/market_wishlist_contract.md
+docs/contracts/commerce/housing_household_hub_contract.md
+docs/contracts/cyberware/cyberware_upgrade_system_contract.md
+```
+
+Knowledge Article Index Tabs 1.6x extends the existing Knowledge Relations contract only. It does not introduce a new Knowledge content source, registry or schema.

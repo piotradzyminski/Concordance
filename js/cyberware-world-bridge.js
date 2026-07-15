@@ -2,7 +2,7 @@ window.WS_APP = window.WS_APP || {};
 
 (function initCyberwareWorldBridge() {
   const app = window.WS_APP;
-  if (app.cyberwareWorldBridge?.version === "14.2x") return;
+  if (app.cyberwareWorldBridge?.version === "16.1x") return;
 
   const clone = app.storeUtils?.clone || ((value) => {
     if (value === undefined) return undefined;
@@ -11,7 +11,8 @@ window.WS_APP = window.WS_APP || {};
 
   const TERMINAL_STATUSES = new Set(["COMPLETED", "FAILED", "CANCELLED", "RECOVERY_REQUIRED", "PAYMENT_RECOVERY_REQUIRED", "COMPENSATION_REQUIRED"]);
   const SERVICE_OPERATION_TYPES = new Set([
-    "INSTALL", "DEINSTALL", "REPLACE", "MAINTENANCE", "DIAGNOSTIC", "REPAIR", "CALIBRATION", "CLEAN", "FIRMWARE_UPDATE", "LICENSE_REVIEW"
+    "INSTALL", "DEINSTALL", "REPLACE", "MAINTENANCE", "DIAGNOSTIC", "REPAIR", "CALIBRATION", "CLEAN", "FIRMWARE_UPDATE", "LICENSE_REVIEW",
+    "INSTALL_MODULE", "REMOVE_MODULE", "REPLACE_MODULE", "APPLY_PERMANENT_MOD"
   ]);
   const PURCHASE_OPERATION_TYPES = new Set(["PURCHASE_TO_HOUSING", "PURCHASE_AND_INSTALL"]);
   const RECOVERY_STATUSES = new Set(["RECOVERY_REQUIRED", "PAYMENT_RECOVERY_REQUIRED", "COMPENSATION_REQUIRED"]);
@@ -33,7 +34,11 @@ window.WS_APP = window.WS_APP || {};
     CALIBRATE: "svc-cyberware-calibrate-standard",
     CLEAN: "svc-cyberware-clean-standard",
     FIRMWARE_UPDATE: "svc-firmware-update-standard",
-    LICENSE_REVIEW: "svc-license-review-standard"
+    LICENSE_REVIEW: "svc-license-review-standard",
+    INSTALL_MODULE: "svc-cyberware-module-install-standard",
+    REMOVE_MODULE: "svc-cyberware-module-remove-standard",
+    REPLACE_MODULE: "svc-cyberware-module-replace-standard",
+    APPLY_PERMANENT_MOD: "svc-cyberware-permanent-modification-standard"
   });
   const CAPABILITY_BY_OPERATION = Object.freeze({
     INSTALL: "CYBERWARE_INSTALL",
@@ -46,7 +51,11 @@ window.WS_APP = window.WS_APP || {};
     CALIBRATE: "CYBERWARE_CALIBRATE",
     CLEAN: "CYBERWARE_CLEAN",
     FIRMWARE_UPDATE: "FIRMWARE_UPDATE",
-    LICENSE_REVIEW: "LICENSE_REVIEW"
+    LICENSE_REVIEW: "LICENSE_REVIEW",
+    INSTALL_MODULE: "CYBERWARE_MODULE_INSTALL",
+    REMOVE_MODULE: "CYBERWARE_MODULE_REMOVE",
+    REPLACE_MODULE: "CYBERWARE_MODULE_REPLACE",
+    APPLY_PERMANENT_MOD: "CYBERWARE_PERMANENT_MODIFICATION"
   });
 
   const emittedRevisionByOperationId = new Map();
@@ -268,7 +277,11 @@ window.WS_APP = window.WS_APP || {};
       input.sourceItemId,
       input.targetItemId,
       input.oldInstanceId,
-      input.newInstanceId
+      input.newInstanceId,
+      input.hostInstanceId,
+      input.moduleInstanceId,
+      input.oldModuleInstanceId,
+      input.newModuleInstanceId
     ]);
   }
   function buildRecoveryInput(input = {}, quote = {}) {
@@ -291,6 +304,11 @@ window.WS_APP = window.WS_APP || {};
       surgeryPreset: id(input.surgeryPreset || "LOCAL_CLINIC"),
       maintenanceOperation: token(input.maintenanceOperation || ""),
       firmwareReleaseId: id(input.firmwareReleaseId || input.releaseId),
+      hostInstanceId: id(input.hostInstanceId || input.instanceId),
+      moduleInstanceId: id(input.moduleInstanceId || input.newModuleInstanceId),
+      oldModuleInstanceId: id(input.oldModuleInstanceId),
+      slotId: id(input.slotId || input.moduleSlotId),
+      modificationId: id(input.modificationId),
       scheduledStartAt: id(input.scheduledStartAt),
       estimatedEndAt: id(input.estimatedEndAt),
       paymentSource: id(input.paymentSource || "CREDITS"),
@@ -336,6 +354,13 @@ window.WS_APP = window.WS_APP || {};
       else if (plan.valid !== true) blockers.push(...(plan.blockers?.length ? plan.blockers : [plan.reason || "CYBERWARE_PLAN_BLOCKED"]));
       warnings.push(...(plan?.warnings || []));
     }
+    let upgradeQuote = null;
+    if (["INSTALL_MODULE", "REMOVE_MODULE", "REPLACE_MODULE", "APPLY_PERMANENT_MOD"].includes(operationType)) {
+      upgradeQuote = app.buildCyberwareUpgradeQuote?.({ ...input, operationType, citizenId }) || null;
+      if (!upgradeQuote) blockers.push("CYBERWARE_UPGRADE_QUOTE_API_REQUIRED");
+      else if (upgradeQuote.ok !== true) blockers.push(...(upgradeQuote.blockers?.length ? upgradeQuote.blockers : [upgradeQuote.reason || "CYBERWARE_UPGRADE_BLOCKED"]));
+      warnings.push(...(upgradeQuote?.warnings || []));
+    }
     let maintenanceQuote = null;
     if (["MAINTENANCE", "DIAGNOSTIC", "REPAIR", "CALIBRATION", "CLEAN", "FIRMWARE_UPDATE"].includes(operationType)) {
       const itemId = id(input.instanceId || input.itemId);
@@ -353,14 +378,16 @@ window.WS_APP = window.WS_APP || {};
       if (firmware && firmware.allowed !== true) blockers.push(...(firmware.blockers || [firmware.reason || "FIRMWARE_BLOCKED"]));
       warnings.push(...(firmware?.warnings || []));
     }
-    const grossPrice = Math.max(0, Math.round(finite(input.grossPrice ?? plan?.procedureCost ?? maintenanceQuote?.cost, 0)));
-    const estimatedDurationMinutes = Math.max(0, Math.round(finite(input.estimatedDurationMinutes ?? plan?.durationMinutes ?? maintenanceQuote?.durationMinutes, 0)));
+    const grossPrice = Math.max(0, Math.round(finite(input.grossPrice ?? plan?.procedureCost ?? maintenanceQuote?.cost ?? upgradeQuote?.cost, 0)));
+    const estimatedDurationMinutes = Math.max(0, Math.round(finite(input.estimatedDurationMinutes ?? plan?.durationMinutes ?? maintenanceQuote?.durationMinutes ?? upgradeQuote?.durationMinutes, 0)));
     const serviceDefinitionId = serviceDefinitionFor(operationType, input.serviceDefinitionId);
     const subjectRefs = {
       instanceIds: getSubjectInstanceIds(input),
       targetCharacterId: citizenId,
       targetBodySlots: unique(input.targetBodySlots || plan?.occupiedSlots || [plan?.primarySlot || input.primarySlot]),
-      returnLocation: plan?.returnDestination || input.returnDestination || null
+      returnLocation: plan?.returnDestination || upgradeQuote?.returnDestination || input.returnDestination || null,
+      parentItemInstanceId: id(input.hostInstanceId || upgradeQuote?.hostInstanceId),
+      moduleSlotId: id(input.slotId || upgradeQuote?.slotId)
     };
     let domainQuote = null;
     if (!blockers.length && typeof app.quoteService === "function") {
@@ -373,7 +400,7 @@ window.WS_APP = window.WS_APP || {};
         estimatedDurationMinutes,
         currency: input.currency || "CREDIT",
         coverageAuthorizations: input.coverageAuthorizations,
-        metadata: { operationType, source: "CYBERWARE_WORLD_BRIDGE_14_2X" }
+        metadata: { operationType, source: "CYBERWARE_WORLD_BRIDGE_16_1X" }
       });
       if (domainQuote?.ok !== true) blockers.push(...(domainQuote?.blockers || [domainQuote?.reason || "SERVICE_QUOTE_BLOCKED"]));
       warnings.push(...(domainQuote?.warnings || []));
@@ -391,6 +418,7 @@ window.WS_APP = window.WS_APP || {};
       subjectRefs,
       plan,
       maintenanceQuote,
+      upgradeQuote,
       serviceQuote: domainQuote,
       quote: domainQuote?.quote || {
         grossPrice,
@@ -491,7 +519,7 @@ window.WS_APP = window.WS_APP || {};
       claims: instanceIds.map((instanceId) => ({ resourceType: "ITEM_INSTANCE", resourceId: instanceId })),
       recoveryHandlerId: `CYBERWARE_${normalizeOperation(input.operationType || input.operation)}`,
       metadata: {
-        source: "CYBERWARE_WORLD_BRIDGE_14_2X",
+        source: "CYBERWARE_WORLD_BRIDGE_16_1X",
         cyberwareOperationType: normalizeOperation(input.operationType || input.operation),
         serviceDefinitionId: id(input.serviceDefinitionId || quote.serviceDefinitionId),
         marketOfferId: id(input.marketOfferId),
@@ -803,7 +831,12 @@ window.WS_APP = window.WS_APP || {};
     const idempotencyKey = `${id(input.idempotencyKey)}:item-commit`;
     let transactionResult = null;
     let instanceIds = getSubjectInstanceIds(input);
-    if (["INSTALL", "DEINSTALL", "REPLACE"].includes(operation)) {
+    if (["INSTALL_MODULE", "REMOVE_MODULE", "REPLACE_MODULE", "APPLY_PERMANENT_MOD"].includes(operation)) {
+      const result = app.commitCyberwareUpgradeServiceResult?.({ ...input, operationType: operation, idempotencyKey }, serviceOrder);
+      if (result?.ok !== true) return { ok: false, reason: result?.reason || "CYBERWARE_UPGRADE_COMMIT_FAILED", transactionResult: result };
+      transactionResult = result;
+      instanceIds = unique(result.instanceIds || getSubjectInstanceIds(input));
+    } else if (["INSTALL", "DEINSTALL", "REPLACE"].includes(operation)) {
       const plan = input.plan || quote.plan || buildPlannerPlan(input);
       if (!plan?.valid) return { ok: false, reason: plan?.reason || "CYBERWARE_PLAN_BLOCKED", plan };
       if (operation === "INSTALL") {
@@ -911,12 +944,13 @@ window.WS_APP = window.WS_APP || {};
     if (transactionResult?.ok !== true) return { ok: false, reason: transactionResult?.reason || "ITEM_INSTANCE_TRANSACTION_FAILED", transactionResult };
     diagnostics.physicalCommits += 1;
     const transaction = transactionResult.transaction || transactionResult;
+    const itemTransactionId = id(transactionResult.itemTransactionId || transaction.transactionId);
     return {
       ok: true,
       reason: "CYBERWARE_PHYSICAL_RESULT_COMMITTED",
       instanceIds,
-      itemTransactionId: id(transaction.transactionId),
-      itemCommit: { committed: true, status: "COMMITTED", transactionId: id(transaction.transactionId) },
+      itemTransactionId,
+      itemCommit: transactionResult.itemCommit || { committed: true, status: "COMMITTED", transactionId: itemTransactionId },
       transaction
     };
   }
@@ -968,7 +1002,7 @@ window.WS_APP = window.WS_APP || {};
       outcome: "SUCCESS",
       resultCode: `${normalizeOperation(input.operationType)}_COMPLETED`,
       itemCommit: physical.itemCommit,
-      metadata: { source: "CYBERWARE_WORLD_BRIDGE_14_2X", operationId: id(input.operationId) }
+      metadata: { source: "CYBERWARE_WORLD_BRIDGE_16_1X", operationId: id(input.operationId) }
     }, {
       idempotencyKey: `${id(input.idempotencyKey)}:service-complete`,
       expectedRevision: current.revision,
@@ -988,13 +1022,13 @@ window.WS_APP = window.WS_APP || {};
       currency: quote.quote?.currency,
       coverageAuthorizations: input.coverageAuthorizations,
       idempotencyKey: `${id(input.idempotencyKey)}:service-offer`,
-      metadata: { source: "CYBERWARE_WORLD_BRIDGE_14_2X", operationType: quote.operationType, operationId: id(input.operationId) }
+      metadata: { source: "CYBERWARE_WORLD_BRIDGE_16_1X", operationType: quote.operationType, operationId: id(input.operationId) }
     });
     if (offerResult?.ok !== true) return { ok: false, reason: offerResult?.reason || "SERVICE_OFFER_CREATE_FAILED" };
     const orderResult = app.createServiceOrderFromOffer?.(offerResult.offer.serviceOfferId, {
       subjectRefs: clone(quote.subjectRefs || { instanceIds: quote.instanceIds }),
       idempotencyKey: `${id(input.idempotencyKey)}:service-order`,
-      metadata: { source: "CYBERWARE_WORLD_BRIDGE_14_2X", operationType: quote.operationType, operationId: id(input.operationId) }
+      metadata: { source: "CYBERWARE_WORLD_BRIDGE_16_1X", operationType: quote.operationType, operationId: id(input.operationId) }
     });
     return orderResult?.ok ? { ok: true, offer: offerResult.offer, order: orderResult.order } : { ok: false, reason: orderResult?.reason || "SERVICE_ORDER_CREATE_FAILED", offer: offerResult.offer };
   }
@@ -1030,6 +1064,17 @@ window.WS_APP = window.WS_APP || {};
       instanceIds: unique(overrides.instanceIds || metadataInput.instanceIds || refs.instanceIds),
       instanceId: id(overrides.instanceId || metadataInput.instanceId || refs.instanceIds?.[0]),
       sourceItemId: id(overrides.sourceItemId || metadataInput.sourceItemId || (operationType === "PURCHASE_AND_INSTALL" ? refs.instanceIds?.[0] : "")),
+      targetItemId: id(overrides.targetItemId || metadataInput.targetItemId),
+      hostInstanceId: id(overrides.hostInstanceId || metadataInput.hostInstanceId || metadataInput.instanceId || refs.instanceIds?.[0]),
+      moduleInstanceId: id(overrides.moduleInstanceId || metadataInput.moduleInstanceId),
+      oldModuleInstanceId: id(overrides.oldModuleInstanceId || metadataInput.oldModuleInstanceId),
+      slotId: id(overrides.slotId || overrides.moduleSlotId || metadataInput.slotId),
+      modificationId: id(overrides.modificationId || metadataInput.modificationId),
+      returnDestination: overrides.returnDestination && typeof overrides.returnDestination === "object"
+        ? clone(overrides.returnDestination)
+        : metadataInput.returnDestination && typeof metadataInput.returnDestination === "object"
+          ? clone(metadataInput.returnDestination)
+          : null,
       idempotencyKey: id(operation.idempotencyKey),
       operationId: id(operation.operationId),
       scheduledStartAt: "",
@@ -2073,7 +2118,7 @@ window.WS_APP = window.WS_APP || {};
     });
     return {
       valid: issues.length === 0,
-      version: "14.2x",
+      version: "16.1x",
       operationCount: operations.length,
       completedCompensationCount: operations.filter((operation) => token(operation.compensation?.status) === "COMPLETED").length,
       pendingCompensationCount: operations.filter((operation) => ["IN_PROGRESS", "RECOVERY_REQUIRED", "REQUIRED"].includes(token(operation.compensation?.status))).length,
@@ -2273,7 +2318,7 @@ window.WS_APP = window.WS_APP || {};
   window.setTimeout?.(resumePendingCyberwareCompensations, 0);
 
   const api = {
-    version: "14.2x",
+    version: "16.1x",
     quoteCyberwarePurchase,
     startCyberwarePurchase,
     quoteCyberwareService,
@@ -2295,5 +2340,5 @@ window.WS_APP = window.WS_APP || {};
     resumePendingCyberwareCompensations
   };
   app.cyberwareWorldBridge = api;
-  Object.assign(app, api, { CYBERWARE_WORLD_BRIDGE_VERSION: "14.2x" });
+  Object.assign(app, api, { CYBERWARE_WORLD_BRIDGE_VERSION: "16.1x" });
 })();

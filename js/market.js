@@ -6,19 +6,11 @@ window.WS_APP = window.WS_APP || {};
   const MARKET_DELIVERABLE_SHIPMENT_STATUSES = new Set(["PENDING", "PAID", "PACKED", "IN_TRANSIT"]);
   const MARKET_SHIPMENT_ACTIVE_STATUSES = new Set(["PENDING", "PAID", "PACKED", "IN_TRANSIT", "HELD"]);
   const MARKET_SHIPMENT_CLOSED_STATUSES = new Set(["DELIVERED", "FAILED", "CANCELLED", "RETURNED"]);
-  const MARKET_MODES = ["CATALOG", "ORDERS", "DELIVERED"];
+  const MARKET_MODES = ["CATALOG", "SECONDARY", "ORDERS", "DELIVERED"];
   const MARKET_ORDER_VIEWS = ["ACTIVE", "HISTORY"];
   const MARKET_ORDER_CLOSED_STATUSES = new Set(["COMPLETED", "REFUNDED", "FAILED", "CANCELLED"]);
   const MARKET_PAGE_SIZE = 6;
   const MARKET_DEPARTMENTS = ["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"];
-  const MARKET_PRODUCT_VISUAL_FALLBACKS = Object.freeze({
-    EQUIPMENT: "assets/market/fallback/equipment.svg",
-    CYBERWARE: "assets/market/fallback/cyberware.svg",
-    MEDICAL: "assets/market/fallback/medical.svg",
-    FOOD: "assets/market/fallback/food.svg",
-    HOUSEHOLD: "assets/market/fallback/household.svg",
-    DEFAULT: "assets/market/fallback/product.svg"
-  });
   const MARKET_SORTS = ["CATEGORY", "PRICE_ASC", "PRICE_DESC", "TIER_ASC", "TIER_DESC", "ETA_ASC", "ETA_DESC", "MANUFACTURER", "NAME"];
   const MARKET_STATUSES = ["ALL", "BUYABLE", "TOO_EXPENSIVE", "TOO_LARGE", "REQUIRES_SUBSCRIPTION", "NO_STORAGE", "CONTROLLED"];
   const MARKET_VENDOR_DEFAULTS = {
@@ -174,138 +166,17 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function formatIsoLabel(iso = "") {
-    const safeIso = isIsoDate(iso) ? iso : getCampaignDateIso();
-    const match = safeIso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    return match ? `${match[3]}.${match[2]}.${match[1]}` : safeIso;
-  }
-
-  function normalizeShipmentStatus(value = "IN_TRANSIT") {
-    const status = String(value || "IN_TRANSIT").trim().toUpperCase();
-    return status || "IN_TRANSIT";
-  }
-
-  function normalizeMarketOrder(order = {}, index = 0) {
-    const source = order && typeof order === "object" && !Array.isArray(order) ? order : {};
-    return {
-      ...source,
-      id: String(source.id || `order-${index + 1}`).trim(),
-      type: String(source.type || "ITEM_PURCHASE").trim().toUpperCase(),
-      catalogId: String(source.catalogId || source.itemCatalogId || source.itemId || "").trim(),
-      itemName: String(source.itemName || source.name || "Market item").trim(),
-      quantity: clampNumber(source.quantity || 1, 1, 999),
-      vendorProviderId: String(source.vendorProviderId || source.providerId || source.vendorId || "provider-habitat-ledger").trim(),
-      vendorId: String(source.vendorId || source.vendorProviderId || source.providerId || "provider-habitat-ledger").trim(),
-      vendorName: String(source.vendorName || "Habitat Market Fulfillment").trim(),
-      price: parseCredits(source.price || source.amount || 0),
-      currency: String(source.currency || "CREDITS").trim().toUpperCase(),
-      status: normalizeShipmentStatus(source.status || "IN_TRANSIT"),
-      placedAtIso: isIsoDate(source.placedAtIso) ? source.placedAtIso : getCampaignDateIso(),
-      etaIso: isIsoDate(source.etaIso) ? source.etaIso : addDaysIso(getCampaignDateIso(), MARKET_DEFAULT_SHIPPING_DAYS),
-      deliveredAtIso: isIsoDate(source.deliveredAtIso) ? source.deliveredAtIso : "",
-      shipmentId: String(source.shipmentId || "").trim(),
-      targetHousingId: String(source.targetHousingId || source.destinationHousingId || "").trim(),
-      targetUnitId: String(source.targetUnitId || DEFAULT_STORAGE_UNIT_ID).trim(),
-      targetUnitTitle: String(source.targetUnitTitle || source.destinationUnitTitle || "").trim(),
-      targetUnitLabel: String(source.targetUnitLabel || "").trim(),
-      destinationAddress: String(source.destinationAddress || "").trim(),
-      deliveryResult: String(source.deliveryResult || "").trim().toUpperCase(),
-      deliveredItemId: String(source.deliveredItemId || "").trim(),
-      holdReason: String(source.holdReason || "").trim().toUpperCase()
-    };
-  }
-
-  function normalizeShipment(shipment = {}, index = 0) {
-    const source = shipment && typeof shipment === "object" && !Array.isArray(shipment) ? shipment : {};
-    return {
-      ...source,
-      id: String(source.id || `ship-${index + 1}`).trim(),
-      orderId: String(source.orderId || "").trim(),
-      sourceInstitutionId: String(source.sourceInstitutionId || source.vendorId || "inst-habitat-market-local").trim(),
-      organizationLocationId: String(source.organizationLocationId || source.sourceLocationId || "").trim(),
-      sourceLabel: String(source.sourceLabel || source.vendorName || "Habitat Market Fulfillment").trim(),
-      sourceAddress: String(source.sourceAddress || "").trim(),
-      destinationHousingId: String(source.destinationHousingId || source.targetHousingId || "").trim(),
-      destinationAddress: String(source.destinationAddress || "").trim(),
-      targetUnitId: String(source.targetUnitId || DEFAULT_STORAGE_UNIT_ID).trim(),
-      deliveryType: String(source.deliveryType || "STANDARD").trim().toUpperCase(),
-      status: normalizeShipmentStatus(source.status || "IN_TRANSIT"),
-      placedAtIso: isIsoDate(source.placedAtIso) ? source.placedAtIso : getCampaignDateIso(),
-      etaIso: isIsoDate(source.etaIso) ? source.etaIso : addDaysIso(getCampaignDateIso(), MARKET_DEFAULT_SHIPPING_DAYS),
-      deliveredAtIso: isIsoDate(source.deliveredAtIso) ? source.deliveredAtIso : "",
-      heldAtIso: isIsoDate(source.heldAtIso) ? source.heldAtIso : "",
-      routeClass: String(source.routeClass || "STANDARD_LOCAL").trim().toUpperCase(),
-      holdReason: String(source.holdReason || "").trim().toUpperCase(),
-      deliveryResult: String(source.deliveryResult || "").trim().toUpperCase(),
-      deliveredItemId: String(source.deliveredItemId || "").trim(),
-      destinationUnitTitle: String(source.destinationUnitTitle || source.targetUnitTitle || "").trim(),
-      targetUnitLabel: String(source.targetUnitLabel || "").trim(),
-      payload: source.payload && typeof source.payload === "object" && !Array.isArray(source.payload) ? { ...source.payload } : {}
-    };
-  }
-
-  function getCitizenMarketOrders(citizen = {}) {
-    return Array.isArray(citizen.marketOrders)
-      ? citizen.marketOrders.filter(Boolean).map((order, index) => normalizeMarketOrder(order, index))
-      : [];
-  }
-
-  function getCitizenShipments(citizen = {}) {
-    return Array.isArray(citizen.shipments)
-      ? citizen.shipments.filter(Boolean).map((shipment, index) => normalizeShipment(shipment, index))
-      : [];
-  }
-
-  function getHousingShipmentUnitContext(citizen = {}, shipment = {}, order = {}) {
-    const records = getCitizenHousingRecords(citizen);
-    const targetHousingId = String(shipment.destinationHousingId || shipment.targetHousingId || order.targetHousingId || order.destinationHousingId || "").trim();
-    const targetUnitId = String(shipment.targetUnitId || order.targetUnitId || DEFAULT_STORAGE_UNIT_ID).trim();
-    const record = (targetHousingId ? records.find((entry) => entry.id === targetHousingId) : null)
-      || records.find((entry) => (entry.storageUnits || []).some((unit) => unit.id === targetUnitId))
-      || records[0]
-      || null;
-    const unit = getHousingPrimaryStorageUnit(record, targetUnitId);
-    return {
-      records,
-      record,
-      unit,
-      housingId: record?.id || targetHousingId || "",
-      unitId: unit?.id || targetUnitId || DEFAULT_STORAGE_UNIT_ID,
-      unitTitle: String(shipment.destinationUnitTitle || shipment.targetUnitTitle || order.targetUnitTitle || order.destinationUnitTitle || record?.title || "UNASSIGNED UNIT").trim(),
-      unitLabel: String(shipment.targetUnitLabel || order.targetUnitLabel || unit?.label || "NO STORAGE UNIT").trim(),
-      destinationAddress: String(shipment.destinationAddress || order.destinationAddress || record?.visibleAddress || citizen.address || citizen.visibleAddress || "UNASSIGNED").trim(),
-      traceAddress: String(record?.traceAddress || citizen.traceAddress || citizen.trace || "").trim()
-    };
-  }
-
-  function getHousingShipmentState(shipment = {}, order = {}) {
-    const status = normalizeShipmentStatus(shipment.status || order.status || "IN_TRANSIT");
-    const result = String(shipment.deliveryResult || order.deliveryResult || "").trim().toUpperCase();
-    if (status === "DELIVERED" && result === "STORAGE_OVERFLOW") return "DELIVERED_OVERFLOW";
-    return status;
-  }
-
-  function formatHousingShipmentState(state = "IN_TRANSIT") {
-    return String(state || "IN_TRANSIT").trim().toUpperCase().replace(/_/g, " ");
-  }
-
-  function renderHousingShipmentRow(order = {}, shipment = {}, citizen = {}) {
-    const state = getHousingShipmentState(shipment, order);
-    const statusClass = state.toLowerCase().replace(/_/g, "-");
-    const context = getHousingShipmentUnitContext(citizen, shipment, order);
-    const itemName = order.itemName || shipment.payload?.itemName || "Market item";
-    const result = String(shipment.deliveryResult || order.deliveryResult || "").trim().toUpperCase();
-    const deliveredItemId = shipment.deliveredItemId || order.deliveredItemId || "";
-    return `
-      <article class="housing-shipment-row is-${escapeHtml(statusClass)}">
-        <div class="housing-shipment-row-main">
-          <b>${escapeHtml(itemName)}</b>
-          <small>${escapeHtml(`${formatHousingShipmentState(state)} / ETA ${formatIsoLabel(shipment.etaIso || order.etaIso)} / ${shipment.routeClass || "STANDARD"}`)}</small>
-          <small>${escapeHtml(`${shipment.sourceLabel || order.vendorName || "Vendor"} → ${context.unitTitle} / ${context.unitLabel}`)}</small>
-          ${result ? `<small class="housing-shipment-result">RESULT: ${escapeHtml(result.replace(/_/g, " "))}${deliveredItemId ? ` / ITEM ${escapeHtml(deliveredItemId)}` : ""}</small>` : ""}
-        </div>
-        <span class="module-status-badge">${escapeHtml(formatCredits(order.price || 0))}</span>
-      </article>
-    `;
+    const raw = String(iso || "").trim();
+    const source = isIsoDate(raw) ? `${raw}T00:00:00.000Z` : raw;
+    const parsed = Date.parse(source);
+    if (!Number.isFinite(parsed)) {
+      const fallback = getCampaignDateIso();
+      const match = fallback.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return match ? `${match[3]}.${match[2]}.${match[1]}` : fallback;
+    }
+    const normalized = new Date(parsed).toISOString();
+    const label = `${normalized.slice(8, 10)}.${normalized.slice(5, 7)}.${normalized.slice(0, 4)}`;
+    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? label : `${label} / ${normalized.slice(11, 16)}`;
   }
 
   function getMarketFeedback(citizenId = "") {
@@ -325,67 +196,52 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
-  function renderHousingFeedback(citizenId = "") {
+  function renderMarketFeedback(citizenId = "") {
     const feedback = getMarketFeedback(citizenId);
     if (!feedback) return "";
     return `<div class="housing-feedback is-${escapeHtml(String(feedback.type || "INFO").toLowerCase())}">${escapeHtml(feedback.message)}</div>`;
   }
 
-  function renderHousingMetric(label = "", value = "", note = "") {
+  function renderMarketMetric(label = "", value = "", note = "") {
     return `<div class="housing-metric"><small>${escapeHtml(label)}</small><b>${escapeHtml(value)}</b>${note ? `<em>${escapeHtml(note)}</em>` : ""}</div>`;
   }
 
   function setMarketWorkspaceTab() {
-    // Compatibility callback retained by the legacy storefront runtime.
+    // Workspace callback retained as a no-op because Market is a standalone terminal module.
   }
 
   function createMarketRuntime() {
     if (marketRuntime) return marketRuntime;
-    const factory = window.WS_APP.createHousingMarketRuntime;
+    const factory = window.WS_APP.createMarketWorkspaceRuntime;
     if (typeof factory !== "function") throw new Error("MARKET_RUNTIME_FACTORY_UNAVAILABLE");
     marketRuntime = factory({
       DEFAULT_STORAGE_UNIT_ID,
-      HOUSING_MARKET_DEFAULT_SHIPPING_DAYS: MARKET_DEFAULT_SHIPPING_DAYS,
-      HOUSING_MARKET_DELIVERABLE_SHIPMENT_STATUSES: MARKET_DELIVERABLE_SHIPMENT_STATUSES,
-      HOUSING_MARKET_DEPARTMENTS: MARKET_DEPARTMENTS,
-      HOUSING_MARKET_MODES: MARKET_MODES,
-      HOUSING_MARKET_ORDER_CLOSED_STATUSES: MARKET_ORDER_CLOSED_STATUSES,
-      HOUSING_MARKET_ORDER_VIEWS: MARKET_ORDER_VIEWS,
-      HOUSING_MARKET_PAGE_SIZE: MARKET_PAGE_SIZE,
-      HOUSING_MARKET_PRODUCT_VISUAL_FALLBACKS: MARKET_PRODUCT_VISUAL_FALLBACKS,
-      HOUSING_MARKET_SORTS: MARKET_SORTS,
-      HOUSING_MARKET_STATUSES: MARKET_STATUSES,
-      HOUSING_MARKET_VENDOR_DEFAULTS: MARKET_VENDOR_DEFAULTS,
-      HOUSING_SHIPMENT_ACTIVE_STATUSES: MARKET_SHIPMENT_ACTIVE_STATUSES,
-      addDaysIso,
+      MARKET_DEFAULT_SHIPPING_DAYS: MARKET_DEFAULT_SHIPPING_DAYS,
+      MARKET_DEPARTMENTS: MARKET_DEPARTMENTS,
+      MARKET_MODES: MARKET_MODES,
+      MARKET_ORDER_CLOSED_STATUSES: MARKET_ORDER_CLOSED_STATUSES,
+      MARKET_ORDER_VIEWS: MARKET_ORDER_VIEWS,
+      MARKET_PAGE_SIZE: MARKET_PAGE_SIZE,
+      MARKET_SORTS: MARKET_SORTS,
+      MARKET_STATUSES: MARKET_STATUSES,
+      MARKET_VENDOR_DEFAULTS: MARKET_VENDOR_DEFAULTS,
       clampNumber,
-      compareIsoDates,
       escapeHtml,
       formatCredits,
       formatIsoLabel,
-      getCampaignDateIso,
-      getCitizenEquipmentItems,
       getCitizenHousingRecords,
-      getCitizenMarketOrders,
-      getCitizenShipments,
       getEquipmentFootprintSize,
       getHousingActiveStorageTarget,
-      getHousingShipmentState,
-      getHousingShipmentUnitContext,
       isIsoDate,
-      normalizeMarketOrder,
-      normalizeShipment,
       parseCredits,
-      renderHousingFeedback,
-      renderHousingMetric,
-      renderHousingModule: renderMarketModule,
-      renderHousingShipmentRow,
+      renderMarketFeedback,
+      renderMarketMetric,
+      renderMarketModule,
       rootSelector: "[data-market-module]",
-      setHousingActiveTab: setMarketWorkspaceTab,
-      setHousingFeedback: setMarketFeedback
+      setMarketWorkspaceTab,
+      setMarketFeedback
     });
     window.WS_APP.marketRuntime = marketRuntime;
-    window.WS_APP.housingMarketRuntime = marketRuntime;
     return marketRuntime;
   }
 
@@ -481,18 +337,18 @@ window.WS_APP = window.WS_APP || {};
         </div>
         ${renderMarketSession(user, citizen)}
         ${renderMarketTargetSwitcher(user, citizen.id)}
-        ${runtime.renderHousingMarketTab(citizen)}
+        ${runtime.renderMarketWorkspaceTab(citizen)}
       </section>
     `;
 
     window.WS_APP.bindModuleBackButton?.(user, () => {
       const root = document.querySelector("[data-market-module]");
-      if (runtime.handleHousingMarketBackNavigation?.({ root, citizenId: citizen.id, user })) return;
-      runtime.resetHousingMarketTransientUi?.(root, citizen.id);
+      if (runtime.handleMarketWorkspaceBackNavigation?.({ root, citizenId: citizen.id, user })) return;
+      runtime.resetMarketWorkspaceTransientUi?.(root, citizen.id);
       window.WS_APP.renderModules?.(user);
     });
     bindMarketModuleActions(user);
-    runtime.syncHousingMarketModalState?.(document.querySelector("[data-market-module]"), citizen.id, { focus: true });
+    runtime.syncMarketWorkspaceModalState?.(document.querySelector("[data-market-module]"), citizen.id, { focus: true });
   }
 
   function bindMarketModuleActions(user = window.WS_APP.currentUser) {
@@ -501,21 +357,21 @@ window.WS_APP = window.WS_APP || {};
     const citizenId = String(root.getAttribute("data-market-citizen-id") || "").trim();
 
     root.querySelector("[data-market-target-citizen]")?.addEventListener("change", (event) => {
-      marketRuntime.resetHousingMarketTransientUi?.(root, citizenId);
+      marketRuntime.resetMarketWorkspaceTransientUi?.(root, citizenId);
       window.WS_APP.marketTargetCitizenId = String(event.target.value || "").trim();
       renderMarketModule(user);
     });
 
     root.addEventListener("change", (event) => {
-      marketRuntime.handleHousingMarketChange?.(event, { root, citizenId, user });
+      marketRuntime.handleMarketWorkspaceChange?.(event, { root, citizenId, user });
     });
 
     root.addEventListener("input", (event) => {
-      marketRuntime.handleHousingMarketInput?.(event, { root, citizenId, user });
+      marketRuntime.handleMarketWorkspaceInput?.(event, { root, citizenId, user });
     });
 
     root.addEventListener("keydown", (event) => {
-      marketRuntime.handleHousingMarketKeydown?.(event, { root, citizenId, user });
+      marketRuntime.handleMarketWorkspaceKeydown?.(event, { root, citizenId, user });
     });
 
     root.addEventListener("click", (event) => {
@@ -526,7 +382,7 @@ window.WS_APP = window.WS_APP || {};
         renderMarketModule(user);
         return;
       }
-      marketRuntime.handleHousingMarketClick?.(event, { root, citizenId, user });
+      marketRuntime.handleMarketWorkspaceClick?.(event, { root, citizenId, user });
     });
   }
 
@@ -542,17 +398,13 @@ window.WS_APP = window.WS_APP || {};
     return { label: `${active} ACTIVE / ${orders} ORDER${orders === 1 ? "" : "S"}`, empty: orders === 0 };
   }
 
-  window.addEventListener("ws:campaign-date-updated", () => {
-    void ensureMarketRuntime().then((runtime) => {
-      runtime.processDueHousingMarketShipments({ nowIso: getCampaignDateIso() });
-      if (document.querySelector("[data-market-module]")) renderMarketModule(window.WS_APP.currentUser);
-    }).catch((error) => console.error("Market shipment scheduler could not initialize.", error));
+
+  window.addEventListener?.("ws:market-secondary-listings-updated", () => {
+    if (!document.querySelector?.("[data-market-module]")) return;
+    renderMarketModule(window.WS_APP.currentUser);
   });
 
   window.WS_APP.ensureMarketRuntime = ensureMarketRuntime;
-  window.WS_APP.ensureHousingMarketRuntime = ensureMarketRuntime;
-  window.WS_APP.processDueHousingMarketShipments = (...args) => ensureMarketRuntime().then((runtime) => runtime.processDueHousingMarketShipments(...args));
-  window.WS_APP.processDueHousingMarketShipmentsForCitizen = (...args) => ensureMarketRuntime().then((runtime) => runtime.processDueHousingMarketShipmentsForCitizen(...args));
   window.WS_APP.renderMarketModule = renderMarketModule;
   window.WS_APP.getMarketModuleMetric = getMarketModuleMetric;
 })();

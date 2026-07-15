@@ -1,30 +1,33 @@
-# Housing / Market Decoupling Contract 2.2x
+# Housing / Market Decoupling Contract 2.3x
 
 ## Ownership boundary
 
 ### Global Market module
 
-`js/market.js` owns the player-facing commerce workspace:
+`js/market.js` owns the standalone player-facing commerce shell. `js/market-workspace-runtime.js` owns its lazy renderer and command adapter.
+
+The Market workspace provides:
 
 - storefront and department navigation;
 - Product Inspector and cart presentation;
-- checkout, pickup, refund and partial-return commands;
-- Market order inspection;
-- shipment scheduling and reconciliation;
-- selection of the target Housing unit for delivery.
+- canonical checkout, pickup, refund and partial-return commands;
+- canonical MarketOrder inspection;
+- selection of the target Housing storage destination.
 
-The Market shell uses `js/housing-market-runtime.js` as a legacy-compatible renderer/command runtime. The historical `housing-market-*` function and CSS names are compatibility names only and do not imply Housing ownership.
+Market Store remains the owner of offers, carts, orders, stock, shipments, fulfillment and recovery. The workspace does not persist these records.
 
 ### Housing module
 
-`js/housing.js` owns the assigned unit and read-only logistics intake:
+`js/housing.js` owns:
 
-- Unit;
-- Household;
-- Storage;
-- Deliveries.
+```text
+UNIT
+HOUSEHOLD
+STORAGE
+DELIVERIES
+```
 
-Housing may project Market orders and shipments to explain incoming, held, delivered or failed logistics. Housing must not own offers, carts, checkout, order recovery, stock, refund or shipment execution.
+`DELIVERIES` is a read-only logistics projection. Housing may explain incoming, held, delivered or failed deliveries and navigate to Market or Storage. Housing does not own Market offers, carts, checkout, stock, order recovery, refund or shipment execution.
 
 ## Module loading
 
@@ -34,40 +37,39 @@ The lazy bundles are independent:
 Market:
   Cyberware Market projection
   Market offers/store
-  housing-market-runtime
+  market-workspace-runtime
   market shell
 
 Housing:
   Housing storage runtime
-  Household furnishing runtime
+  Household runtime
   Housing shell
 ```
 
-Opening Housing must not load the Market catalog/runtime. Opening Market may load Housing-compatible storage projections required to choose a delivery target, but it must not render or mutate the Household floor plan.
+Opening Housing must not load the Market Store or Market Workspace Runtime. Opening Market may read Housing storage projections required to select a destination, but it must not mutate Household floor-plan state directly.
 
 ## Navigation
 
-Market notifications and `MARKET_ORDER` routes open module `market` directly and select the referenced order in the Orders view.
-
-Housing buttons may open Market with:
+Market notifications and `MARKET_ORDER` routes open module `market` directly and write only Market-owned transient navigation state:
 
 ```text
-citizenId
-deliveryHousingId
-department
-marketOrderId
+marketModeByCitizen
+marketOrderViewByCitizen
+marketSelectedOrderByCitizen
+marketFiltersByCitizen
 ```
 
-The route is a navigation hint. Housing does not perform the Market command.
+Housing may open Market with navigation hints such as `citizenId`, `deliveryHousingId`, `department` or `marketOrderId`. Housing does not perform the Market operation.
 
 ## Delivery bridge
 
 Canonical flow:
 
 ```text
-Market Order
-→ Shipment
-→ Housing delivery target
+MarketOrder
+→ Market Shipment
+→ Housing reservation at execution
+→ canonical ItemInstance MOVE
 → Housing Storage
 ```
 
@@ -79,30 +81,29 @@ shipmentId
 citizenId
 housingUnitId
 storageUnitId
-itemInstanceId
+instanceId
 ```
 
-Market owns shipment creation, processing and recovery. Housing owns destination capacity/reservation and the final storage location. A delivery must preserve the same `ItemInstance` identity.
+Market Store owns shipment creation, scheduling, processing and recovery. Housing owns destination capacity/reservation and the final storage location. Delivery preserves the same `instanceId`.
+
+## Legacy exclusion
+
+The Market shell and workspace do not read or write:
+
+```text
+citizen.marketOrders
+citizen.shipments
+```
+
+The retired `js/housing-market-runtime.js` path and its factory aliases must not be reintroduced.
 
 ## Prohibited duplication
 
 Do not add:
 
 - a Housing-local Market catalog;
-- a Housing-local cart or order store;
+- a Housing-local cart, order or shipment store;
 - a Market-local Housing/Household store;
 - direct Market placement into `HOUSING_ROOM`;
-- direct Housing price, stock or checkout calculations.
-
-## UI contract
-
-Market is a first-class module card. Housing tabs are:
-
-```text
-UNIT
-HOUSEHOLD
-STORAGE
-DELIVERIES
-```
-
-`Deliveries` is read-only except for navigation to Market or Storage. Product browsing and order actions remain in Market.
+- direct Housing price, stock or checkout calculations;
+- direct workspace mutation of ItemInstance or Billing records.

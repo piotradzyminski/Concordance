@@ -2,7 +2,7 @@ window.APP_DATA = window.APP_DATA || {};
 
 window.APP_DATA.NOTIFICATION_CONTENT_TEMPLATES = {
   schemaVersion: 1,
-  version: "terminal_notification_content_projection_2_2x",
+  version: "terminal_notification_content_projection_2_6x",
 
   templates: {
     "WORLD_OPERATION.STATUS_CHANGED": { templateId: "world-bridge-operation-status", kind: "WORLD_OPERATION" },
@@ -13,6 +13,10 @@ window.APP_DATA.NOTIFICATION_CONTENT_TEMPLATES = {
     "MARKET.ORDER.REFUND_REQUESTED": { templateId: "market-order-status", kind: "MARKET_ORDER" },
     "MARKET.ORDER.REFUNDED": { templateId: "market-order-status", kind: "MARKET_ORDER" },
     "MARKET.ORDER.RECOVERY_REQUIRED": { templateId: "market-order-status", kind: "MARKET_ORDER" },
+
+    "HOUSING.SHIPMENT.DELIVERED": { templateId: "housing-shipment-status", kind: "HOUSING_SHIPMENT" },
+    "HOUSING.SHIPMENT.HELD": { templateId: "housing-shipment-status", kind: "HOUSING_SHIPMENT" },
+    "HOUSING.STORAGE.CAPACITY_WARNING": { templateId: "housing-shipment-status", kind: "HOUSING_SHIPMENT" },
 
     "SERVICE.ORDER.SCHEDULED": { templateId: "service-order-status", kind: "SERVICE_ORDER" },
     "SERVICE.ORDER.COMPLETED": { templateId: "service-order-status", kind: "SERVICE_ORDER" },
@@ -108,6 +112,12 @@ window.APP_DATA.NOTIFICATION_CONTENT_TEMPLATES = {
     MARKET_ORDER_REFUND_RECOVERY_REQUIRED: "The refund requires recovery.",
     MARKET_SHIPMENT_DELIVERY_FAILED: "The shipment could not be delivered.",
     MARKET_SHIPMENT_CAPACITY_REQUIRED: "The destination storage does not have enough capacity.",
+    HOUSING_STORAGE_FULL: "The destination storage does not have enough free grid space.",
+    HOUSING_STORAGE_CAPACITY_EXCEEDED: "The destination storage capacity has been exceeded.",
+    HOUSING_GRID_NO_SPACE: "No contiguous storage area is available for the shipment.",
+    HOUSING_PLACEMENT_UNAVAILABLE: "The shipment cannot be placed in the selected Housing storage.",
+    HOUSING_RESERVATION_PERSISTENCE_FAILED: "The Housing placement reservation could not be saved.",
+    HOUSING_DELIVERY_COMMIT_RECOVERY_REQUIRED: "The Housing delivery requires recovery before it can be finalized.",
     ITEM_INSTANCE_NOT_FOUND: "The referenced item is no longer available.",
     ENTITLEMENT_NOT_FOUND: "No active entitlement covers this request.",
     ENTITLEMENT_SUSPENDED: "The entitlement is currently suspended.",

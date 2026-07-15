@@ -798,6 +798,22 @@
     if (marker.includes("SERVICE_PORT") || marker.includes("SERVICE ACCESS") || source.isServicePort === true) {
       return withCyberwareCatalogDomain(normalizeServicePortCatalogItem(source, index), "SERVICE_PORT");
     }
+    if (marker === "CYBERWARE_MODULE" || String(source.itemType || "").trim().toUpperCase() === "CYBERWARE_MODULE") {
+      return {
+        ...source,
+        id: String(source.id || source.catalogId || `cyberware-module-${index + 1}`).trim(),
+        catalogId: String(source.catalogId || source.id || `cyberware-module-${index + 1}`).trim(),
+        catalogDomain: "CYBERWARE_MODULE",
+        subtype: "CYBERWARE_MODULE",
+        category: "CYBERWARE",
+        itemType: "CYBERWARE_MODULE",
+        scale: String(source.scale || "SMALL").trim().toUpperCase(),
+        grade: String(source.grade || "LICENSED").trim().toUpperCase(),
+        tags: uniqueValues(["CYBERWARE", "CYBERWARE_MODULE", ...(source.tags || [])]),
+        sourceType: "CYBERWARE_UPGRADE_CATALOG",
+        status: "CATALOG"
+      };
+    }
     if (BODY_CYBERWARE_CATALOG_DOMAINS.has(marker) || String(source.sourceType || "").trim().toUpperCase() === "BODY_CYBERWARE_CATALOG") {
       const domain = BODY_CYBERWARE_CATALOG_DOMAINS.has(marker) ? marker : String(source.subtype || source.catalogDomain || "IMPLANT").trim().toUpperCase();
       return withCyberwareCatalogDomain(normalizeBodyCyberwareCatalogItem(source, index), domain || "IMPLANT");
@@ -815,7 +831,8 @@
       ...getNeurochipCatalog().map((item) => withCyberwareCatalogDomain(item, "NEUROCHIP")),
       ...getInterfaceCatalog().map((item) => withCyberwareCatalogDomain(item, "INTERFACE")),
       ...getServicePortCatalog().map((item) => withCyberwareCatalogDomain(item, "SERVICE_PORT")),
-      ...getBodyCyberwareCatalog().map((item) => withCyberwareCatalogDomain(item, item.subtype || item.catalogDomain || "IMPLANT"))
+      ...getBodyCyberwareCatalog().map((item) => withCyberwareCatalogDomain(item, item.subtype || item.catalogDomain || "IMPLANT")),
+      ...((window.APP_DATA?.cyberwareUpgradeSystem?.moduleDefinitions || []).map((item) => normalizeCyberwareCatalogItem(item)).filter(Boolean))
     ].filter(Boolean);
     const seen = new Set();
     return source.filter((item) => {
@@ -882,6 +899,7 @@
     const catalogItem = typeof itemOrId === "string" ? getCyberwareCatalogItem(itemOrId) : normalizeCyberwareCatalogItem(itemOrId, options.index || 0);
     if (!catalogItem) return null;
     const subtype = String(catalogItem.catalogDomain || catalogItem.subtype || "").trim().toUpperCase();
+    if (subtype === "CYBERWARE_MODULE") return null;
     if (subtype === "NEUROCHIP") return createNeurochipInstallCandidateFromCatalogItem(catalogItem, options);
     if (subtype === "INTERFACE") return createInterfaceInstallCandidateFromCatalogItem(catalogItem, options);
     if (subtype === "SERVICE_PORT") return createServicePortInstallCandidateFromCatalogItem(catalogItem, options);
@@ -927,6 +945,8 @@
         ? "Interface Kit"
         : subtype === "SERVICE_PORT"
           ? "Service Port Kit"
+        : subtype === "CYBERWARE_MODULE"
+          ? "Module Kit"
           : "Implant Kit";
     const itemName = String(catalogItem.name || catalogItem.model || catalogItem.id || "Cyberware").trim();
     const kitName = itemName.toUpperCase().endsWith(" KIT") ? itemName : `${itemName} ${suffix}`;
@@ -945,7 +965,9 @@
       condition: 100,
       value: catalogItem.value || catalogItem.basePrice || 0,
       marketPrice: catalogItem.marketPrice || catalogItem.price || catalogItem.basePrice || catalogItem.value || 0,
-      cyberwareCandidate: true,
+      cyberwareCandidate: subtype !== "CYBERWARE_MODULE",
+      itemType: subtype === "CYBERWARE_MODULE" ? "CYBERWARE_MODULE" : (catalogItem.itemType || "CYBERWARE"),
+      moduleProfile: catalogItem.moduleProfile ? { ...catalogItem.moduleProfile } : null,
       implantId: catalogItem.id,
       sourceCatalogId: catalogItem.catalogId || catalogItem.id,
       sourceType,

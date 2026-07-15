@@ -24,7 +24,7 @@ may produce a synthetic event timestamp inside the skipped interval:
 10:01–12:59
 ```
 
-The result is deterministic for the same stable event identity, advance interval and policy. A consumer must persist the resolved timestamp on its own canonical record. Re-rendering an Inbox or reopening a module must never resolve a new timestamp for an already-created event.
+The result is deterministic for the same stable event identity, advance interval and policy. A consumer must persist the resolved timestamp on its own canonical record or in the generic World Time Scheduled Events queue. Re-rendering an Inbox or reopening a module must never resolve a new timestamp for an already-created event.
 
 ## Public API
 
@@ -241,6 +241,15 @@ resolveEventTimeFromCampaignEvent(event, {
 
 from their own `ws:campaign-time-updated` listener. The listener owns only domain-specific event creation. It must persist the returned timestamp and enforce its own idempotency.
 
+
+The shared persistence bridge is:
+
+```js
+WS_APP.scheduleWorldTimeEventDuringAdvance(event, input)
+```
+
+It resolves once, stores the selected `scheduledAt` and delegates later execution to a registered domain handler. The Event Windows module remains stateless.
+
 Terminal Inbox provides the convenience boundary:
 
 ```js
@@ -273,4 +282,4 @@ Campaign Time mutation
 Campaign Data I/O state
 ```
 
-There is no resolver persistence adapter because the module is stateless. Persisted domain records remain the source of truth for an already-resolved event time.
+There is no resolver persistence adapter because the module is stateless. Persisted domain records or the World Time Scheduled Events envelope remain the source of truth for an already-resolved event time.

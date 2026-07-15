@@ -5,7 +5,7 @@ window.WS_APP = window.WS_APP || {};
 
   if (app.AdminSubscriptionsControl) return;
 
-  const VERSION = "subscriptions_responsive_accessibility_4_5";
+  const VERSION = "subscriptions_entitlement_projection_4_6";
   const MAX_RENDERED_CONTRACTS = 80;
   const DEFAULT_STATE = Object.freeze({
     query: "",
@@ -160,6 +160,38 @@ window.WS_APP = window.WS_APP || {};
     return { type, id, label };
   }
 
+  function getContractEntitlementSnapshot(contract = {}, citizenId = "") {
+    const source = {
+      ...contract,
+      citizenId: String(contract.citizenId || citizenId || "").trim()
+    };
+    const atTime = String(
+      app.getCampaignTimeIso?.()
+      || app.CAMPAIGN_TIME_ISO
+      || app.getCampaignDateIso?.()
+      || app.CAMPAIGN_DATE_ISO
+      || ""
+    ).trim();
+    if (typeof app.getSubscriptionContractEntitlementSnapshot === "function") {
+      try {
+        const snapshot = app.getSubscriptionContractEntitlementSnapshot(source, atTime) || null;
+        if (snapshot && typeof snapshot === "object") return snapshot;
+      } catch (error) {
+        // Admin read projection falls back to persisted axes.
+      }
+    }
+    const status = token(
+      source.entitlementStatus
+      || (source.contractStatus === "CANCELLED" ? "CANCELLED" : source.billingStatus || source.status || "PENDING")
+    ) || "PENDING";
+    return {
+      allowed: ["ACTIVE", "GRACE_PERIOD"].includes(status),
+      status,
+      reasons: [],
+      evaluatedAt: atTime || null
+    };
+  }
+
   function resolveSelectedEntitlements(row = {}) {
     const codes = row.entitlementCodes || [];
     const resolver = app.SubscriptionAPI?.resolveSubscriptionEntitlement;
@@ -219,7 +251,17 @@ window.WS_APP = window.WS_APP || {};
         const providerId = String(contract.providerId || catalog?.providerId || provider).trim();
         const billingStatus = token(contract.billingStatus || contract.status || "PENDING") || "PENDING";
         const contractStatus = token(contract.contractStatus || (billingStatus === "CANCELLED" ? "CANCELLED" : "ACTIVE")) || "ACTIVE";
-        const entitlementStatus = token(contract.entitlementStatus || (contractStatus === "CANCELLED" ? "REVOKED" : billingStatus === "PAID" ? "ACTIVE" : billingStatus)) || "UNKNOWN";
+        const entitlementSnapshot = getContractEntitlementSnapshot(contract, citizen.id);
+        const entitlementStatus = token(
+          entitlementSnapshot.status
+          || contract.entitlementStatus
+          || (contractStatus === "CANCELLED" ? "CANCELLED" : billingStatus === "PAID" ? "ACTIVE" : billingStatus)
+        ) || "UNKNOWN";
+        const entitlementReasonCodes = [...new Set(
+          (Array.isArray(entitlementSnapshot.reasons) ? entitlementSnapshot.reasons : [])
+            .map((reason) => token(reason?.code || reason))
+            .filter(Boolean)
+        )];
         const tierId = String(contract.tierId || "").trim();
         const tierLabel = String(contract.displaySnapshot?.tierLabel || contract.tierLabel || tier?.label || tierId || "—").trim();
         const amount = Number(contract.amount ?? tier?.amount ?? 0) || 0;
@@ -237,6 +279,7 @@ window.WS_APP = window.WS_APP || {};
           billingStatus,
           contractStatus,
           entitlementStatus,
+          ...entitlementReasonCodes,
           target.type,
           target.id,
           target.label
@@ -258,6 +301,9 @@ window.WS_APP = window.WS_APP || {};
           billingStatus,
           contractStatus,
           entitlementStatus,
+          entitlementAllowed: entitlementSnapshot.allowed === true,
+          entitlementReasonCodes,
+          entitlementEvaluatedAt: entitlementSnapshot.evaluatedAt || null,
           tierLabel,
           target,
           amount,
@@ -276,7 +322,7 @@ window.WS_APP = window.WS_APP || {};
     return row.contractStatus === "CANCELLED"
       ? false
       : ["OVERDUE", "SUSPENDED", "PENDING"].includes(row.billingStatus)
-        || ["BLOCKED", "REVOKED", "SUSPENDED", "INVALID", "PARTIAL"].includes(row.entitlementStatus);
+        || ["BLOCKED", "REVOKED", "EXPIRED", "NOT_FOUND", "SUSPENDED", "INVALID", "PARTIAL"].includes(row.entitlementStatus);
   }
 
   function filterContractRows(rows = [], stateInput = {}) {
@@ -298,7 +344,7 @@ window.WS_APP = window.WS_APP || {};
     const attentionRank = (row) => {
       if (row.billingStatus === "OVERDUE") return 0;
       if (row.billingStatus === "SUSPENDED") return 1;
-      if (row.entitlementStatus === "BLOCKED" || row.entitlementStatus === "REVOKED") return 2;
+      if (["EXPIRED", "REVOKED", "BLOCKED", "NOT_FOUND"].includes(row.entitlementStatus)) return 2;
       if (row.billingStatus === "PENDING") return 3;
       if (row.contractStatus === "CANCELLED") return 9;
       return 5;
@@ -516,6 +562,11 @@ window.WS_APP = window.WS_APP || {};
 
   function renderEntitlementPanel(row = {}) {
     const summary = resolveSelectedEntitlements(row);
+    const resolvedStatus = row.entitlementStatus || summary.status;
+    const combinedReasons = [...new Set([
+      ...(Array.isArray(row.entitlementReasonCodes) ? row.entitlementReasonCodes : []),
+      ...(Array.isArray(summary.reasons) ? summary.reasons : [])
+    ].map(token).filter(Boolean))];
     const entries = summary.entries.length
       ? summary.entries.map((entry) => `
           <li>
@@ -524,12 +575,12 @@ window.WS_APP = window.WS_APP || {};
           </li>
         `).join("")
       : `<li class="is-empty">No entitlement codes are declared for this package.</li>`;
-    const reasons = summary.reasons.length
-      ? `<div class="admin-subscription-reasons"><b>Resolver reasons</b>${summary.reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</div>`
+    const reasons = combinedReasons.length
+      ? `<div class="admin-subscription-reasons"><b>Resolver reasons</b>${combinedReasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</div>`
       : "";
     return `
       <section class="admin-subscription-profile-section">
-        <header><p class="kicker">ACTIVE ENTITLEMENTS</p>${renderBadge(summary.status)}</header>
+        <header><p class="kicker">ENTITLEMENT RESOLUTION</p>${renderBadge(resolvedStatus)}</header>
         <ul class="admin-subscription-entitlement-list">${entries}</ul>
         ${reasons}
       </section>
@@ -711,6 +762,9 @@ window.WS_APP = window.WS_APP || {};
             ${renderDetailValue("Tier", row.tierLabel)}
             ${renderDetailValue("Started", row.contract.startedAt || row.contract.startDate || "—")}
             ${renderDetailValue("Period End", row.contract.currentPeriodEnd || row.contract.renewalDate || "—")}
+            ${renderDetailValue("Grace End", row.contract.gracePeriodEndsAt || "—")}
+            ${renderDetailValue("Access", row.entitlementAllowed ? "ALLOWED" : "BLOCKED")}
+            ${renderDetailValue("Evaluated At", row.entitlementEvaluatedAt || "—")}
           </dl>
         </section>
 
@@ -1169,6 +1223,7 @@ window.WS_APP = window.WS_APP || {};
     normalizeSearchText,
     captureScrollPosition,
     restoreScrollPosition,
+    getContractEntitlementSnapshot,
     buildContractRows,
     filterContractRows,
     renderWorkspace,

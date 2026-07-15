@@ -3,7 +3,7 @@ window.WS_APP = window.WS_APP || {};
 (function initSubscriptionEntitlementModule() {
   const app = window.WS_APP;
   const CONTRACT_SCHEMA_VERSION = "subscription_contracts_bridge_schema_2_0x";
-  const ENTITLEMENT_API_VERSION = "subscriptions_entitlement_3_0x";
+  const ENTITLEMENT_API_VERSION = "subscriptions_entitlement_3_1x";
   const ENTITLEMENT_CACHE_LIMIT = 500;
   const CONTRACT_STATUSES = new Set(["ACTIVE", "CANCELLED"]);
   const BILLING_STATUSES = new Set(["PAID", "PENDING", "OVERDUE", "SUSPENDED", "CANCELLED"]);
@@ -434,12 +434,20 @@ window.WS_APP = window.WS_APP || {};
 
 
   function normalizeEvaluationTime(value) {
-    const fallback = String(app.getCampaignDateIso?.() || app.CAMPAIGN_DATE_ISO || "2109-02-13").trim();
+    const fallback = String(
+      app.getCampaignTimeIso?.()
+      || app.CAMPAIGN_TIME_ISO
+      || app.getCampaignDateIso?.()
+      || app.CAMPAIGN_DATE_ISO
+      || "2109-02-13T12:00:00.000Z"
+    ).trim();
     const source = String(value || fallback).trim();
     const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(source);
     const parsed = new Date(dateOnly ? `${source}T12:00:00.000Z` : source);
+    const fallbackDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(fallback);
+    const fallbackParsed = new Date(fallbackDateOnly ? `${fallback}T12:00:00.000Z` : fallback);
     const safe = Number.isNaN(parsed.getTime())
-      ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(fallback) ? `${fallback}T12:00:00.000Z` : "2109-02-13T12:00:00.000Z")
+      ? (Number.isNaN(fallbackParsed.getTime()) ? new Date("2109-02-13T12:00:00.000Z") : fallbackParsed)
       : parsed;
     return {
       iso: safe.toISOString(),
@@ -758,6 +766,9 @@ window.WS_APP = window.WS_APP || {};
       coverageRuleIds,
       reasons: clone(reasons),
       evaluatedAt: atTime.iso,
+      currentPeriodStart: runtimeContract.currentPeriodStart || null,
+      currentPeriodEnd: runtimeContract.currentPeriodEnd || null,
+      gracePeriodEndsAt: runtimeContract.gracePeriodEndsAt || null,
       contractRevision: Number(runtimeContract.revision || 0),
       catalogRevision: Number(catalog?.revision || 0),
       tierRevision: Number(tier?.revision || 0),
@@ -1181,7 +1192,9 @@ window.WS_APP = window.WS_APP || {};
   app.SUBSCRIPTION_ENTITLEMENT_API_VERSION = ENTITLEMENT_API_VERSION;
   app.resolveSubscriptionContractState = resolveSubscriptionContractState;
   app.resolveSubscriptionEntitlement = resolveSubscriptionEntitlement;
-  app.getSubscriptionContractEntitlementSnapshot = getSubscriptionContractEntitlementSnapshot;
+  app.getSubscriptionContractEntitlementSnapshot = function getPublicSubscriptionContractEntitlementSnapshot(subscription = {}, atTimeValue = "") {
+    return clone(getCachedSubscriptionContractEntitlementSnapshot(subscription, atTimeValue));
+  };
   app.invalidateSubscriptionEntitlement = invalidateSubscriptionEntitlement;
   app.getSubscriptionEntitlementCacheStats = getSubscriptionEntitlementCacheStats;
   app.getSubscriptionTargetPolicy = getSubscriptionTargetPolicy;

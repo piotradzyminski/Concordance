@@ -1,4 +1,4 @@
-# Canonical cleanup manifest — Parallel Scope Merge 15.14x.
+# Canonical cleanup manifest — through Parallel Scope Merge 15.19x.
 docs/patchnotes/patch_notes_item_instance_view_cache_1.0x.md
 data/item-effect-catalog.js
 js/citizen-status-store.js
@@ -7,3 +7,31 @@ tests/contracts/item-type-effect-resolution.test.cjs
 docs/contracts/equipment/item_effect_resolution_contract.md
 docs/patchnotes/patch_notes_item_type_effect_removal_1.3.1x.md
 docs/patchnotes/patch_notes_equipment_bodymap_avif_paths_1.0x.md
+docs/contracts/commerce/market_product_visual_assets_contract.md
+tests/contracts/market-product-visual-assets.test.cjs
+assets/market/fallback/cyberware.svg
+assets/market/fallback/equipment.svg
+assets/market/fallback/food.svg
+assets/market/fallback/household.svg
+assets/market/fallback/medical.svg
+assets/market/fallback/product.svg
+assets/market/products/coremed-analgesic-tablets.svg
+assets/market/products/coremed-antibiotic-course.svg
+assets/market/products/coremed-antiseptic-ampoules.svg
+assets/market/products/coremed-coagulant-patches.svg
+assets/market/products/coremed-first-aid-pouch.svg
+assets/market/products/coremed-nausea-suppressant.svg
+assets/market/products/habitat-electrolyte-concentrate.svg
+assets/market/products/habitat-heat-sealed-meal-tray.svg
+assets/market/products/habitat-hydration-pouches.svg
+assets/market/products/habitat-insect-protein-crisps.svg
+assets/market/products/habitat-laundry-sheets.svg
+assets/market/products/habitat-personal-hygiene-pack.svg
+assets/market/products/habitat-protein-meal-bricks.svg
+assets/market/products/habitat-standard-ration-pack.svg
+assets/market/products/habitat-surface-cleaning-concentrate.svg
+assets/market/products/habitat-utility-sealant-tape.svg
+assets/market/products/habitat-waste-liner-roll.svg
+assets/market/products/habitat-water-filter-cartridges.svg
+assets/market/products/somnacore-alertness-tablets.svg
+js/housing-market-runtime.js

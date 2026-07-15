@@ -144,19 +144,23 @@ window.WS_APP = window.WS_APP || {};
     function renderFurnishingEntry(entry = {}, selectedInstanceId = "") {
       const instance = entry.instance || {};
       const profile = entry.profile || {};
+      const lifecycle = entry.lifecycle || window.WS_APP.getHousingFurnishingLifecycleProjection?.(instance) || null;
       const location = instance.location || {};
       const active = instance.instanceId === selectedInstanceId;
       const footprint = profile.footprint || { width: 1, height: 1 };
       const locationLabel = entry.scope === "PLACED"
         ? `PLACED / ${normalizeId(location.roomId).replace(/^.*-/, "") || "ROOM"}`
         : `STORAGE / ${normalizeId(location.storageUnitId).replace(/^.*-/, "") || "UNIT"}`;
+      const lifecycleLabel = lifecycle
+        ? `${lifecycle.ownershipType.replace(/_/g, " ")} / ${lifecycle.grade} / ${Math.round(lifecycle.condition)}%`
+        : `${footprint.width}×${footprint.height}`;
       return `
-        <button class="housing-household-furnishing-card ${active ? "is-selected" : ""}" type="button" data-household-select-item="${escapeHtml(instance.instanceId)}" aria-pressed="${active ? "true" : "false"}">
+        <button class="housing-household-furnishing-card ${active ? "is-selected" : ""} ${lifecycle ? `is-condition-${escapeHtml(String(lifecycle.conditionState || "operational").toLowerCase())}` : ""}" type="button" data-household-select-item="${escapeHtml(instance.instanceId)}" aria-pressed="${active ? "true" : "false"}">
           <span>
             <b>${escapeHtml(getItemName(instance))}</b>
             <small>${escapeHtml(locationLabel)}</small>
           </span>
-          <em>${escapeHtml(`${footprint.width}×${footprint.height}`)}</em>
+          <em>${escapeHtml(lifecycleLabel)}</em>
         </button>
       `;
     }
@@ -198,43 +202,76 @@ window.WS_APP = window.WS_APP || {};
       if (!selected) {
         return `
           <section class="housing-household-selection is-empty">
-            <p class="kicker">PLACEMENT CONTROL</p>
+            <p class="kicker">FURNISHING CONTROL</p>
             <h5>Select a furnishing</h5>
-            <p>Choose a placeable ItemInstance from Housing Storage or an item already placed in this unit.</p>
+            <p>Choose a furniture ItemInstance to inspect placement, ownership, condition, grade, functional slots and lifecycle actions.</p>
           </section>
         `;
       }
       const instance = selected.instance || {};
       const profile = selected.profile || {};
+      const lifecycle = selected.lifecycle || window.WS_APP.getHousingFurnishingLifecycleProjection?.(instance, record) || null;
       const footprint = window.WS_APP.getHouseholdItemFootprint?.(instance, state.rotation) || profile.footprint || { width: 1, height: 1, rotation: state.rotation };
       const isPlaced = normalizeToken(instance.location?.type) === "HOUSING_ROOM";
       const storageUnits = Array.isArray(record?.storageUnits) ? record.storageUnits : [];
+      const movable = lifecycle ? lifecycle.movable === true : true;
+      const moduleSlots = lifecycle?.slots || [];
+      const replacementCandidates = lifecycle?.replaceable
+        ? (window.WS_APP.getHousingFurnishingReplacementCandidates?.(instance.ownerId, instance.instanceId) || [])
+        : [];
       return `
         <section class="housing-household-selection">
           <header>
-            <div><p class="kicker">PLACEMENT CONTROL</p><h5>${escapeHtml(getItemName(instance))}</h5></div>
-            <span class="module-status-badge">${escapeHtml(isPlaced ? "MOVE MODE" : "PLACE MODE")}</span>
+            <div><p class="kicker">FURNISHING CONTROL</p><h5>${escapeHtml(getItemName(instance))}</h5></div>
+            <span class="module-status-badge">${escapeHtml(lifecycle?.conditionState || (isPlaced ? "MOVE MODE" : "PLACE MODE"))}</span>
           </header>
           <div class="housing-household-selection-facts">
             <span><small>FOOTPRINT</small><b>${escapeHtml(`${footprint.width}×${footprint.height}`)}</b></span>
-            <span><small>ROTATION</small><b>${escapeHtml(`${state.rotation}°`)}</b></span>
-            <span><small>TYPE</small><b>${escapeHtml(profile.itemType || profile.category || "HOUSEHOLD")}</b></span>
-            <span><small>CAPABILITIES</small><b>${escapeHtml((profile.capabilities || []).join(" / ") || "NONE")}</b></span>
+            <span><small>OWNERSHIP</small><b>${escapeHtml((lifecycle?.ownershipType || "CITIZEN_FURNISHING").replace(/_/g, " "))}</b></span>
+            <span><small>GRADE</small><b>${escapeHtml(lifecycle?.grade || "—")}</b></span>
+            <span><small>CONDITION</small><b>${escapeHtml(lifecycle ? `${Math.round(lifecycle.condition)}% / ${lifecycle.conditionState}` : "—")}</b></span>
+            <span><small>WEEKLY WEAR</small><b>${escapeHtml(lifecycle ? `${lifecycle.weeklyWearPercent}%` : "—")}</b></span>
+            <span><small>CAPABILITIES</small><b>${escapeHtml((lifecycle?.capabilities || profile.capabilities || []).join(" / ") || "NONE")}</b></span>
           </div>
           <div class="housing-household-selection-actions">
-            <button class="housing-inline-action" type="button" data-household-rotate>ROTATE 90°</button>
+            ${movable ? `<button class="housing-inline-action" type="button" data-household-rotate>ROTATE 90°</button>` : ""}
             <button class="housing-inline-action" type="button" data-household-clear-selection>CLEAR</button>
-            ${isPlaced ? `
+            ${isPlaced && movable ? `
               <label class="housing-household-return-target">
                 <span>RETURN TARGET</span>
                 <select data-household-return-storage>
                   ${storageUnits.map((unit) => `<option value="${escapeHtml(unit.id)}" ${unit.id === state.storageUnitId ? "selected" : ""}>${escapeHtml(unit.label || unit.id)}</option>`).join("")}
                 </select>
               </label>
-              <button class="housing-inline-action is-danger" type="button" data-household-return-item="${escapeHtml(instance.instanceId)}">RETURN TO STORAGE</button>
+              <button class="housing-inline-action" type="button" data-household-return-item="${escapeHtml(instance.instanceId)}">RETURN TO STORAGE</button>
             ` : ""}
+            ${lifecycle?.repairable ? `<button class="housing-inline-action" type="button" data-household-repair-item="${escapeHtml(instance.instanceId)}">REPAIR TO 100%</button>` : ""}
+            ${lifecycle?.serviceRequired ? `<span class="housing-household-service-required">OPERATOR SERVICE REQUIRED</span>` : ""}
+            ${lifecycle?.disposable ? `<button class="housing-inline-action is-danger" type="button" data-household-dispose-item="${escapeHtml(instance.instanceId)}">INCINERATE / +5 ₡</button>` : ""}
           </div>
-          <p class="housing-household-placement-hint" data-household-preview-status>Hover a room cell to preview placement. Click a valid cell to commit.</p>
+          ${moduleSlots.length ? `
+            <div class="housing-household-lifecycle-section">
+              <p class="kicker">FUNCTIONAL SLOTS</p>
+              <div class="housing-household-slot-list">
+                ${moduleSlots.map((slot) => {
+                  if (slot.installedModule) {
+                    return `<span class="housing-household-slot"><small>${escapeHtml(slot.slotType)}</small><b>${escapeHtml(getItemName(slot.installedModule))}</b><button type="button" class="housing-inline-action" data-household-remove-module data-parent-instance-id="${escapeHtml(instance.instanceId)}" data-slot-id="${escapeHtml(slot.slotId)}">REMOVE</button></span>`;
+                  }
+                  const candidates = window.WS_APP.getHousingFurnishingModuleCandidates?.(instance.ownerId, instance.instanceId, slot.slotId) || [];
+                  return `<span class="housing-household-slot"><small>${escapeHtml(slot.slotType)}</small><b>EMPTY</b>${candidates.map((candidate) => `<button type="button" class="housing-inline-action" data-household-install-module data-parent-instance-id="${escapeHtml(instance.instanceId)}" data-module-instance-id="${escapeHtml(candidate.instanceId)}" data-slot-id="${escapeHtml(slot.slotId)}">INSTALL ${escapeHtml(getItemName(candidate))}</button>`).join("") || "<em>NO COMPATIBLE MODULE IN STORAGE</em>"}</span>`;
+                }).join("")}
+              </div>
+            </div>
+          ` : ""}
+          ${replacementCandidates.length ? `
+            <div class="housing-household-lifecycle-section">
+              <p class="kicker">REPLACE STANDARD</p>
+              <div class="housing-household-replacement-list">
+                ${replacementCandidates.map((candidate) => `<button type="button" class="housing-inline-action" data-household-replace-item data-current-instance-id="${escapeHtml(instance.instanceId)}" data-replacement-instance-id="${escapeHtml(candidate.instanceId)}">REPLACE WITH ${escapeHtml(getItemName(candidate))}</button>`).join("")}
+              </div>
+            </div>
+          ` : ""}
+          <p class="housing-household-placement-hint" data-household-preview-status>${movable ? "Hover a room cell to preview placement. Click a valid cell to commit." : "Operator fixture is lifecycle-managed and cannot be moved by the Citizen."}</p>
         </section>
       `;
     }
@@ -315,7 +352,7 @@ window.WS_APP = window.WS_APP || {};
       const workspace = ensureWorkspaceSelection(citizen.id, activeRecord.id, activeRecord);
       const state = workspace.state;
       const selected = workspace.selected;
-      const placedEntries = workspace.entries.filter((entry) => entry.scope === "PLACED");
+      const placedEntries = workspace.entries.filter((entry) => entry.scope === "PLACED" && entry.lifecycle?.nonBlocking !== true);
       const operations = ["REST", "SLEEP", "USE_CONSUMABLE", "USE_MEDICAL_CONSUMABLE"].map((operationType) => ({
         operationType,
         result: window.WS_APP.resolveHouseholdOperationReadiness?.({ citizenId: citizen.id, housingRecordId: activeRecord.id, operationType }) || { ok: false, reason: "HOUSEHOLD_API_UNAVAILABLE" }
@@ -553,6 +590,60 @@ window.WS_APP = window.WS_APP || {};
         } else {
           setHousingFeedback?.(citizenId, `Return failed: ${formatReason(result?.reason || result?.code)}.`, "ERROR");
         }
+        renderHousingModule(context.user || window.WS_APP.currentUser);
+        return true;
+      }
+      const installModule = target.closest("[data-household-install-module]");
+      if (installModule) {
+        const result = window.WS_APP.installHousingFurnishingModule?.({
+          citizenId,
+          parentInstanceId: normalizeId(installModule.getAttribute("data-parent-instance-id")),
+          moduleInstanceId: normalizeId(installModule.getAttribute("data-module-instance-id")),
+          slotId: normalizeId(installModule.getAttribute("data-slot-id")),
+          idempotencyKey: nextIdempotencyKey("household:module-install")
+        });
+        setHousingFeedback?.(citizenId, result?.ok ? "Furnishing module installed." : `Module install failed: ${formatReason(result?.reason)}.`, result?.ok ? "OK" : "ERROR");
+        renderHousingModule(context.user || window.WS_APP.currentUser);
+        return true;
+      }
+      const removeModule = target.closest("[data-household-remove-module]");
+      if (removeModule) {
+        const result = window.WS_APP.removeHousingFurnishingModule?.({
+          citizenId,
+          housingRecordId: findWorkspaceContext(context.root, citizenId).housingRecordId,
+          parentInstanceId: normalizeId(removeModule.getAttribute("data-parent-instance-id")),
+          slotId: normalizeId(removeModule.getAttribute("data-slot-id")),
+          idempotencyKey: nextIdempotencyKey("household:module-remove")
+        });
+        setHousingFeedback?.(citizenId, result?.ok ? "Furnishing module returned to storage." : `Module removal failed: ${formatReason(result?.reason)}.`, result?.ok ? "OK" : "ERROR");
+        renderHousingModule(context.user || window.WS_APP.currentUser);
+        return true;
+      }
+      const repairItem = target.closest("[data-household-repair-item]");
+      if (repairItem) {
+        const result = window.WS_APP.repairHousingFurnishing?.({ citizenId, instanceId: normalizeId(repairItem.getAttribute("data-household-repair-item")), idempotencyKey: nextIdempotencyKey("household:repair") });
+        setHousingFeedback?.(citizenId, result?.ok ? "Furnishing restored to full condition." : `Repair failed: ${formatReason(result?.reason)}.`, result?.ok ? "OK" : "ERROR");
+        renderHousingModule(context.user || window.WS_APP.currentUser);
+        return true;
+      }
+      const replaceItem = target.closest("[data-household-replace-item]");
+      if (replaceItem) {
+        const result = window.WS_APP.replaceHousingFurnishing?.({
+          citizenId,
+          currentInstanceId: normalizeId(replaceItem.getAttribute("data-current-instance-id")),
+          replacementInstanceId: normalizeId(replaceItem.getAttribute("data-replacement-instance-id")),
+          idempotencyKey: nextIdempotencyKey("household:replace")
+        });
+        if (result?.ok) setWorkspaceState(citizenId, { selectedInstanceId: normalizeId(replaceItem.getAttribute("data-replacement-instance-id")) });
+        setHousingFeedback?.(citizenId, result?.ok ? "Furnishing standard replaced." : `Replacement failed: ${formatReason(result?.reason)}.`, result?.ok ? "OK" : "ERROR");
+        renderHousingModule(context.user || window.WS_APP.currentUser);
+        return true;
+      }
+      const disposeItem = target.closest("[data-household-dispose-item]");
+      if (disposeItem) {
+        const result = window.WS_APP.disposeHousingFurnishing?.({ citizenId, instanceId: normalizeId(disposeItem.getAttribute("data-household-dispose-item")), idempotencyKey: nextIdempotencyKey("household:dispose") });
+        if (result?.ok) setWorkspaceState(citizenId, { selectedInstanceId: "", selectedRoomId: "", rotation: 0 });
+        setHousingFeedback?.(citizenId, result?.ok ? `Furnishing incinerated. ${result.creditValue || 5} ₡ credited.` : `Disposal failed: ${formatReason(result?.reason)}.`, result?.ok ? "OK" : "ERROR");
         renderHousingModule(context.user || window.WS_APP.currentUser);
         return true;
       }

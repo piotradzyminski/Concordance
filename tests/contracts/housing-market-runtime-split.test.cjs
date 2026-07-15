@@ -10,7 +10,7 @@ const ROOT = path.resolve(__dirname, "../..");
 const read = (relativePath) => fs.readFileSync(path.join(ROOT, relativePath), "utf8");
 
 test("Market runtime remains a factory-owned workspace with deterministic local UI state", () => {
-  const source = read("js/housing-market-runtime.js");
+  const source = read("js/market-workspace-runtime.js");
   const context = {
     window: { WS_APP: {} },
     document: { querySelector: () => null },
@@ -27,66 +27,52 @@ test("Market runtime remains a factory-owned workspace with deterministic local 
   };
   context.window.window = context.window;
   vm.createContext(context);
-  vm.runInContext(source, context, { filename: "js/housing-market-runtime.js" });
+  vm.runInContext(source, context, { filename: "js/market-workspace-runtime.js" });
 
   const noop = () => {};
-  const runtime = context.window.WS_APP.createHousingMarketRuntime({
+  const runtime = context.window.WS_APP.createMarketWorkspaceRuntime({
     DEFAULT_STORAGE_UNIT_ID: "housing-storage-main",
-    HOUSING_MARKET_DEFAULT_SHIPPING_DAYS: 1,
-    HOUSING_MARKET_DELIVERABLE_SHIPMENT_STATUSES: new Set(["PENDING", "IN_TRANSIT"]),
-    HOUSING_MARKET_DEPARTMENTS: ["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"],
-    HOUSING_MARKET_MODES: ["CATALOG", "ORDERS", "DELIVERED"],
-    HOUSING_MARKET_ORDER_CLOSED_STATUSES: new Set(["COMPLETED", "REFUNDED", "FAILED", "CANCELLED"]),
-    HOUSING_MARKET_ORDER_VIEWS: ["ACTIVE", "HISTORY"],
-    HOUSING_MARKET_PAGE_SIZE: 6,
-    HOUSING_MARKET_PRODUCT_VISUAL_FALLBACKS: { DEFAULT: "assets/market/fallback/product.svg" },
-    HOUSING_MARKET_SORTS: ["CATEGORY", "NAME"],
-    HOUSING_MARKET_STATUSES: ["ALL", "BUYABLE"],
-    HOUSING_MARKET_VENDOR_DEFAULTS: { DEFAULT: { vendorId: "vendor-test", organizationLocationId: "orgloc-test" } },
-    HOUSING_SHIPMENT_ACTIVE_STATUSES: new Set(["PENDING", "IN_TRANSIT", "HELD"]),
-    addDaysIso: (iso) => iso,
+    MARKET_DEFAULT_SHIPPING_DAYS: 1,
+    MARKET_DEPARTMENTS: ["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"],
+    MARKET_MODES: ["CATALOG", "ORDERS", "DELIVERED"],
+    MARKET_ORDER_CLOSED_STATUSES: new Set(["COMPLETED", "REFUNDED", "FAILED", "CANCELLED"]),
+    MARKET_ORDER_VIEWS: ["ACTIVE", "HISTORY"],
+    MARKET_PAGE_SIZE: 6,
+    MARKET_SORTS: ["CATEGORY", "NAME"],
+    MARKET_STATUSES: ["ALL", "BUYABLE"],
+    MARKET_VENDOR_DEFAULTS: { DEFAULT: { vendorId: "vendor-test", organizationLocationId: "orgloc-test" } },
     clampNumber: (value, min, max) => Math.max(min, Math.min(max, Math.round(Number(value) || min))),
-    compareIsoDates: (a, b) => String(a).localeCompare(String(b)),
     escapeHtml: (value) => String(value ?? ""),
     formatCredits: (value) => `${Number(value) || 0} ₡`,
     formatIsoLabel: (value) => String(value || ""),
-    getCampaignDateIso: () => "2109-02-13",
-    getCitizenEquipmentItems: () => [],
     getCitizenHousingRecords: () => [],
-    getCitizenMarketOrders: () => [],
-    getCitizenShipments: () => [],
     getEquipmentFootprintSize: () => ({ width: 1, height: 1 }),
     getHousingActiveStorageTarget: () => ({ activeRecord: null, unit: null }),
-    getHousingShipmentState: () => "IN_TRANSIT",
-    getHousingShipmentUnitContext: () => ({}),
     isIsoDate: () => true,
-    normalizeMarketOrder: (value) => value,
-    normalizeShipment: (value) => value,
     parseCredits: (value) => Number(value) || 0,
-    renderHousingFeedback: () => "",
-    renderHousingMetric: () => "",
-    renderHousingModule: noop,
-    renderHousingShipmentRow: () => "",
-    setHousingActiveTab: noop,
-    setHousingFeedback: noop,
+    renderMarketFeedback: () => "",
+    renderMarketMetric: () => "",
+    renderMarketModule: noop,
+    setMarketWorkspaceTab: noop,
+    setMarketFeedback: noop,
     rootSelector: "[data-market-module]"
   });
 
-  const filters = runtime.normalizeHousingMarketFilters({ type: "ALL", category: "MEDICAL", sort: "INVALID", page: 9 });
+  const filters = runtime.normalizeMarketWorkspaceFilters({ type: "ALL", category: "MEDICAL", sort: "INVALID", page: 9 });
   assert.equal(filters.type, "ALL");
   assert.equal(filters.category, "ALL");
   assert.equal(filters.sort, "CATEGORY");
   assert.equal(filters.page, 9);
 
-  const pagination = runtime.getHousingMarketPagination(14, 3);
+  const pagination = runtime.getMarketWorkspacePagination(14, 3);
   assert.equal(pagination.page, 3);
   assert.equal(pagination.totalPages, 3);
   assert.equal(pagination.startIndex, 12);
   assert.equal(pagination.endIndex, 14);
-  assert.equal(typeof runtime.renderHousingMarketTab, "function");
-  assert.equal(typeof runtime.handleHousingMarketClick, "function");
+  assert.equal(typeof runtime.renderMarketWorkspaceTab, "function");
+  assert.equal(typeof runtime.handleMarketWorkspaceClick, "function");
   assert.equal(runtime.renderHousingStorageTab, undefined);
-  assert.match(source, /rootSelector = "\[data-housing-module\]"/);
+  assert.match(source, /rootSelector = "\[data-market-module\]"/);
   assert.match(source, /document\.querySelector\(rootSelector\)/);
 });
 
@@ -95,17 +81,17 @@ test("Global Market shell owns storefront rendering and Housing owns only delive
   const housing = read("js/housing.js");
 
   assert.match(market, /function renderMarketModule\(/);
-  assert.match(market, /createHousingMarketRuntime/);
-  assert.match(market, /runtime\.renderHousingMarketTab\(citizen\)/);
-  assert.match(market, /marketRuntime\.handleHousingMarketClick\?\./);
+  assert.match(market, /createMarketWorkspaceRuntime/);
+  assert.match(market, /runtime\.renderMarketWorkspaceTab\(citizen\)/);
+  assert.match(market, /marketRuntime\.handleMarketWorkspaceClick\?\./);
   assert.match(market, /data-market-module/);
 
   assert.match(housing, /function renderHousingDeliveriesTab\(/);
   assert.match(housing, /data-housing-open-market/);
-  assert.match(housing, /"UNIT", "HOUSEHOLD", "STORAGE", "DELIVERIES"/);
+  assert.match(housing, /"OVERVIEW", "UNIT", "HOUSEHOLD", "STORAGE", "COLLECTION", "DELIVERIES", "HISTORY"/);
   assert.doesNotMatch(housing, /housing-market-workspace/);
-  assert.doesNotMatch(housing, /renderHousingMarketWorkspace/);
-  assert.doesNotMatch(housing, /delegateHousingMarketEvent/);
-  assert.doesNotMatch(housing, /function renderHousingMarketTab\(/);
-  assert.doesNotMatch(housing, /function addHousingMarketOfferToCart\(/);
+  assert.doesNotMatch(housing, /renderMarketWorkspaceWorkspace/);
+  assert.doesNotMatch(housing, /delegateMarketWorkspaceEvent/);
+  assert.doesNotMatch(housing, /function renderMarketWorkspaceTab\(/);
+  assert.doesNotMatch(housing, /function addMarketWorkspaceOfferToCart\(/);
 });

@@ -359,6 +359,69 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
+  function getHousingShipmentContext(input = {}) {
+    const data = input.templateData || input.data || {};
+    const shipmentReference = findReference(input, "SHIPMENT") || findReference(input, "MARKET_SHIPMENT");
+    const shipmentId = text(data.shipmentId || shipmentReference?.id);
+    const shipment = shipmentId ? app.getMarketShipment?.(shipmentId) || null : null;
+    const marketOrderId = text(shipment?.marketOrderId || data.marketOrderId || findReference(input, "MARKET_ORDER")?.id);
+    const order = marketOrderId ? app.getMarketOrder?.(marketOrderId) || null : null;
+    const citizenId = text(shipment?.citizenId || data.citizenId || input.citizenId);
+    const providerId = text(shipment?.providerId || data.providerId || order?.vendorProviderId);
+    const organization = getOrganization(providerId, "");
+    const storageId = text(shipment?.destinationStorageId || data.destinationStorageId || findReference(input, "HOUSING_STORAGE")?.id);
+    const storage = storageId && citizenId ? app.getHousingStorage?.(storageId, citizenId) || null : null;
+    const instanceIds = [...new Set([
+      ...(Array.isArray(shipment?.instanceIds) ? shipment.instanceIds : []),
+      ...(Array.isArray(data.instanceIds) ? data.instanceIds : [])
+    ].map(text).filter(Boolean))];
+    const itemLabels = getItemLabels(instanceIds);
+    const housingLabel = safeLabel(
+      storage?.record?.title
+      || storage?.record?.name
+      || storage?.record?.label,
+      "Assigned Housing Unit"
+    );
+    const storageLabel = safeLabel(
+      storage?.unit?.name
+      || storage?.unit?.title
+      || storage?.unit?.label,
+      "Housing storage"
+    );
+    const destinationAddress = safeLabel(
+      shipment?.destinationAddress
+      || data.destinationAddress
+      || storage?.record?.addressLabel
+      || storage?.record?.address,
+      housingLabel
+    );
+    return {
+      shipmentId,
+      shipment,
+      marketOrderId,
+      order,
+      citizenId,
+      providerId,
+      providerLabel: safeLabel(organization?.name || organization?.displayName, "Housing delivery service"),
+      storageId,
+      storage,
+      housingLabel,
+      storageLabel,
+      destinationAddress,
+      status: token(shipment?.status || data.status, "UPDATED"),
+      previousStatus: token(data.previousStatus, ""),
+      holdReason: token(shipment?.holdReason || data.holdReason, ""),
+      lastErrorCode: token(shipment?.lastErrorCode || data.lastErrorCode, ""),
+      routeClass: token(shipment?.routeClass || data.routeClass, ""),
+      etaAt: text(shipment?.etaAt || data.etaAt),
+      deliveredAt: text(shipment?.deliveredAt || data.deliveredAt),
+      heldAt: text(shipment?.heldAt || data.heldAt),
+      instanceIds,
+      itemLabels,
+      itemSummary: formatItemList(itemLabels, instanceIds.length ? `${instanceIds.length} delivered items` : "Shipment contents")
+    };
+  }
+
   function getBillingContext(input = {}) {
     const data = input.templateData || input.data || {};
     const transactionRef = findReference(input, "BILLING_TRANSACTION");
@@ -844,6 +907,87 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
+  function buildHousingShipmentContent(input = {}, template = {}) {
+    const context = getHousingShipmentContext(input);
+    const eventCode = normalizeEventCode(input.eventCode);
+    const isDelivered = eventCode === "HOUSING.SHIPMENT.DELIVERED";
+    const isCapacityWarning = eventCode === "HOUSING.STORAGE.CAPACITY_WARNING";
+    const actionRequired = !isDelivered;
+    const statusLabel = isDelivered ? "Delivered" : isCapacityWarning ? "Storage capacity required" : "Held";
+    const reasonCode = context.holdReason || context.lastErrorCode;
+    const reason = formatReason(
+      reasonCode,
+      isCapacityWarning
+        ? "The destination storage does not have enough free space for this shipment."
+        : "The shipment cannot be delivered until the recorded Housing issue is resolved."
+    );
+    const title = isDelivered
+      ? "Shipment delivered"
+      : isCapacityWarning
+        ? "Housing storage capacity required"
+        : "Shipment held";
+    const lead = isDelivered
+      ? `${context.itemSummary} was delivered to ${context.storageLabel}.`
+      : isCapacityWarning
+        ? `Delivery of ${context.itemSummary} is waiting for free space in ${context.storageLabel}.`
+        : `Delivery of ${context.itemSummary} has been held.`;
+    const destinationSection = isCapacityWarning ? "STORAGE" : "DELIVERIES";
+
+    return {
+      resolved: true,
+      templateId: template.templateId,
+      title,
+      lead,
+      body: actionRequired ? "The shipment remains linked to its Market order and Housing destination." : "",
+      layout: "notice-system",
+      panels: compactPanels(
+        panel("SHIPMENT", [
+          row(context.itemLabels.length > 1 ? "Items" : "Item", context.itemSummary),
+          row("Delivery service", context.providerLabel),
+          row("Status", statusLabel)
+        ], "subject"),
+        panel("DESTINATION", [
+          row("Housing", context.housingLabel),
+          row("Storage", context.storageLabel),
+          row("Address", context.destinationAddress)
+        ], "status"),
+        panel(actionRequired ? "ACTION" : "RESULT", [
+          isDelivered && context.deliveredAt ? row("Delivered", formatDate(context.deliveredAt)) : null,
+          !isDelivered && context.heldAt ? row("Held since", formatDate(context.heldAt)) : null,
+          actionRequired ? row("Reason", reason) : row("Result", "Stored in the assigned Housing destination"),
+          isCapacityWarning ? row("Next step", "Free storage space or select another valid Housing storage, then retry delivery.") : null,
+          eventCode === "HOUSING.SHIPMENT.HELD" ? row("Next step", "Open Housing deliveries and review the blocked shipment.") : null
+        ], actionRequired ? "action" : "status", "wide")
+      ),
+      finalRows: [
+        row("Result", statusLabel),
+        actionRequired ? row("Action", isCapacityWarning ? "Free Housing storage capacity" : "Review Housing delivery") : null
+      ].filter(Boolean),
+      tags: ["HOUSING", isCapacityWarning ? "STORAGE" : "SHIPMENT", actionRequired ? "ACTION REQUIRED" : "DELIVERED"],
+      actions: [{
+        actionId: isCapacityWarning ? "OPEN_HOUSING_STORAGE" : "OPEN_HOUSING_DELIVERIES",
+        label: isCapacityWarning ? "OPEN STORAGE" : "OPEN HOUSING",
+        routeId: isCapacityWarning ? "HOUSING_STORAGE" : "HOUSING_DELIVERY",
+        module: "housing",
+        section: destinationSection.toLowerCase(),
+        entityRef: isCapacityWarning && context.storageId
+          ? { type: "HOUSING_STORAGE", id: context.storageId }
+          : context.shipmentId
+            ? { type: "MARKET_SHIPMENT", id: context.shipmentId }
+            : null,
+        params: {
+          housingTab: destinationSection,
+          housingStorageId: context.storageId,
+          shipmentId: context.shipmentId,
+          marketOrderId: context.marketOrderId
+        }
+      }],
+      subjectLabel: context.itemSummary,
+      providerLabel: context.providerLabel,
+      statusLabel
+    };
+  }
+
   function buildBillingContent(input = {}, template = {}) {
     const context = getBillingContext(input);
     const eventCode = normalizeEventCode(input.eventCode);
@@ -938,6 +1082,7 @@ window.WS_APP = window.WS_APP || {};
       let content = null;
       if (template.kind === "WORLD_OPERATION") content = buildWorldOperationContent(input, template);
       if (template.kind === "MARKET_ORDER") content = buildMarketContent(input, template);
+      if (template.kind === "HOUSING_SHIPMENT") content = buildHousingShipmentContent(input, template);
       if (template.kind === "SERVICE_ORDER") content = buildServiceContent(input, template);
       if (template.kind === "SUBSCRIPTION") content = buildSubscriptionContent(input, template);
       if (template.kind === "BILLING") content = buildBillingContent(input, template);
@@ -960,7 +1105,7 @@ window.WS_APP = window.WS_APP || {};
     const missingTemplates = eventCodes.filter((eventCode) => !catalog.templates?.[eventCode]);
     const invalidTemplates = eventCodes.filter((eventCode) => {
       const definition = catalog.templates?.[eventCode];
-      return !definition?.templateId || !["WORLD_OPERATION", "MARKET_ORDER", "SERVICE_ORDER", "SUBSCRIPTION", "BILLING"].includes(definition?.kind);
+      return !definition?.templateId || !["WORLD_OPERATION", "MARKET_ORDER", "HOUSING_SHIPMENT", "SERVICE_ORDER", "SUBSCRIPTION", "BILLING"].includes(definition?.kind);
     });
     const result = {
       ok: missingTemplates.length === 0 && invalidTemplates.length === 0,

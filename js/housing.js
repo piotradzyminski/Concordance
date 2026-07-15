@@ -152,14 +152,14 @@ window.WS_APP = window.WS_APP || {};
 
   function getHousingActiveTab(citizenId = "") {
     window.WS_APP.housingActiveTabByCitizen = window.WS_APP.housingActiveTabByCitizen || {};
-    const tab = String(window.WS_APP.housingActiveTabByCitizen[citizenId] || "UNIT").toUpperCase();
-    return ["UNIT", "HOUSEHOLD", "STORAGE", "DELIVERIES"].includes(tab) ? tab : "UNIT";
+    const tab = String(window.WS_APP.housingActiveTabByCitizen[citizenId] || "OVERVIEW").toUpperCase();
+    return ["OVERVIEW", "UNIT", "HOUSEHOLD", "STORAGE", "COLLECTION", "DELIVERIES", "HISTORY"].includes(tab) ? tab : "OVERVIEW";
   }
 
-  function setHousingActiveTab(citizenId = "", tab = "UNIT") {
+  function setHousingActiveTab(citizenId = "", tab = "OVERVIEW") {
     window.WS_APP.housingActiveTabByCitizen = window.WS_APP.housingActiveTabByCitizen || {};
-    const normalized = String(tab || "UNIT").toUpperCase();
-    window.WS_APP.housingActiveTabByCitizen[citizenId] = ["UNIT", "HOUSEHOLD", "STORAGE", "DELIVERIES"].includes(normalized) ? normalized : "UNIT";
+    const normalized = String(tab || "OVERVIEW").toUpperCase();
+    window.WS_APP.housingActiveTabByCitizen[citizenId] = ["OVERVIEW", "UNIT", "HOUSEHOLD", "STORAGE", "COLLECTION", "DELIVERIES", "HISTORY"].includes(normalized) ? normalized : "OVERVIEW";
   }
 
   function getHousingActiveRecordId(citizenId = "", records = []) {
@@ -354,9 +354,17 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function formatIsoLabel(iso = "") {
-    const safeIso = isIsoDate(iso) ? iso : getCampaignDateIso();
-    const match = safeIso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    return match ? `${match[3]}.${match[2]}.${match[1]}` : safeIso;
+    const raw = String(iso || "").trim();
+    const source = isIsoDate(raw) ? `${raw}T00:00:00.000Z` : raw;
+    const parsed = Date.parse(source);
+    if (!Number.isFinite(parsed)) {
+      const fallback = getCampaignDateIso();
+      const match = fallback.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return match ? `${match[3]}.${match[2]}.${match[1]}` : fallback;
+    }
+    const normalized = new Date(parsed).toISOString();
+    const label = `${normalized.slice(8, 10)}.${normalized.slice(5, 7)}.${normalized.slice(0, 4)}`;
+    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? label : `${label} / ${normalized.slice(11, 16)}`;
   }
 
   function normalizeShipmentStatus(value = "IN_TRANSIT") {
@@ -528,6 +536,12 @@ window.WS_APP = window.WS_APP || {};
             <b>${escapeHtml(String(transition.type || "RENT TRANSITION").replace(/_/g, " "))}</b>
             <small>${escapeHtml(transitionTarget ? `${transitionTarget.standardCode || "?"} / ${transitionTarget.standardTierId || "?"} / ${transitionTarget.areaM2 ?? "?"} m²` : "UNIT RELEASE")}</small>
             <small>${escapeHtml(`${transferCount} ITEM${transferCount === 1 ? "" : "S"} REQUIRE TRANSFER`)}</small>
+            ${String(transition.type || "").toUpperCase() === "RELOCATION_REQUIRED" && String(transition.status || "PREPARED").toUpperCase() === "PREPARED" ? `
+              <div class="housing-record-transition-actions">
+                <button class="housing-inline-action is-primary" type="button" data-housing-approve-relocation="${escapeHtml(record.linkedSubscriptionId || "")}">APPROVE MOVE</button>
+                <button class="housing-inline-action" type="button" data-housing-cancel-relocation="${escapeHtml(record.linkedSubscriptionId || "")}">CANCEL MOVE</button>
+              </div>
+            ` : ""}
           </div>
         ` : ""}
         <div class="housing-record-actions">
@@ -542,32 +556,20 @@ window.WS_APP = window.WS_APP || {};
     const active = getHousingActiveTab(citizen.id);
     const storageSlots = records.reduce((sum, record) => sum + record.storageUnits.reduce((unitSum, unit) => unitSum + unit.slotCapacity, 0), 0);
     const activeShipments = getCitizenShipments(citizen).filter((shipment) => !isHousingShipmentClosed(shipment, {}));
+    const collection = window.WS_APP.getHousingCollectionItems?.(citizen.id, getHousingActiveRecordId(citizen.id, records)) || [];
+    const tab = (id, title, description) => `
+      <button class="housing-module-tab system-segment-tile system-segment-tile--card ${active === id ? "is-active" : ""}" type="button" role="tab" aria-selected="${active === id ? "true" : "false"}" data-housing-tab="${id}">
+        <span class="system-segment-tile__body"><b class="system-segment-tile__title">${title}</b><small class="system-segment-tile__description">${description}</small></span>
+      </button>`;
     return `
-      <div class="housing-module-tabs system-segment-tabs" role="tablist" aria-label="Housing Sections">
-        <button class="housing-module-tab system-segment-tile system-segment-tile--card ${active === "UNIT" ? "is-active" : ""}" type="button" role="tab" aria-selected="${active === "UNIT" ? "true" : "false"}" data-housing-tab="UNIT">
-          <span class="system-segment-tile__body">
-            <b class="system-segment-tile__title">UNIT</b>
-            <small class="system-segment-tile__description">HABITAT / ${escapeHtml(records.length)} RECORD${records.length === 1 ? "" : "S"}</small>
-          </span>
-        </button>
-        <button class="housing-module-tab system-segment-tile system-segment-tile--card ${active === "HOUSEHOLD" ? "is-active" : ""}" type="button" role="tab" aria-selected="${active === "HOUSEHOLD" ? "true" : "false"}" data-housing-tab="HOUSEHOLD">
-          <span class="system-segment-tile__body">
-            <b class="system-segment-tile__title">HOUSEHOLD</b>
-            <small class="system-segment-tile__description">ROOMS / FURNISHING / SAFE SPACE</small>
-          </span>
-        </button>
-        <button class="housing-module-tab system-segment-tile system-segment-tile--card ${active === "STORAGE" ? "is-active" : ""}" type="button" role="tab" aria-selected="${active === "STORAGE" ? "true" : "false"}" data-housing-tab="STORAGE">
-          <span class="system-segment-tile__body">
-            <b class="system-segment-tile__title">STORAGE</b>
-            <small class="system-segment-tile__description">STORAGE / ${escapeHtml(storageSlots)} SLOTS</small>
-          </span>
-        </button>
-        <button class="housing-module-tab system-segment-tile system-segment-tile--card ${active === "DELIVERIES" ? "is-active" : ""}" type="button" role="tab" aria-selected="${active === "DELIVERIES" ? "true" : "false"}" data-housing-tab="DELIVERIES">
-          <span class="system-segment-tile__body">
-            <b class="system-segment-tile__title">DELIVERIES</b>
-            <small class="system-segment-tile__description">INBOUND / ${escapeHtml(activeShipments.length)} ACTIVE / MARKET BRIDGE</small>
-          </span>
-        </button>
+      <div class="housing-module-tabs system-segment-tabs housing-module-tabs--hub" role="tablist" aria-label="Housing Sections">
+        ${tab("OVERVIEW", "OVERVIEW", "HUB / WEATHER / WORLD FEED")}
+        ${tab("UNIT", "UNIT", `HABITAT / ${escapeHtml(records.length)} RECORD${records.length === 1 ? "" : "S"}`)}
+        ${tab("HOUSEHOLD", "HOUSEHOLD", "ROOMS / FURNISHING / SAFE SPACE")}
+        ${tab("STORAGE", "STORAGE", `STORAGE / ${escapeHtml(storageSlots)} SLOTS`)}
+        ${tab("COLLECTION", "COLLECTION", `MEMENTOS / ${escapeHtml(collection.length)} ITEMS`)}
+        ${tab("DELIVERIES", "DELIVERIES", `INBOUND / ${escapeHtml(activeShipments.length)} ACTIVE`)}
+        ${tab("HISTORY", "HISTORY", "HOUSEHOLD ACTIVITY")}
       </div>
     `;
   }
@@ -708,6 +710,83 @@ window.WS_APP = window.WS_APP || {};
     `;
   }
 
+  function formatHubTime(value = "") {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return value || "UNAVAILABLE";
+    return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(date).replace(",", " /");
+  }
+
+  function renderHousingOverviewTab(citizen = {}) {
+    const record = getHousingActiveRecord(citizen);
+    const overview = window.WS_APP.getHousingHouseholdHubOverview?.(citizen.id, record?.id) || null;
+    if (!overview) return '<section class="housing-module-panel"><p class="file-empty">Household Hub projection is unavailable.</p></section>';
+    const current = overview.weather?.current || {};
+    const forecast = overview.weather?.forecast || [];
+    return `
+      <div class="housing-hub-overview">
+        ${renderHousingFeedback(citizen.id)}
+        <section class="housing-module-panel housing-hub-command-panel">
+          <header class="housing-module-panel-head"><div><p class="kicker">PERSONAL HOUSING HUB</p><h5>${escapeHtml(record?.title || "Unassigned Housing")}</h5></div><span class="module-status-badge">${escapeHtml(overview.unitStatus)}</span></header>
+          <div class="housing-hub-clock"><small>CAMPAIGN TIME</small><b>${escapeHtml(formatHubTime(overview.campaignTimeIso))}</b><span>${escapeHtml(overview.visibleAddress)}</span></div>
+          <div class="housing-summary-unit">
+            ${renderHousingMetric("RENT", overview.rentStatus)}
+            ${renderHousingMetric("COLLECTION", overview.collectionCount)}
+            ${renderHousingMetric("IMPORTANT", overview.importantItemCount)}
+            ${renderHousingMetric("DISPLAY", `${overview.displayUsed}/${overview.displayCapacity}`)}
+            ${renderHousingMetric("UNREAD", overview.unreadTerminalCount)}
+          </div>
+          <div class="housing-hub-quick-actions">
+            <button class="housing-inline-action is-primary" type="button" data-housing-open-collection>OPEN COLLECTION</button>
+            <button class="housing-inline-action" type="button" data-housing-open-terminal>OPEN TERMINAL</button>
+            <button class="housing-inline-action" type="button" data-housing-open-market>OPEN MARKET</button>
+          </div>
+        </section>
+        <section class="housing-module-panel housing-hub-weather">
+          <header class="housing-module-panel-head"><div><p class="kicker">GLOBAL WEATHER FEED</p><h5>${escapeHtml(current.label || "Unavailable")}</h5></div><span class="module-status-badge">${escapeHtml(current.exteriorRisk || "UNKNOWN")}</span></header>
+          <div class="housing-hub-weather-current">
+            <strong>${escapeHtml(current.temperatureC ?? "—")}°C</strong>
+            <div><span>VISIBILITY <b>${escapeHtml(current.visibilityPercent ?? "—")}%</b></span><span>AIR <b>${escapeHtml(current.airQuality || "—")}</b></span><span>PRECIPITATION <b>${escapeHtml(current.precipitation || "—")}</b></span></div>
+            <p>${escapeHtml(current.note || "No environmental advisory.")}</p>
+          </div>
+          <div class="housing-hub-forecast">${forecast.map((entry) => `<span><small>${escapeHtml(formatHubTime(entry.validFrom))}</small><b>${escapeHtml(entry.label)}</b><em>${escapeHtml(entry.temperatureC)}°C / ${escapeHtml(entry.visibilityPercent)}%</em></span>`).join("")}</div>
+        </section>
+        <section class="housing-module-panel housing-hub-feed">
+          <header class="housing-module-panel-head"><div><p class="kicker">WORLD / TERMINAL FEED</p><h5>Current signals</h5></div></header>
+          <div class="housing-hub-feed-list">${(overview.worldFeed || []).map((entry) => `<article class="housing-hub-feed-entry ${entry.important ? "is-important" : ""} ${entry.unread ? "is-unread" : ""}"><span>${escapeHtml(entry.category || entry.source || "FEED")}</span><b>${escapeHtml(entry.title || "Signal")}</b><p>${escapeHtml(entry.body || "")}</p><small>${escapeHtml(formatHubTime(entry.timestamp))}</small></article>`).join("") || '<p class="file-empty">No current signals.</p>'}</div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderHousingCollectionTab(citizen = {}) {
+    const record = getHousingActiveRecord(citizen);
+    if (!record) return '<section class="housing-module-panel"><p class="file-empty">Collection requires an active Housing Unit.</p></section>';
+    const collection = window.WS_APP.getHousingCollectionItems?.(citizen.id, record.id) || [];
+    const hosts = window.WS_APP.getHousingDisplayHosts?.(citizen.id, record.id) || [];
+    const candidates = window.WS_APP.getHousingDisplayCandidates?.(citizen.id) || [];
+    const candidateOptions = candidates.map((item) => `<option value="${escapeHtml(item.instanceId)}">${escapeHtml(item.playerLabel || item.instanceData?.name || item.definitionId)}</option>`).join("");
+    return `
+      <div class="housing-hub-collection">
+        ${renderHousingFeedback(citizen.id)}
+        <section class="housing-module-panel">
+          <header class="housing-module-panel-head"><div><p class="kicker">COLLECTION</p><h5>Collectibles, mementos and important items</h5></div><span class="module-status-badge">${escapeHtml(collection.length)} ITEMS</span></header>
+          <p class="housing-hub-note">Collection metadata and display placement remain attached to the canonical ItemInstance. Decorative items provide identity and history, not numeric bonuses.</p>
+          <div class="housing-hub-collection-list">${collection.map((entry) => `<article class="housing-hub-collection-item ${entry.important ? "is-important" : ""}"><div><span>${escapeHtml(entry.category)}</span><b>${escapeHtml(entry.label)}</b><small>${escapeHtml(entry.displayed ? "DISPLAYED" : entry.storageProtection)}</small></div><p>${escapeHtml(entry.note || entry.provenance || "No collection note.")}</p><div class="housing-hub-item-actions"><button class="housing-inline-action ${entry.important ? "is-primary" : ""}" type="button" data-housing-toggle-important="${escapeHtml(entry.instance.instanceId)}" data-housing-important-next="${entry.important ? "false" : "true"}">${entry.important ? "IMPORTANT" : "MARK IMPORTANT"}</button>${entry.displayed ? `<button class="housing-inline-action" type="button" data-housing-remove-display="${escapeHtml(entry.instance.instanceId)}">RETURN TO STORAGE</button>` : ""}</div></article>`).join("") || '<p class="file-empty">No collectibles or important items are registered.</p>'}</div>
+        </section>
+        <section class="housing-module-panel">
+          <header class="housing-module-panel-head"><div><p class="kicker">DISPLAY SURFACES</p><h5>Household exhibition slots</h5></div><span class="module-status-badge">${escapeHtml(hosts.length)} HOSTS</span></header>
+          <div class="housing-hub-display-hosts">${hosts.map((host) => `<article class="housing-hub-display-host"><header><b>${escapeHtml(host.label)}</b><small>${escapeHtml(host.slots.filter((slot) => slot.item).length)}/${escapeHtml(host.slots.length)} OCCUPIED</small></header><div>${host.slots.map((slot) => slot.item ? `<span class="housing-hub-display-slot is-filled"><small>${escapeHtml(slot.slotId)}</small><b>${escapeHtml(slot.item.playerLabel || slot.item.instanceData?.name || slot.item.definitionId)}</b><button class="housing-inline-action" type="button" data-housing-remove-display="${escapeHtml(slot.item.instanceId)}">REMOVE</button></span>` : `<span class="housing-hub-display-slot"><small>${escapeHtml(slot.slotId)}</small>${candidateOptions ? `<select data-housing-display-candidate><option value="">SELECT ITEM</option>${candidateOptions}</select><button class="housing-inline-action" type="button" data-housing-display-item data-host-instance-id="${escapeHtml(host.instance.instanceId)}" data-display-slot-id="${escapeHtml(slot.slotId)}">DISPLAY</button>` : '<em>NO DISPLAYABLE ITEM IN STORAGE</em>'}</span>`).join("")}</div></article>`).join("") || '<p class="file-empty">Place display furniture or install a Display Rail module to expose display slots.</p>'}</div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderHousingHistoryTab(citizen = {}) {
+    const record = getHousingActiveRecord(citizen);
+    const history = window.WS_APP.getHousingHouseholdHistory?.(citizen.id, record?.id) || [];
+    return `<section class="housing-module-panel housing-hub-history"><header class="housing-module-panel-head"><div><p class="kicker">HOUSEHOLD HISTORY</p><h5>Canonical Housing and ItemInstance activity</h5></div><span class="module-status-badge">${escapeHtml(history.length)} EVENTS</span></header><div class="housing-hub-history-list">${history.map((entry) => `<article><span>${escapeHtml(entry.type)}</span><b>${escapeHtml(entry.status)}</b><small>${escapeHtml(formatHubTime(entry.at))}</small><p>${escapeHtml(entry.detail || "")}</p></article>`).join("") || '<p class="file-empty">No Household activity has been committed yet.</p>'}</div></section>`;
+  }
+
   function renderHousingModule(user = window.WS_APP.currentUser) {
     const container = document.querySelector("#module-grid");
     const status = document.querySelector("#module-status");
@@ -750,13 +829,19 @@ window.WS_APP = window.WS_APP || {};
         ${renderHousingModuleSummary(citizen, records)}
         ${renderHousingTabs(citizen, records)}
         <div class="housing-module-unit">
-          ${activeTab === "HOUSEHOLD"
-            ? renderHousingHouseholdTab(citizen)
-            : activeTab === "STORAGE"
-              ? renderHousingStorageTab(citizen)
-              : activeTab === "DELIVERIES"
-                ? renderHousingDeliveriesTab(citizen)
-                : renderHousingUnitTab(citizen)}
+          ${activeTab === "OVERVIEW"
+            ? renderHousingOverviewTab(citizen)
+            : activeTab === "HOUSEHOLD"
+              ? renderHousingHouseholdTab(citizen)
+              : activeTab === "STORAGE"
+                ? renderHousingStorageTab(citizen)
+                : activeTab === "COLLECTION"
+                  ? renderHousingCollectionTab(citizen)
+                  : activeTab === "DELIVERIES"
+                    ? renderHousingDeliveriesTab(citizen)
+                    : activeTab === "HISTORY"
+                      ? renderHousingHistoryTab(citizen)
+                      : renderHousingUnitTab(citizen)}
         </div>
       </section>
     `;
@@ -842,6 +927,78 @@ window.WS_APP = window.WS_APP || {};
       }
 
       if (handleHousingHouseholdClick(event, { root, citizenId, user })) return;
+
+      const openCollectionButton = event.target.closest?.("[data-housing-open-collection]");
+      if (openCollectionButton) {
+        setHousingActiveTab(citizenId, "COLLECTION");
+        renderHousingModule(user);
+        return;
+      }
+
+      const openTerminalButton = event.target.closest?.("[data-housing-open-terminal]");
+      if (openTerminalButton) {
+        window.WS_APP.openModule?.("terminal-hub", user, { citizenId });
+        return;
+      }
+
+      const importantButton = event.target.closest?.("[data-housing-toggle-important]");
+      if (importantButton) {
+        const result = window.WS_APP.setHousingItemImportant?.({ citizenId, instanceId: String(importantButton.getAttribute("data-housing-toggle-important") || ""), important: String(importantButton.getAttribute("data-housing-important-next") || "true") === "true" }) || { ok: false, reason: "HOUSEHOLD_HUB_API_UNAVAILABLE" };
+        setHousingFeedback(citizenId, result.ok ? "Important-item marker updated." : `Collection update failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "SUCCESS" : "ERROR");
+        renderHousingModule(user);
+        return;
+      }
+
+      const displayButton = event.target.closest?.("[data-housing-display-item]");
+      if (displayButton) {
+        const slot = displayButton.closest?.(".housing-hub-display-slot");
+        const select = slot?.querySelector?.("[data-housing-display-candidate]");
+        const instanceId = String(select?.value || "").trim();
+        const recordId = getHousingActiveRecordId(citizenId, getCitizenHousingRecords(window.WS_APP.getCitizenById?.(citizenId) || {}));
+        const result = instanceId ? window.WS_APP.displayHousingCollectionItem?.({ citizenId, housingRecordId: recordId, instanceId, hostInstanceId: String(displayButton.getAttribute("data-host-instance-id") || ""), slotId: String(displayButton.getAttribute("data-display-slot-id") || "") }) : { ok: false, reason: "HOUSEHOLD_DISPLAY_ITEM_REQUIRED" };
+        setHousingFeedback(citizenId, result?.ok ? "Item assigned to the Household display." : `Display failed: ${String(result?.reason || "UNKNOWN").replace(/_/g, " ")}.`, result?.ok ? "SUCCESS" : "ERROR");
+        renderHousingModule(user);
+        return;
+      }
+
+      const removeDisplayButton = event.target.closest?.("[data-housing-remove-display]");
+      if (removeDisplayButton) {
+        const recordId = getHousingActiveRecordId(citizenId, getCitizenHousingRecords(window.WS_APP.getCitizenById?.(citizenId) || {}));
+        const result = window.WS_APP.removeHousingCollectionDisplay?.({ citizenId, housingRecordId: recordId, instanceId: String(removeDisplayButton.getAttribute("data-housing-remove-display") || "") }) || { ok: false, reason: "HOUSEHOLD_HUB_API_UNAVAILABLE" };
+        setHousingFeedback(citizenId, result.ok ? "Displayed item returned to Housing Storage." : `Display removal failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "SUCCESS" : "ERROR");
+        renderHousingModule(user);
+        return;
+      }
+
+      const approveRelocationButton = event.target.closest?.("[data-housing-approve-relocation]");
+      if (approveRelocationButton) {
+        const contractId = String(approveRelocationButton.getAttribute("data-housing-approve-relocation") || "").trim();
+        const preview = window.WS_APP.previewHousingRentRelocation?.(contractId) || { ok: false, errorCode: "HOUSING_RELOCATION_RUNTIME_UNAVAILABLE" };
+        if (!preview.ok) {
+          setHousingFeedback(citizenId, `Relocation blocked: ${String(preview.errorCode || preview.reason || "UNKNOWN").replace(/_/g, " ")}.`, "ERROR");
+          renderHousingModule(user);
+          return;
+        }
+        const confirmed = typeof window.confirm !== "function" || window.confirm(`Move ${preview.instanceIds?.length || 0} item(s) to the new Housing Unit? Furnishings will be staged in storage for placement on the new layout.`);
+        if (!confirmed) return;
+        const result = window.WS_APP.approveHousingRentRelocation?.(contractId) || { ok: false, errorCode: "HOUSING_RELOCATION_RUNTIME_UNAVAILABLE" };
+        setHousingFeedback(citizenId, result.ok ? "Relocation completed. The new unit is now primary and transferred furnishings are staged in storage." : `Relocation failed: ${String(result.errorCode || result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "SUCCESS" : "ERROR");
+        setHousingActiveTab(citizenId, "UNIT");
+        renderHousingModule(user);
+        return;
+      }
+
+      const cancelRelocationButton = event.target.closest?.("[data-housing-cancel-relocation]");
+      if (cancelRelocationButton) {
+        const contractId = String(cancelRelocationButton.getAttribute("data-housing-cancel-relocation") || "").trim();
+        const confirmed = typeof window.confirm !== "function" || window.confirm("Cancel this prepared move and restore the previous Rent tier?");
+        if (!confirmed) return;
+        const result = window.WS_APP.cancelHousingRentRelocation?.(contractId) || { ok: false, errorCode: "HOUSING_RELOCATION_RUNTIME_UNAVAILABLE" };
+        setHousingFeedback(citizenId, result.ok ? "Prepared relocation cancelled and the previous Rent tier restored." : `Relocation cancellation failed: ${String(result.errorCode || result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "SUCCESS" : "ERROR");
+        setHousingActiveTab(citizenId, "UNIT");
+        renderHousingModule(user);
+        return;
+      }
 
       const openMarketOrderButton = event.target.closest?.("[data-housing-open-market-order]");
       if (openMarketOrderButton) {
@@ -1019,7 +1176,10 @@ window.WS_APP = window.WS_APP || {};
     if (!event?.detail?.citizenId || event.detail.citizenId === citizenId) renderHousingModule(window.WS_APP.currentUser);
   };
 
+  window.addEventListener("ws:campaign-time-updated", refreshHousingDeliveryProjection);
   window.addEventListener("ws:campaign-date-updated", refreshHousingDeliveryProjection);
+  window.addEventListener("ws:terminal-entries-updated", refreshHousingDeliveryProjection);
+  window.addEventListener("ws:item-instances-updated", refreshHousingDeliveryProjection);
   window.addEventListener("ws:market-shipment-updated", refreshHousingDeliveryProjection);
   window.addEventListener("ws:market-shipment-in-transit", refreshHousingDeliveryProjection);
   window.addEventListener("ws:market-shipment-delivered", refreshHousingDeliveryProjection);

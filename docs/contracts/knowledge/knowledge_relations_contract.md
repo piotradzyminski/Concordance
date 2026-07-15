@@ -5,7 +5,7 @@
 ```text
 relation schema: future-noir.knowledge-relations v2
 pack relation schema: stable-id-v2
-patch: Knowledge Relation Tabs and Registry Separation 1.1x
+patch: Knowledge Relation Article Index Tabs 1.6x
 ```
 
 ## Registry boundaries
@@ -85,8 +85,28 @@ At viewport widths `>= 1280px`, visible same-registry relation blocks may render
 
 The sidecar must never make Encyclopedia relations visible inside System Index, or System Index relations visible inside Encyclopedia. Source-patch content is not authoritative and must not be imported as part of the UI layout change.
 
-## Sidecar layering refinement
+## Article-anchored index-tab presentation
 
-At desktop width the `.knowledge-related-sidecar` remains in a lower stacking layer than the `.knowledge-reading-panel`. The reading panel owns an opaque background and clips the overlapping section, so only the tab portion protruding from behind the article is visible. Connector spine/line pseudo-elements are disabled in this layout.
+At desktop width the `.knowledge-related-sidecar` is absolutely anchored to `.knowledge-record-layout--with-sidecar`, not allocated as a visible grid column. Its index tabs begin to the left of the article and extend beneath the article edge. The `.knowledge-reading-panel` remains an opaque higher stacking layer, so the overlapping right section is fully occluded and only the file-index portion protruding from behind the document is visible.
 
-This is strictly presentational. It does not change stable relation IDs, registry ownership, migration, visibility policy, seed records or the canonical SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX split.
+Desktop presentation requirements:
+
+```text
+sidecar position: absolute relative to the current article layout
+sidecar stacking: negative local layer below the reading panel
+reading panel: opaque left edge with explicit occlusion strip
+all tabs: one fixed width and one fixed height
+hidden overlap: deeper beneath the article than the visible index portion
+connector lines: none
+relation heading: retained without any background strip
+title label: dedicated wrapper with balanced multi-line wrapping
+hover/focus: no geometry or length change
+```
+
+The visible tabs behave as document index markers, not as an independent navigation rail. This is strictly presentational. It does not change stable relation IDs, registry ownership, migration, visibility policy, seed records or the canonical SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX split.
+
+### Article-edge masking
+
+The tab list is clipped independently of the article surface. The desktop mask ends at the outer article edge rather than the inner reading-panel edge. With the current geometry this uses a `58px` right inset: `42px` of tab underlap plus the `16px` `.module-detail` content inset. The mask is the canonical occlusion boundary; article background opacity is not relied upon to hide the tab continuation.
+
+Masking changes no tab position, width, height, heading placement, label wrapping or hover/focus geometry.

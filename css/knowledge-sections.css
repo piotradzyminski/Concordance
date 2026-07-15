@@ -627,34 +627,41 @@
   gap: 14px;
 }
 
-/* Desktop relation sidecar. Tabs sit below the article stacking layer and
-   overlap its left edge; the opaque reading surface occludes the overlap so
-   only the part protruding from behind the article remains visible. */
+/* Desktop relation index tabs. The relation block is anchored to the article,
+   rendered below the document plane and offset to the left. Every tab has one
+   fixed length; its right section extends beneath the opaque reading panel and
+   is clipped by that higher layer. */
 @media (min-width: 1280px) {
   .knowledge-record-layout--with-sidecar {
     position: relative;
+    z-index: 0;
     isolation: isolate;
-    grid-template-columns: 212px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
-    width: calc(100% + 212px);
-    margin-left: -212px;
+    width: 100%;
+    margin-left: 0;
     overflow: visible;
   }
 
   .knowledge-record-layout--with-sidecar .knowledge-related-sidecar {
-    position: relative;
-    z-index: 0;
-    order: 1;
-    align-self: start;
-    padding: 48px 0 0 18px;
+    position: absolute;
+    z-index: -1;
+    top: 48px;
+    left: -184px;
+    width: 226px;
+    display: grid;
+    gap: 14px;
+    padding: 0;
   }
 
   .knowledge-record-layout--with-sidecar .knowledge-reading-panel {
     position: relative;
-    z-index: 2;
-    order: 2;
-    overflow: clip;
+    z-index: 3;
+    order: 1;
+    min-width: 0;
+    overflow: hidden;
     background: #0b1011;
+    box-shadow: -2px 0 0 #0b1011;
   }
 
   .knowledge-related-sidecar .knowledge-related-box {
@@ -665,8 +672,15 @@
   }
 
   .knowledge-related-sidecar .knowledge-related-box > b {
-    padding-left: 0;
+    display: block;
+    box-sizing: border-box;
+    width: 184px;
+    margin: 0;
+    padding: 0 8px 5px 0;
+    background: transparent;
     color: rgba(143, 189, 180, 0.46);
+    text-align: right;
+    white-space: nowrap;
   }
 
   .knowledge-related-sidecar .knowledge-related-list {
@@ -677,6 +691,8 @@
     margin: 0;
     padding: 0;
     overflow: visible;
+    -webkit-clip-path: inset(0 58px 0 0);
+    clip-path: inset(0 58px 0 0);
   }
 
   .knowledge-related-sidecar .knowledge-related-list::before,
@@ -687,13 +703,31 @@
 
   .knowledge-related-sidecar .knowledge-related-link,
   .knowledge-related-sidecar .knowledge-related-missing {
-    right: -24px;
-    width: calc(100% + 24px);
-    min-height: 44px;
-    border-right-color: transparent;
-    background: rgba(4, 8, 8, 0.96);
-    padding: 8px 42px;
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    width: 226px;
+    height: 68px;
+    min-height: 68px;
+    border: 1px solid rgba(143, 189, 180, 0.18);
+    background: #070b0c;
+    padding: 10px 54px 10px 16px;
+    justify-content: flex-end;
+    color: var(--muted);
+    line-height: 1.3;
+    text-align: right;
+    white-space: normal !important;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.52);
+  }
+
+  .knowledge-related-sidecar .knowledge-related-link__label {
+    display: block;
+    width: 100%;
+    max-width: 142px;
+    min-width: 0;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
+    text-wrap: balance;
   }
 
   .knowledge-related-sidecar .knowledge-related-link::after,
@@ -703,8 +737,9 @@
 
   .knowledge-related-sidecar .knowledge-related-link:hover,
   .knowledge-related-sidecar .knowledge-related-link:focus-visible {
-    border-right-color: transparent;
-    transform: translateX(-3px);
+    border-color: var(--line-hard);
+    background: #0a1010;
+    transform: none;
   }
 }
 

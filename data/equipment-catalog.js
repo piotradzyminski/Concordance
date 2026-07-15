@@ -2048,12 +2048,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 45,
     "manufacturer": "CoreMed",
     "provider": "CoreMed",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/coremed-analgesic-tablets.svg",
-      "detail": "assets/market/products/coremed-analgesic-tablets.svg",
-      "alt": "Sealed blister pack of analgesic tablets",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 12,
@@ -2084,12 +2078,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 90,
     "manufacturer": "CoreMed",
     "provider": "CoreMed",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/coremed-antiseptic-ampoules.svg",
-      "detail": "assets/market/products/coremed-antiseptic-ampoules.svg",
-      "alt": "Sterile antiseptic ampoules in a sealed tray",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 4,
@@ -2120,12 +2108,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 120,
     "manufacturer": "CoreMed",
     "provider": "CoreMed",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/coremed-coagulant-patches.svg",
-      "detail": "assets/market/products/coremed-coagulant-patches.svg",
-      "alt": "Three sealed coagulant patches",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 3,
@@ -2156,12 +2138,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 180,
     "manufacturer": "CoreMed",
     "provider": "CoreMed",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/coremed-antibiotic-course.svg",
-      "detail": "assets/market/products/coremed-antibiotic-course.svg",
-      "alt": "Sealed antibiotic capsule course",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 10,
@@ -2192,12 +2168,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 160,
     "manufacturer": "SomnaCore",
     "provider": "SomnaCore",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/somnacore-alertness-tablets.svg",
-      "detail": "assets/market/products/somnacore-alertness-tablets.svg",
-      "alt": "Regulated alertness tablets in a sealed blister",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 6,
@@ -2228,12 +2198,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 75,
     "manufacturer": "CoreMed",
     "provider": "CoreMed",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/coremed-nausea-suppressant.svg",
-      "detail": "assets/market/products/coremed-nausea-suppressant.svg",
-      "alt": "Compact blister pack of nausea suppressant tablets",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 8,
@@ -2264,12 +2228,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 240,
     "manufacturer": "CoreMed",
     "provider": "CoreMed",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/coremed-first-aid-pouch.svg",
-      "detail": "assets/market/products/coremed-first-aid-pouch.svg",
-      "alt": "Sealed CoreMed first aid pouch",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 1,
@@ -2300,12 +2258,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 60,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-standard-ration-pack.svg",
-      "detail": "assets/market/products/habitat-standard-ration-pack.svg",
-      "alt": "Sealed standard nutrient ration pack",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 4,
@@ -2338,12 +2290,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 45,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-protein-meal-bricks.svg",
-      "detail": "assets/market/products/habitat-protein-meal-bricks.svg",
-      "alt": "Two packaged protein meal bricks",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 2,
@@ -2377,12 +2323,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 55,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-heat-sealed-meal-tray.svg",
-      "detail": "assets/market/products/habitat-heat-sealed-meal-tray.svg",
-      "alt": "Heat-sealed prepared meal tray",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 1,
@@ -2415,12 +2355,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 35,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-hydration-pouches.svg",
-      "detail": "assets/market/products/habitat-hydration-pouches.svg",
-      "alt": "Set of sealed hydration pouches",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 6,
@@ -2451,12 +2385,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 70,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-electrolyte-concentrate.svg",
-      "detail": "assets/market/products/habitat-electrolyte-concentrate.svg",
-      "alt": "Electrolyte concentrate sachets",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 8,
@@ -2489,12 +2417,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 28,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-insect-protein-crisps.svg",
-      "detail": "assets/market/products/habitat-insect-protein-crisps.svg",
-      "alt": "Sealed insect-protein crisp package",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 3,
@@ -2525,12 +2447,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 85,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-personal-hygiene-pack.svg",
-      "detail": "assets/market/products/habitat-personal-hygiene-pack.svg",
-      "alt": "Sealed personal hygiene supply pack",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 1,
@@ -2560,12 +2476,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 65,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-surface-cleaning-concentrate.svg",
-      "detail": "assets/market/products/habitat-surface-cleaning-concentrate.svg",
-      "alt": "Two bottles of surface cleaning concentrate",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 2,
@@ -2595,12 +2505,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 40,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-laundry-sheets.svg",
-      "detail": "assets/market/products/habitat-laundry-sheets.svg",
-      "alt": "Pack of pre-dosed laundry sheets",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 12,
@@ -2630,12 +2534,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 110,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-water-filter-cartridges.svg",
-      "detail": "assets/market/products/habitat-water-filter-cartridges.svg",
-      "alt": "Pair of domestic water filter cartridges",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 2,
@@ -2665,12 +2563,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 30,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-waste-liner-roll.svg",
-      "detail": "assets/market/products/habitat-waste-liner-roll.svg",
-      "alt": "Roll of sealed domestic waste liners",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 20,
@@ -2700,12 +2592,6 @@ window.APP_DATA.equipmentCatalog = [
     "value": 52,
     "manufacturer": "Habitat Market",
     "provider": "Habitat Market",
-    "visualProfile": {
-      "thumbnail": "assets/market/products/habitat-utility-sealant-tape.svg",
-      "detail": "assets/market/products/habitat-utility-sealant-tape.svg",
-      "alt": "Two rolls of utility sealant tape",
-      "fit": "CONTAIN"
-    },
     "consumable": true,
     "consumableProfile": {
       "packageQuantity": 2,
@@ -2818,206 +2704,570 @@ window.APP_DATA.equipmentCatalog = [
     },
     "equipProfile": {}
   },
-{
-  "id": "eqcat-household-rest-cot",
-  "name": "Fold-Frame Rest Cot",
-  "category": "HOUSEHOLD",
-  "subtype": "REST_COT",
-  "itemType": "HOUSEHOLD_FURNISHING",
-  "footprint": "2x3",
-  "status": "OWNED",
-  "operatingStatus": "ACTIVE",
-  "legality": "REGISTERED",
-  "condition": 100,
-  "value": 420,
-  "tags": [
-    "HOUSEHOLD",
-    "FURNITURE",
-    "HOUSEHOLD_PLACEABLE",
-    "REST",
-    "SLEEP"
-  ],
-  "notes": "Compact fold-frame cot for basic safe-space rest and sleep.",
-  "itemTypeProfile": {
-    "furnishingClass": "REST",
-    "fixedInstallation": false
-  },
-  "equipProfile": {},
-  "householdProfile": {
-    "placeable": true,
+  {
+    "id": "eqcat-household-rest-cot",
+    "name": "Fold-Frame Rest Cot",
+    "category": "HOUSEHOLD",
+    "subtype": "REST_COT",
+    "itemType": "HOUSEHOLD_FURNISHING",
     "footprint": "2x3",
-    "capabilities": [
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 420,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNITURE",
+      "HOUSEHOLD_PLACEABLE",
       "REST",
       "SLEEP"
     ],
-    "allowedRoomTypes": [
-      "MULTIPURPOSE",
-      "LIVING",
-      "SLEEPING",
-      "SAFE_ROOM"
-    ],
-    "blockedRoomTypes": [
-      "HYGIENE",
-      "KITCHEN"
-    ]
-  }
-},
-{
-  "id": "eqcat-household-fold-table",
-  "name": "Modular Fold Table",
-  "category": "HOUSEHOLD",
-  "subtype": "FOLD_TABLE",
-  "itemType": "HOUSEHOLD_FURNISHING",
-  "footprint": "2x2",
-  "status": "OWNED",
-  "operatingStatus": "ACTIVE",
-  "legality": "REGISTERED",
-  "condition": 100,
-  "value": 280,
-  "tags": [
-    "HOUSEHOLD",
-    "FURNITURE",
-    "HOUSEHOLD_PLACEABLE",
-    "CONSUMABLE_USE"
-  ],
-  "notes": "Utility table for food, medication and general household use.",
-  "itemTypeProfile": {
-    "furnishingClass": "UTILITY_SURFACE",
-    "fixedInstallation": false
+    "notes": "Compact fold-frame cot for basic safe-space rest and sleep.",
+    "itemTypeProfile": {
+      "furnishingClass": "REST",
+      "fixedInstallation": false
+    },
+    "equipProfile": {},
+    "householdProfile": {
+      "placeable": true,
+      "footprint": "2x3",
+      "capabilities": [
+        "REST",
+        "SLEEP"
+      ],
+      "allowedRoomTypes": [
+        "MULTIPURPOSE",
+        "LIVING",
+        "SLEEPING",
+        "SAFE_ROOM"
+      ],
+      "blockedRoomTypes": [
+        "HYGIENE",
+        "KITCHEN"
+      ]
+    }
   },
-  "equipProfile": {},
-  "householdProfile": {
-    "placeable": true,
+  {
+    "id": "eqcat-household-fold-table",
+    "name": "Modular Fold Table",
+    "category": "HOUSEHOLD",
+    "subtype": "FOLD_TABLE",
+    "itemType": "HOUSEHOLD_FURNISHING",
     "footprint": "2x2",
-    "capabilities": [
-      "CONSUMABLE_USE",
-      "FOOD_PREP"
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 280,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNITURE",
+      "HOUSEHOLD_PLACEABLE",
+      "CONSUMABLE_USE"
     ],
-    "allowedRoomTypes": [
-      "MULTIPURPOSE",
-      "LIVING",
-      "KITCHEN",
-      "SAFE_ROOM"
-    ]
-  }
-},
-{
-  "id": "eqcat-household-med-locker",
-  "name": "Sealed Medical Locker",
-  "category": "HOUSEHOLD",
-  "subtype": "MEDICAL_LOCKER",
-  "itemType": "HOUSEHOLD_FURNISHING",
-  "footprint": "1x2",
-  "status": "OWNED",
-  "operatingStatus": "ACTIVE",
-  "legality": "REGISTERED",
-  "condition": 100,
-  "value": 760,
-  "tags": [
-    "HOUSEHOLD",
-    "FURNITURE",
-    "FIXTURE",
-    "HOUSEHOLD_PLACEABLE",
-    "MEDICAL",
-    "SECURE_STORAGE"
-  ],
-  "notes": "Locking cabinet prepared for controlled medication and clinical consumables.",
-  "itemTypeProfile": {
-    "furnishingClass": "MEDICAL_STORAGE",
-    "fixedInstallation": false
+    "notes": "Utility table for food, medication and general household use.",
+    "itemTypeProfile": {
+      "furnishingClass": "UTILITY_SURFACE",
+      "fixedInstallation": false
+    },
+    "equipProfile": {},
+    "householdProfile": {
+      "placeable": true,
+      "footprint": "2x2",
+      "capabilities": [
+        "CONSUMABLE_USE",
+        "FOOD_PREP"
+      ],
+      "allowedRoomTypes": [
+        "MULTIPURPOSE",
+        "LIVING",
+        "KITCHEN",
+        "SAFE_ROOM"
+      ]
+    }
   },
-  "equipProfile": {},
-  "householdProfile": {
-    "placeable": true,
+  {
+    "id": "eqcat-household-med-locker",
+    "name": "Sealed Medical Locker",
+    "category": "HOUSEHOLD",
+    "subtype": "MEDICAL_LOCKER",
+    "itemType": "HOUSEHOLD_FURNISHING",
     "footprint": "1x2",
-    "capabilities": [
-      "MEDICAL_CONSUMABLE_USE",
-      "SECURE_CONSUMABLE_STORAGE"
-    ],
-    "allowedRoomTypes": [
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 760,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNITURE",
+      "FIXTURE",
+      "HOUSEHOLD_PLACEABLE",
       "MEDICAL",
-      "SAFE_ROOM"
-    ]
-  }
-},
-{
-  "id": "eqcat-household-utility-chair",
-  "name": "Utility Rest Chair",
-  "category": "HOUSEHOLD",
-  "subtype": "UTILITY_CHAIR",
-  "itemType": "HOUSEHOLD_FURNISHING",
-  "footprint": "1x1",
-  "status": "OWNED",
-  "operatingStatus": "ACTIVE",
-  "legality": "REGISTERED",
-  "condition": 100,
-  "value": 95,
-  "tags": [
-    "HOUSEHOLD",
-    "FURNITURE",
-    "HOUSEHOLD_PLACEABLE",
-    "REST"
-  ],
-  "notes": "Compact standardized chair for short rest cycles.",
-  "itemTypeProfile": {
-    "furnishingClass": "SEATING",
-    "fixedInstallation": false
+      "SECURE_STORAGE"
+    ],
+    "notes": "Locking cabinet prepared for controlled medication and clinical consumables.",
+    "itemTypeProfile": {
+      "furnishingClass": "MEDICAL_STORAGE",
+      "fixedInstallation": false
+    },
+    "equipProfile": {},
+    "householdProfile": {
+      "placeable": true,
+      "footprint": "1x2",
+      "capabilities": [
+        "MEDICAL_CONSUMABLE_USE",
+        "SECURE_CONSUMABLE_STORAGE"
+      ],
+      "allowedRoomTypes": [
+        "MEDICAL",
+        "SAFE_ROOM"
+      ]
+    }
   },
-  "equipProfile": {},
-  "householdProfile": {
-    "placeable": true,
+  {
+    "id": "eqcat-household-utility-chair",
+    "name": "Utility Rest Chair",
+    "category": "HOUSEHOLD",
+    "subtype": "UTILITY_CHAIR",
+    "itemType": "HOUSEHOLD_FURNISHING",
     "footprint": "1x1",
-    "capabilities": [
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 95,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNITURE",
+      "HOUSEHOLD_PLACEABLE",
       "REST"
     ],
-    "allowedRoomTypes": [
-      "MULTIPURPOSE",
-      "LIVING",
-      "SAFE_ROOM",
-      "WORKSHOP"
-    ]
-  }
-},
-{
-  "id": "eqcat-household-utility-locker",
-  "name": "Household Utility Locker",
-  "category": "HOUSEHOLD",
-  "subtype": "UTILITY_LOCKER",
-  "itemType": "HOUSEHOLD_FURNISHING",
-  "footprint": "1x2",
-  "status": "OWNED",
-  "operatingStatus": "ACTIVE",
-  "legality": "REGISTERED",
-  "condition": 100,
-  "value": 210,
-  "tags": [
-    "HOUSEHOLD",
-    "FURNITURE",
-    "HOUSEHOLD_PLACEABLE",
-    "STORAGE"
-  ],
-  "notes": "General-purpose locker for household equipment and packaged goods.",
-  "itemTypeProfile": {
-    "furnishingClass": "STORAGE",
-    "fixedInstallation": false
+    "notes": "Compact standardized chair for short rest cycles.",
+    "itemTypeProfile": {
+      "furnishingClass": "SEATING",
+      "fixedInstallation": false
+    },
+    "equipProfile": {},
+    "householdProfile": {
+      "placeable": true,
+      "footprint": "1x1",
+      "capabilities": [
+        "REST"
+      ],
+      "allowedRoomTypes": [
+        "MULTIPURPOSE",
+        "LIVING",
+        "SAFE_ROOM",
+        "WORKSHOP"
+      ]
+    }
   },
-  "equipProfile": {},
-  "householdProfile": {
-    "placeable": true,
+  {
+    "id": "eqcat-household-utility-locker",
+    "name": "Household Utility Locker",
+    "category": "HOUSEHOLD",
+    "subtype": "UTILITY_LOCKER",
+    "itemType": "HOUSEHOLD_FURNISHING",
     "footprint": "1x2",
-    "capabilities": [
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 210,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNITURE",
+      "HOUSEHOLD_PLACEABLE",
       "STORAGE"
     ],
-    "allowedRoomTypes": [
-      "MULTIPURPOSE",
-      "LIVING",
+    "notes": "General-purpose locker for household equipment and packaged goods.",
+    "itemTypeProfile": {
+      "furnishingClass": "STORAGE",
+      "fixedInstallation": false
+    },
+    "equipProfile": {},
+    "householdProfile": {
+      "placeable": true,
+      "footprint": "1x2",
+      "capabilities": [
+        "STORAGE"
+      ],
+      "allowedRoomTypes": [
+        "MULTIPURPOSE",
+        "LIVING",
+        "STORAGE",
+        "SAFE_ROOM",
+        "WORKSHOP",
+        "ENTRY"
+      ]
+    }
+  },
+  {
+    "id": "eqcat-household-underbed-storage-module",
+    "name": "Underbed Storage Module",
+    "category": "HOUSEHOLD",
+    "subtype": "FURNISHING_MODULE",
+    "itemType": "GENERIC_ITEM",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 120,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNISHING_UPGRADE",
+      "STORAGE"
+    ],
+    "notes": "Adds compact storage to compatible rest furniture.",
+    "itemTypeProfile": {},
+    "equipProfile": {},
+    "householdUpgradeProfile": {
+      "slotType": "STORAGE"
+    }
+  },
+  {
+    "id": "eqcat-household-acoustic-canopy-module",
+    "name": "Acoustic Privacy Canopy",
+    "category": "HOUSEHOLD",
+    "subtype": "FURNISHING_MODULE",
+    "itemType": "GENERIC_ITEM",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 120,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNISHING_UPGRADE",
+      "COMFORT"
+    ],
+    "notes": "Adds a private acoustic sleep canopy to compatible rest furniture.",
+    "itemTypeProfile": {},
+    "equipProfile": {},
+    "householdUpgradeProfile": {
+      "slotType": "COMFORT"
+    }
+  },
+  {
+    "id": "eqcat-household-terminal-dock-module",
+    "name": "Terminal Work Dock",
+    "category": "HOUSEHOLD",
+    "subtype": "FURNISHING_MODULE",
+    "itemType": "GENERIC_ITEM",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 120,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNISHING_UPGRADE",
+      "UTILITY"
+    ],
+    "notes": "Turns a compatible household surface into a compact workstation.",
+    "itemTypeProfile": {},
+    "equipProfile": {},
+    "householdUpgradeProfile": {
+      "slotType": "UTILITY"
+    }
+  },
+  {
+    "id": "eqcat-household-cold-compartment-module",
+    "name": "Cold Compartment Module",
+    "category": "HOUSEHOLD",
+    "subtype": "FURNISHING_MODULE",
+    "itemType": "GENERIC_ITEM",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 120,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNISHING_UPGRADE",
+      "UTILITY"
+    ],
+    "notes": "Adds cold storage to a compatible locker or cabinet.",
+    "itemTypeProfile": {},
+    "equipProfile": {},
+    "householdUpgradeProfile": {
+      "slotType": "UTILITY"
+    }
+  },
+  {
+    "id": "eqcat-household-secure-lock-module",
+    "name": "Secure Lock Module",
+    "category": "HOUSEHOLD",
+    "subtype": "FURNISHING_MODULE",
+    "itemType": "GENERIC_ITEM",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 120,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNISHING_UPGRADE",
+      "SECURITY"
+    ],
+    "notes": "Adds secure storage authorization to a compatible locker.",
+    "itemTypeProfile": {},
+    "equipProfile": {},
+    "householdUpgradeProfile": {
+      "slotType": "SECURITY"
+    }
+  },
+  {
+    "id": "eqcat-household-display-rail-module",
+    "name": "Display Rail Module",
+    "category": "HOUSEHOLD",
+    "subtype": "FURNISHING_MODULE",
+    "itemType": "GENERIC_ITEM",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 120,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNISHING_UPGRADE",
+      "DISPLAY"
+    ],
+    "notes": "Adds a display surface for collectibles and mementos.",
+    "itemTypeProfile": {},
+    "equipProfile": {},
+    "householdUpgradeProfile": {
+      "slotType": "DISPLAY"
+    }
+  },
+  {
+    "id": "eqcat-household-memory-shelf",
+    "name": "Memory Display Shelf",
+    "category": "HOUSEHOLD",
+    "subtype": "DISPLAY_SHELF",
+    "itemType": "HOUSEHOLD_FURNISHING",
+    "footprint": "2x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 360,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNITURE",
+      "HOUSEHOLD_PLACEABLE",
+      "DISPLAY",
+      "ARCHIVAL_DISPLAY"
+    ],
+    "notes": "Compact display furniture for collectibles, trophies and campaign mementos.",
+    "itemTypeProfile": {
+      "furnishingClass": "DISPLAY",
+      "fixedInstallation": false
+    },
+    "equipProfile": {},
+    "householdProfile": {
+      "placeable": true,
+      "footprint": "2x1",
+      "capabilities": [
+        "DISPLAY"
+      ],
+      "allowedRoomTypes": [
+        "MULTIPURPOSE",
+        "LIVING",
+        "SLEEPING",
+        "SAFE_ROOM",
+        "WORKSPACE"
+      ]
+    },
+    "householdDisplayProfile": {
+      "slotCount": 4,
+      "acceptedCategories": [
+        "COLLECTIBLE",
+        "MEMENTO",
+        "TROPHY",
+        "DOCUMENT",
+        "MEDIA",
+        "DISPLAY_ITEM",
+        "DECORATION"
+      ]
+    }
+  },
+  {
+    "id": "eqcat-household-secure-archive-cabinet",
+    "name": "Secure Archive Cabinet",
+    "category": "HOUSEHOLD",
+    "subtype": "ARCHIVE_CABINET",
+    "itemType": "HOUSEHOLD_FURNISHING",
+    "footprint": "1x2",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 940,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNITURE",
+      "HOUSEHOLD_PLACEABLE",
       "STORAGE",
-      "SAFE_ROOM",
-      "WORKSHOP",
-      "ENTRY"
-    ]
+      "SECURE_STORAGE",
+      "ARCHIVAL_STORAGE",
+      "DOCUMENT_STORAGE"
+    ],
+    "notes": "Locking archival cabinet for documents, memory media and important personal objects.",
+    "itemTypeProfile": {
+      "furnishingClass": "STORAGE",
+      "fixedInstallation": false
+    },
+    "equipProfile": {},
+    "containerProfile": {
+      "slotCapacity": 12,
+      "gridColumns": 3,
+      "gridRows": 4,
+      "isolatedCells": true,
+      "label": "SECURE ARCHIVE",
+      "acceptedTags": []
+    },
+    "householdProfile": {
+      "placeable": true,
+      "footprint": "1x2",
+      "capabilities": [
+        "STORAGE",
+        "SECURE_STORAGE",
+        "ARCHIVAL_STORAGE"
+      ],
+      "allowedRoomTypes": [
+        "MULTIPURPOSE",
+        "LIVING",
+        "SLEEPING",
+        "SAFE_ROOM",
+        "WORKSPACE",
+        "STORAGE"
+      ]
+    },
+    "householdDisplayProfile": {
+      "slotCount": 1,
+      "acceptedCategories": [
+        "MEMENTO",
+        "TROPHY",
+        "DOCUMENT",
+        "MEDIA",
+        "DISPLAY_ITEM"
+      ]
+    }
+  },
+  {
+    "id": "eqcat-household-ambient-light-panel",
+    "name": "Ambient Light Panel",
+    "category": "HOUSEHOLD",
+    "subtype": "DECORATION",
+    "itemType": "HOUSEHOLD_FURNISHING",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 150,
+    "tags": [
+      "HOUSEHOLD",
+      "FURNITURE",
+      "HOUSEHOLD_PLACEABLE",
+      "DECORATION",
+      "AMBIENT"
+    ],
+    "notes": "Low-output architectural light panel. Decorative only; it grants no mechanical bonus.",
+    "itemTypeProfile": {
+      "furnishingClass": "DECORATION",
+      "fixedInstallation": false
+    },
+    "equipProfile": {},
+    "householdProfile": {
+      "placeable": true,
+      "footprint": "1x1",
+      "capabilities": [],
+      "allowedRoomTypes": [
+        "MULTIPURPOSE",
+        "LIVING",
+        "SLEEPING",
+        "SAFE_ROOM",
+        "WORKSPACE",
+        "ENTRY"
+      ]
+    }
+  },
+  {
+    "id": "eqcat-collectible-campaign-memento",
+    "name": "Campaign Memento Token",
+    "category": "PERSONAL",
+    "subtype": "MEMENTO",
+    "itemType": "GENERIC_ITEM",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 5,
+    "tags": [
+      "COLLECTIBLE",
+      "MEMENTO",
+      "DISPLAY_ITEM",
+      "PERSONAL"
+    ],
+    "notes": "Generic pre-alpha campaign memento used to verify Household collection and display flows.",
+    "itemTypeProfile": {},
+    "equipProfile": {}
+  },
+  {
+    "id": "eqcat-collectible-memory-shard",
+    "name": "Recovered Memory Shard",
+    "category": "MEDIA",
+    "subtype": "MEMORY_SHARD",
+    "itemType": "GENERIC_ITEM",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 40,
+    "tags": [
+      "COLLECTIBLE",
+      "MEDIA",
+      "MEMENTO",
+      "DISPLAY_ITEM"
+    ],
+    "notes": "Read-only recovered memory medium. Test content, not canonical lore.",
+    "itemTypeProfile": {},
+    "equipProfile": {}
+  },
+  {
+    "id": "eqcat-collectible-service-token",
+    "name": "Service Recognition Token",
+    "category": "PERSONAL",
+    "subtype": "TROPHY",
+    "itemType": "GENERIC_ITEM",
+    "footprint": "1x1",
+    "status": "OWNED",
+    "operatingStatus": "ACTIVE",
+    "legality": "REGISTERED",
+    "condition": 100,
+    "value": 5,
+    "tags": [
+      "COLLECTIBLE",
+      "TROPHY",
+      "DISPLAY_ITEM",
+      "PERSONAL"
+    ],
+    "notes": "Generic recognition token for testing trophy display. Test content, not canonical lore.",
+    "itemTypeProfile": {},
+    "equipProfile": {}
   }
-}
 ];
 window.APP_DATA.equipmentDefinitionAliases = {
   "eqcat-thigh-holster-left": "eqcat-thigh-holster",

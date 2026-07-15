@@ -45,12 +45,16 @@ test("Canonical shipment processor reserves Housing at delivery time and moves t
   assert.match(process, /status:\s*"DELIVERED"/);
 });
 
-test("Campaign Time and startup reconciliation process due shipments", () => {
+test("Market scheduler owns exact Campaign Time delivery ETA processing", () => {
   const source = readProjectFile("js/market-store.js");
+  const scheduler = readProjectFile("js/market-time-scheduler.js");
   const reconcile = extractFunctionSource(source, "reconcileMarketShipments");
   assert.match(reconcile, /compareWorldTimes/);
   assert.match(reconcile, /processMarketShipment/);
-  assert.match(source, /ws:campaign-date-updated/);
+  assert.match(scheduler, /MARKET_SHIPMENT_DUE/);
+  assert.match(scheduler, /scheduleMarketShipmentDueEvent/);
+  assert.match(scheduler, /reconcileMarketShipment/);
+  assert.doesNotMatch(source, /ws:campaign-date-updated/);
   assert.match(source, /reconcileMarketShipments\(\);/);
 });
 
@@ -63,7 +67,7 @@ test("Admin delivery override uses the canonical resolver and writes an audit re
   assert.match(force, /FORCE_PROCESS_MARKET_SHIPMENT/);
   assert.match(force, /lastAdminAction/);
 
-  const ui = readProjectFile("js/housing-market-runtime.js");
+  const ui = readProjectFile("js/market-workspace-runtime.js");
   assert.match(ui, /DELIVER NOW/);
   assert.match(ui, /RETRY DELIVERY/);
   assert.match(ui, /RECONCILE SHIPMENT/);
@@ -76,10 +80,13 @@ test("Delivery fulfillment bundle versions are cache-busted consistently", () =>
   const index = readProjectFile("index.html");
   const modules = readProjectFile("js/modules.js");
   assert.match(index, /data\/market-offers\.js\?v=4/);
-  assert.match(index, /js\/market-store\.js\?v=12/);
-  assert.match(index, /js\/modules\.js\?v=302/);
-  assert.match(modules, /css\/housing\.css\?v=34/);
+  assert.match(index, /js\/market-store\.js\?v=13/);
+  assert.match(index, /js\/modules\.js\?v=309/);
+  assert.match(modules, /css\/housing\.css\?v=38/);
+
+
   assert.match(modules, /data\/market-offers\.js\?v=4/);
-  assert.match(modules, /js\/market-store\.js\?v=12/);
-  assert.match(modules, /js\/housing-market-runtime\.js\?v=4/);
+  assert.match(modules, /js\/market-store\.js\?v=13/);
+  assert.match(modules, /js\/market-workspace-runtime\.js\?v=3/);
+  assert.match(index, /js\/market-time-scheduler\.js\?v=1/);
 });

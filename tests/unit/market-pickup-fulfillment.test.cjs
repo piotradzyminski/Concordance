@@ -8,7 +8,7 @@ function createPickupHarness() {
   const items = new Map();
   const transactions = new Map();
   let billingIntent = null;
-  const state = { campaignDateIso: "2109-02-13" };
+  const state = { campaignTimeIso: "2109-02-13T12:00:00.000Z" };
   const product = {
     id: "ration-runtime-1",
     catalogId: "ration-runtime-1",
@@ -19,7 +19,7 @@ function createPickupHarness() {
     manufacturer: "Habitat Market"
   };
   const wsApp = {
-    getCampaignDateIso: () => state.campaignDateIso,
+    getCampaignTimeIso: () => state.campaignTimeIso,
     getEquipmentCatalogItems: () => [product],
     getEquipmentCatalogItemById: (id) => id === product.id ? product : null,
     getCitizenById: (id) => id === "citizen-a" ? { id: "citizen-a", credits: 1000 } : null,
@@ -105,6 +105,8 @@ test("Market pickup creates vendor custody and confirms the same ItemInstance in
   assert.equal(checkout.operation, "PICKUP_READY");
   assert.equal(checkout.order.status, "FULFILLING");
   assert.equal(checkout.order.pickupFulfillment.status, "READY");
+  assert.equal(checkout.order.pickupFulfillment.readyAt, "2109-02-13T12:00:00.000Z");
+  assert.equal(checkout.order.pickupFulfillment.expiresAt, "2109-02-16T12:00:00.000Z");
 
   const instanceId = checkout.createdItemInstanceIds[0];
   assert.equal(items.get(instanceId).location.type, "VENDOR");

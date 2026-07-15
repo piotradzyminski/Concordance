@@ -1,4 +1,4 @@
-# Subscription Contracts Contract — Housing Rent Catalog 4.0x / Public API 3.1x / Events 2.3x / Workspace UI 4.0 + Terminal Cards 4.0x / Profiles UI 4.1 / UI Stability 4.2.1 / Actions & Feedback 4.3 / Catalog Presentation 4.4 / Responsive & Accessibility 4.5
+# Subscription Contracts Contract — Housing Rent Catalog 4.0x / Public API 3.1x / Events 2.3x / Workspace UI 4.0 + Terminal Cards 4.0x / Profiles UI 4.1 / UI Stability 4.2.1 / Actions & Feedback 4.3 / Catalog Presentation 4.4 / Responsive & Accessibility 4.5 / Entitlement Projection 4.6
 
 ## Status
 
@@ -6,6 +6,7 @@
 SCHEMA: subscription_contracts_bridge_schema_2_0x
 CATALOG: subscription_catalog_housing_rent_4_0x
 WORLD BRIDGE PHASE: SUBSCRIPTIONS / BRIDGE READY 3.1x
+ENTITLEMENT PROJECTION: subscriptions_entitlement_3_1x
 ```
 
 This contract defines canonical persisted Subscription catalog and citizen contract records plus the public command/read boundary and deterministic entitlement resolver required by Cyberware World Bridge.
@@ -217,7 +218,19 @@ Entitlement matrix:
 
 ## Contract entitlement snapshot cache
 
-`isSubscriptionEntitled(subscription, atTime)` is a read helper over the canonical contract resolver. Repeated calls for the same effective contract state must not repeat full contract normalization, catalog/tier validation and target validation.
+`getSubscriptionContractEntitlementSnapshot(subscription, atTime?)` is the canonical read projection for player lists, player profiles, Admin lists/profiles and integration consumers. It returns a defensive clone of the bounded cached snapshot and never writes a derived entitlement status back to the contract.
+
+When `atTime` is omitted, evaluation order is:
+
+```text
+getCampaignTimeIso() / CAMPAIGN_TIME_ISO
+getCampaignDateIso() / CAMPAIGN_DATE_ISO
+safe deterministic fallback
+```
+
+Exact Campaign Time therefore governs same-day transitions across `ACTIVE`, `GRACE_PERIOD`, `EXPIRED` and `REVOKED`. Date-only contract boundaries retain end-of-day semantics.
+
+`isSubscriptionEntitled(subscription, atTime)` is a read helper over the same canonical contract resolver. Repeated calls for the same effective contract state must not repeat full contract normalization, catalog/tier validation and target validation.
 
 The cache key includes:
 
@@ -247,7 +260,20 @@ ws:subscription-catalog-updated
 explicit invalidateSubscriptionEntitlement()
 ```
 
+Campaign Time does not require destructive cache invalidation because the exact evaluation timestamp is part of the snapshot key. `SubscriptionAPI` observes `ws:campaign-time-updated` and reconciles time-dependent entitlement events once per time change. The date-only compatibility event is not a second Subscription listener.
+
 `getSubscriptionEntitlementCacheStats()` exposes query-cache and contract-snapshot hit/miss counters for diagnostics.
+
+## UI entitlement projection rules
+
+Player and Admin render paths must:
+
+- use the canonical contract snapshot status rather than persisted `contract.entitlementStatus`;
+- treat `EXPIRED`, `REVOKED` and `NOT_FOUND` as attention states;
+- preserve Billing and contract status as separate axes;
+- expose resolver reason codes and period/grace boundaries;
+- keep `GRACE_PERIOD` access allowed while still presenting Billing attention;
+- avoid contract writes, event emission or revision changes during render.
 
 ## Runtime compatibility views
 

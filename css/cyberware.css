@@ -50,3 +50,110 @@
     min-width: 0;
   }
 }
+
+/* Cyberware Upgrade System 16.1x */
+.cyberware-upgrade-panel {
+  margin-top: 12px;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: rgba(5, 8, 9, 0.62);
+}
+
+.cyberware-upgrade-panel > summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  color: var(--text, #d5dfdd);
+  font-family: var(--mono, "IBM Plex Mono", monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cyberware-upgrade-tabs {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.cyberware-upgrade-tabs > section {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(143, 189, 180, 0.15);
+  background: rgba(2, 5, 6, 0.56);
+}
+
+.cyberware-upgrade-tabs h6,
+.cyberware-upgrade-tabs p {
+  margin: 0 0 8px;
+}
+
+.cyberware-upgrade-tabs h6 {
+  color: var(--text, #d5dfdd);
+  letter-spacing: 0.12em;
+}
+
+.cyberware-upgrade-tabs p,
+.cyberware-upgrade-tabs small {
+  color: var(--muted, #839794);
+  font-size: 0.66rem;
+}
+
+.cyberware-upgrade-slot-grid,
+.cyberware-upgrade-permanent-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.cyberware-upgrade-slot,
+.cyberware-upgrade-permanent {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(9, 14, 15, 0.72);
+}
+
+.cyberware-upgrade-slot.is-occupied,
+.cyberware-upgrade-permanent.is-applied {
+  border-color: rgba(143, 189, 180, 0.36);
+}
+
+.cyberware-upgrade-slot header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted, #839794);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.cyberware-upgrade-slot strong,
+.cyberware-upgrade-permanent b {
+  color: var(--text, #d5dfdd);
+  font-size: 0.75rem;
+}
+
+.cyberware-upgrade-slot select,
+.cyberware-upgrade-slot__actions select {
+  width: 100%;
+  min-width: 0;
+}
+
+.cyberware-upgrade-slot__actions {
+  display: grid;
+  gap: 7px;
+}
+
+.cyberware-upgrade-feedback {
+  min-height: 1em;
+  margin: 0;
+  padding: 0 12px 12px;
+  color: var(--muted, #839794);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cyberware-upgrade-feedback[data-tone="success"] { color: var(--success, #8fbdb4); }
+.cyberware-upgrade-feedback[data-tone="error"] { color: var(--danger, #b85c66); }

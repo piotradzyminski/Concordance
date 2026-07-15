@@ -49,6 +49,17 @@ window.WS_APP = window.WS_APP || {};
     });
   }
 
+  function setCyberwareUpgradeFeedback(control = null, result = {}) {
+    const panel = control?.closest?.("[data-cyberware-upgrade-panel]");
+    const feedback = panel?.querySelector?.("[data-cyberware-upgrade-feedback]");
+    if (!feedback) return;
+    const ok = result?.ok === true;
+    feedback.textContent = ok
+      ? `REQUEST ACCEPTED · ${String(result?.operation?.status || result?.status || result?.reason || "QUEUED")}`
+      : `REQUEST BLOCKED · ${String(result?.reason || "CYBERWARE_UPGRADE_FAILED")}`;
+    feedback.dataset.tone = ok ? "success" : "error";
+  }
+
   function bindCyberwareModuleActions(user = app.currentUser) {
     const root = document.querySelector?.("[data-cyberware-module-shell]") || null;
     if (!root || root.dataset.cyberwareActionsBound === "true") return false;
@@ -176,6 +187,32 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
 
+      const anatomyRegion = event.target.closest?.("[data-cyberware-anatomy-region]");
+      if (anatomyRegion && !anatomyRegion.disabled) {
+        event.preventDefault();
+        app.openCyberwareBodymapView?.(citizenId, anatomyRegion.dataset.cyberwareAnatomyRegion || "BODY", { root });
+        return;
+      }
+      const anatomyOrientation = event.target.closest?.("[data-cyberware-anatomy-orientation]");
+      if (anatomyOrientation && !anatomyOrientation.disabled) {
+        event.preventDefault();
+        app.setCyberwareBodymapOrientation?.(citizenId, anatomyOrientation.dataset.cyberwareAnatomyOrientation || "FRONT", { root });
+        return;
+      }
+      const anatomyAnchor = event.target.closest?.("[data-cyberware-anatomy-anchor]");
+      if (anatomyAnchor && !anatomyAnchor.disabled) {
+        event.preventDefault();
+        app.selectCyberwareBodymapAnchor?.(citizenId, anatomyAnchor.dataset.cyberwareAnatomyAnchor || "", { root });
+        return;
+      }
+      const locateInstance = event.target.closest?.("[data-cyberware-locate-instance]");
+      if (locateInstance && !locateInstance.disabled) {
+        event.preventDefault();
+        app.setCyberwareUiView?.(citizenId, "BODYMAP", { mount: false });
+        app.setCyberwareSelectedInstance?.(citizenId, locateInstance.dataset.cyberwareLocateInstance || "", { root, syncView: true });
+        return;
+      }
+
       const bodymapView = event.target.closest?.("[data-cyberware-bodymap-view]");
       if (bodymapView && !bodymapView.disabled) {
         event.preventDefault();
@@ -218,6 +255,48 @@ window.WS_APP = window.WS_APP || {};
       if (view && !view.disabled) {
         event.preventDefault();
         app.setCyberwareUiView?.(citizenId, view.dataset.cyberwareUiView || "OVERVIEW");
+        return;
+      }
+
+      const upgradeInstall = event.target.closest?.("[data-cyberware-upgrade-install]");
+      const upgradeRemove = event.target.closest?.("[data-cyberware-upgrade-remove]");
+      const upgradeReplace = event.target.closest?.("[data-cyberware-upgrade-replace]");
+      const permanentUpgrade = event.target.closest?.("[data-cyberware-upgrade-permanent]");
+      if ((upgradeInstall || upgradeRemove || upgradeReplace || permanentUpgrade) && citizenId) {
+        event.preventDefault();
+        const control = upgradeInstall || upgradeRemove || upgradeReplace || permanentUpgrade;
+        const slotCard = control.closest?.(".cyberware-upgrade-slot");
+        const hostInstanceId = String(control.dataset.hostInstanceId || "").trim();
+        const slotId = String(control.dataset.slotId || "").trim();
+        let operationType = "";
+        let moduleInstanceId = "";
+        let modificationId = "";
+        if (upgradeInstall) {
+          operationType = "INSTALL_MODULE";
+          moduleInstanceId = String(slotCard?.querySelector?.("[data-cyberware-upgrade-candidate]")?.value || "").trim();
+        } else if (upgradeRemove) {
+          operationType = "REMOVE_MODULE";
+        } else if (upgradeReplace) {
+          operationType = "REPLACE_MODULE";
+          moduleInstanceId = String(slotCard?.querySelector?.("[data-cyberware-upgrade-replacement]")?.value || "").trim();
+        } else {
+          operationType = "APPLY_PERMANENT_MOD";
+          modificationId = String(permanentUpgrade.dataset.modificationId || "").trim();
+        }
+        const result = app.startCyberwareUpgrade?.({
+          citizenId,
+          operationType,
+          hostInstanceId,
+          moduleInstanceId,
+          slotId,
+          modificationId,
+          source: "CYBERWARE_UPGRADES_UI"
+        }) || { ok: false, reason: "CYBERWARE_UPGRADE_API_REQUIRED" };
+        setCyberwareUpgradeFeedback(control, result);
+        const worldOperation = result?.operation?.operationId || result?.operationId;
+        if (!worldOperation && result?.ok === true) {
+          refreshAfterCyberwareMutation(citizenId, { planner: true, diagnostics: true, maintenance: true });
+        }
         return;
       }
 

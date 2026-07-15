@@ -18,7 +18,7 @@ function getFunctionBlock(source, name, nextName) {
 }
 
 function createRuntime() {
-  const source = read("js/housing-market-runtime.js");
+  const source = read("js/market-workspace-runtime.js");
   const context = {
     window: { WS_APP: {} },
     document: { querySelector: () => null, activeElement: null, body: null },
@@ -35,23 +35,22 @@ function createRuntime() {
   };
   context.window.window = context.window;
   vm.createContext(context);
-  vm.runInContext(source, context, { filename: "js/housing-market-runtime.js" });
+  vm.runInContext(source, context, { filename: "js/market-workspace-runtime.js" });
 
   const noop = () => {};
-  const runtime = context.window.WS_APP.createHousingMarketRuntime({
+  const runtime = context.window.WS_APP.createMarketWorkspaceRuntime({
     DEFAULT_STORAGE_UNIT_ID: "housing-storage-main",
-    HOUSING_MARKET_DEFAULT_SHIPPING_DAYS: 1,
-    HOUSING_MARKET_DELIVERABLE_SHIPMENT_STATUSES: new Set(["PENDING", "IN_TRANSIT"]),
-    HOUSING_MARKET_DEPARTMENTS: ["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"],
-    HOUSING_MARKET_MODES: ["CATALOG", "ORDERS", "DELIVERED"],
-    HOUSING_MARKET_ORDER_CLOSED_STATUSES: new Set(["COMPLETED", "REFUNDED", "FAILED", "CANCELLED"]),
-    HOUSING_MARKET_ORDER_VIEWS: ["ACTIVE", "HISTORY"],
-    HOUSING_MARKET_PAGE_SIZE: 6,
-    HOUSING_MARKET_PRODUCT_VISUAL_FALLBACKS: { DEFAULT: "assets/market/fallback/product.svg" },
-    HOUSING_MARKET_SORTS: ["CATEGORY", "NAME"],
-    HOUSING_MARKET_STATUSES: ["ALL", "BUYABLE"],
-    HOUSING_MARKET_VENDOR_DEFAULTS: { DEFAULT: { vendorId: "vendor-test", organizationLocationId: "orgloc-test" } },
-    HOUSING_SHIPMENT_ACTIVE_STATUSES: new Set(["PENDING", "IN_TRANSIT", "HELD"]),
+    MARKET_DEFAULT_SHIPPING_DAYS: 1,
+    MARKET_DELIVERABLE_SHIPMENT_STATUSES: new Set(["PENDING", "IN_TRANSIT"]),
+    MARKET_DEPARTMENTS: ["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"],
+    MARKET_MODES: ["CATALOG", "ORDERS", "DELIVERED"],
+    MARKET_ORDER_CLOSED_STATUSES: new Set(["COMPLETED", "REFUNDED", "FAILED", "CANCELLED"]),
+    MARKET_ORDER_VIEWS: ["ACTIVE", "HISTORY"],
+    MARKET_PAGE_SIZE: 6,
+    MARKET_SORTS: ["CATEGORY", "NAME"],
+    MARKET_STATUSES: ["ALL", "BUYABLE"],
+    MARKET_VENDOR_DEFAULTS: { DEFAULT: { vendorId: "vendor-test", organizationLocationId: "orgloc-test" } },
+    MARKET_SHIPMENT_ACTIVE_STATUSES: new Set(["PENDING", "IN_TRANSIT", "HELD"]),
     addDaysIso: (iso) => iso,
     clampNumber: (value, min, max) => Math.max(min, Math.min(max, Math.round(Number(value) || min))),
     compareIsoDates: (a, b) => String(a).localeCompare(String(b)),
@@ -71,12 +70,12 @@ function createRuntime() {
     normalizeMarketOrder: (value) => value,
     normalizeShipment: (value) => value,
     parseCredits: (value) => Number(value) || 0,
-    renderHousingFeedback: () => "",
-    renderHousingMetric: () => "",
-    renderHousingModule: noop,
+    renderMarketFeedback: () => "",
+    renderMarketMetric: () => "",
+    renderMarketModule: noop,
     renderHousingShipmentRow: () => "",
-    setHousingActiveTab: noop,
-    setHousingFeedback: noop
+    setMarketWorkspaceTab: noop,
+    setMarketFeedback: noop
   });
   return { context, runtime };
 }
@@ -93,16 +92,16 @@ test("Market cart context distinguishes line count from total purchased item qua
   }];
   context.window.WS_APP.quoteMarketCart = () => ({ ok: true, totals: { finalTotal: 600, currency: "CREDIT" }, lines: [] });
 
-  const cart = runtime.getHousingMarketCartContext("citizen-a");
+  const cart = runtime.getMarketWorkspaceCartContext("citizen-a");
   assert.equal(cart.lineCount, 2);
   assert.equal(cart.itemCount, 6);
   assert.equal(cart.total, 600);
 });
 
 test("Cart presentation labels line and item totals independently", () => {
-  const source = read("js/housing-market-runtime.js");
-  const drawer = getFunctionBlock(source, "renderHousingMarketCartDrawer", "getHousingShipmentRows");
-  const commandBar = getFunctionBlock(source, "renderHousingMarketCommandBar", "renderHousingMarketTab");
+  const source = read("js/market-workspace-runtime.js");
+  const drawer = getFunctionBlock(source, "renderMarketWorkspaceCartDrawer", "getCanonicalMarketWorkspaceOrders");
+  const commandBar = getFunctionBlock(source, "renderMarketWorkspaceCommandBar", "renderMarketWorkspaceTab");
 
   assert.match(drawer, /<small>LINES<\/small><b>\$\{escapeHtml\(context\.lineCount\)\}<\/b>/);
   assert.match(drawer, /<small>ITEMS<\/small><b>\$\{escapeHtml\(context\.itemCount\)\}<\/b>/);
@@ -111,28 +110,28 @@ test("Cart presentation labels line and item totals independently", () => {
 });
 
 test("Market Back hierarchy closes inspector, closes cart, then returns order views to Catalog", () => {
-  const source = read("js/housing-market-runtime.js");
-  const back = getFunctionBlock(source, "handleHousingMarketBackNavigation", "handleHousingMarketClick");
+  const source = read("js/market-workspace-runtime.js");
+  const back = getFunctionBlock(source, "handleMarketWorkspaceBackNavigation", "handleMarketWorkspaceClick");
 
-  const inspectorIndex = back.indexOf("closeHousingMarketProductInspector");
-  const cartIndex = back.indexOf("closeHousingMarketCart");
-  const catalogIndex = back.indexOf('setHousingMarketMode(citizenId, "CATALOG")');
+  const inspectorIndex = back.indexOf("closeMarketWorkspaceProductInspector");
+  const cartIndex = back.indexOf("closeMarketWorkspaceCart");
+  const catalogIndex = back.indexOf('setMarketWorkspaceMode(citizenId, "CATALOG")');
   assert.ok(inspectorIndex >= 0);
   assert.ok(cartIndex > inspectorIndex);
   assert.ok(catalogIndex > cartIndex);
 });
 
 test("Cart and Product Inspector are modal dialogs with Escape handling and focus containment", () => {
-  const source = read("js/housing-market-runtime.js");
+  const source = read("js/market-workspace-runtime.js");
   const css = read("css/housing.css");
-  const keydown = getFunctionBlock(source, "handleHousingMarketKeydown", "handleHousingMarketBackNavigation");
+  const keydown = getFunctionBlock(source, "handleMarketWorkspaceKeydown", "handleMarketWorkspaceBackNavigation");
 
   assert.match(source, /data-housing-market-cart-layer/);
   assert.match(source, /housing-market-cart-drawer" role="dialog" aria-modal="true"/);
   assert.match(source, /housing-market-product-inspector-drawer" role="dialog" aria-modal="true"/);
-  assert.match(keydown, /closeHousingMarketProductInspector/);
-  assert.match(keydown, /closeHousingMarketCart/);
-  assert.match(keydown, /trapHousingMarketDialogFocus/);
+  assert.match(keydown, /closeMarketWorkspaceProductInspector/);
+  assert.match(keydown, /closeMarketWorkspaceCart/);
+  assert.match(keydown, /trapMarketWorkspaceDialogFocus/);
   assert.match(source, /data-housing-market-modal-inert/);
   assert.match(css, /body\.housing-market-modal-open\s*\{[\s\S]*?overflow:\s*hidden/);
 });
@@ -140,9 +139,9 @@ test("Cart and Product Inspector are modal dialogs with Escape handling and focu
 test("Global Market Back delegates local navigation before exiting to module access", () => {
   const shell = read("js/market.js");
 
-  assert.match(shell, /runtime\.handleHousingMarketBackNavigation/);
-  assert.match(shell, /if \(runtime\.handleHousingMarketBackNavigation\?\.\([^;]+\)\) return/);
-  assert.match(shell, /runtime\.resetHousingMarketTransientUi/);
+  assert.match(shell, /runtime\.handleMarketWorkspaceBackNavigation/);
+  assert.match(shell, /if \(runtime\.handleMarketWorkspaceBackNavigation\?\.\([^;]+\)\) return/);
+  assert.match(shell, /runtime\.resetMarketWorkspaceTransientUi/);
   assert.match(shell, /window\.WS_APP\.renderModules\?\.\(user\)/);
   assert.match(shell, /bindModuleBackButton\?\.\(user, \(\) =>/);
 });

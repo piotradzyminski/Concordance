@@ -23,8 +23,8 @@ test("Subscriptions player UI is lazy-only and remains registered in the module 
 
   assert.doesNotMatch(index, /<script[^>]+js\/subscriptions\.js/);
   assert.doesNotMatch(index, /<script[^>]+js\/subscriptions-workspace\.js/);
-  assert.match(subscriptions, /js\/subscriptions\.js\?v=34/);
-  assert.match(subscriptions, /js\/subscriptions-workspace\.js\?v=6/);
+  assert.match(subscriptions, /js\/subscriptions\.js\?v=35/);
+  assert.match(subscriptions, /js\/subscriptions-workspace\.js\?v=7/);
 });
 
 test("Global Market uses Cyberware market projection without full Cyberware UI runtime", () => {
@@ -45,11 +45,11 @@ test("Global Market uses Cyberware market projection without full Cyberware UI r
   const cyberware = extractBlock(modules, "  cyberware: {", "  market: {");
 
   assert.match(market, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
-  assert.match(market, /js\/housing-market-runtime\.js\?v=4/);
-  assert.match(market, /js\/market\.js\?v=1/);
+  assert.match(market, /js\/market-workspace-runtime\.js\?v=3/);
+  assert.match(market, /js\/market\.js\?v=4/);
   assert.doesNotMatch(market, /CYBERWARE_UI_RUNTIME_SCRIPTS/);
   assert.doesNotMatch(housing, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
-  assert.doesNotMatch(housing, /housing-market-runtime\.js/);
+  assert.doesNotMatch(housing, /market-workspace-runtime\.js/);
   assert.doesNotMatch(housing, /js\/market\.js/);
   assert.doesNotMatch(equipment, /CYBERWARE_UI_RUNTIME_SCRIPTS/);
   assert.doesNotMatch(equipment, /js\/cyberware-index\.js/);
@@ -59,8 +59,8 @@ test("Global Market uses Cyberware market projection without full Cyberware UI r
   assert.match(cyberware, /CYBERWARE_UI_RUNTIME_SCRIPTS/);
   assert.match(cyberware, /js\/cyberware-index\.js\?v=2/);
   assert.match(cyberware, /js\/cyberware-planner\.js\?v=8/);
-  assert.match(cyberware, /js\/cyberware-workspace\.js\?v=1/);
-  assert.match(cyberware, /js\/cyberware-module\.js\?v=1/);
+  assert.match(cyberware, /js\/cyberware-workspace\.js\?v=3/);
+  assert.match(cyberware, /js\/cyberware-module\.js\?v=3/);
 
   assert.match(catalogData, /data\/neurochip-catalog\.js/);
   assert.match(catalogData, /data\/interface-catalog\.js/);
@@ -119,11 +119,12 @@ test("shared citizen finance helpers are eager and independent from Subscription
   const subscriptions = read("js/subscriptions.js");
 
   const financeIndex = index.indexOf('js/citizen-finance.js?v=1');
-  const modulesIndex = index.indexOf('js/modules.js?v=302');
+  const modulesIndex = index.indexOf('js/modules.js?v=309');
+
   assert.ok(financeIndex >= 0, "citizen-finance.js must be eager-loaded");
   assert.ok(financeIndex < modulesIndex, "citizen-finance.js must load before module routing");
   assert.doesNotMatch(index, /<script[^>]+js\/subscriptions\.js/);
-  assert.match(modules, /js\/subscriptions\.js\?v=34/);
+  assert.match(modules, /js\/subscriptions\.js\?v=35/);
 
   assert.doesNotMatch(citizenRecords, /(?<![.\w])getCitizenFinancialLedger\s*\(/);
   assert.doesNotMatch(service, /(?<![.\w])getCitizenFinancialLedger\s*\(/);

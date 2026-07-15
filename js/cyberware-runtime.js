@@ -339,7 +339,10 @@
     const sourceItems = uniqueItems([...(placement.installed || []), ...(placement.conflicts || []), ...(placement.unassigned || [])]);
     const items = sourceItems.map((item, index) => {
       const normalized = normalizeCyberwareEntry ? normalizeCyberwareEntry(item, index) : { ...item };
-      const merged = { ...item, ...normalized, placementStatus: item.runtimeStatus || "", placementReason: item.runtimeReason || "" };
+      const baseMerged = { ...item, ...normalized, placementStatus: item.runtimeStatus || "", placementReason: item.runtimeReason || "" };
+      const merged = typeof window.WS_APP.applyCyberwareUpgradeEffects === "function"
+        ? window.WS_APP.applyCyberwareUpgradeEffects(baseMerged)
+        : baseMerged;
       merged.baseAssessment = getBaseOperationalAssessment(merged);
       return merged;
     });

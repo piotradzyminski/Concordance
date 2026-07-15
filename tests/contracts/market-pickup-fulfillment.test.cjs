@@ -45,14 +45,18 @@ test("Pickup recovery expires unclaimed reservations through canonical cancellat
   assert.match(cancellation, /compensateItemInstanceTransaction/);
   assert.match(cancellation, /releaseMarketStockReservation/);
   assert.match(cancellation, /refundBillingTransaction/);
-  assert.match(source, /ws:campaign-date-updated/);
+  const scheduler = readProjectFile("js/market-time-scheduler.js");
+  assert.match(scheduler, /MARKET_PICKUP_EXPIRES/);
+  assert.match(scheduler, /scheduleMarketPickupExpiryEvent/);
+  assert.match(scheduler, /PICKUP_RESERVATION_EXPIRED/);
+  assert.doesNotMatch(source, /ws:campaign-date-updated/);
 });
 
-test("Housing Market UI offers pickup and exposes confirm and retry actions", () => {
-  const source = readProjectFile("js/housing-market-runtime.js");
-  assert.match(source, /function addHousingMarketOfferForPickupToCart/);
+test("Pickup runtime remains available while the compact product card does not expose a dedicated pickup CTA", () => {
+  const source = readProjectFile("js/market-workspace-runtime.js");
+  assert.match(source, /function addMarketWorkspaceOfferForPickupToCart/);
   assert.match(source, /data-housing-market-add-pickup-offer/);
-  assert.match(source, /ADD FOR PICKUP/);
+  assert.doesNotMatch(extractFunctionSource(source, "renderMarketWorkspaceProductCard"), /ADD FOR PICKUP|data-housing-market-add-pickup-offer/);
   assert.match(source, /data-housing-market-order-pickup-confirm/);
   assert.match(source, /data-housing-market-order-pickup-retry/);
   assert.match(source, /PICKUP EXPIRES/);
@@ -64,10 +68,12 @@ test("Pickup bundle versions are cache-busted consistently", () => {
   const index = readProjectFile("index.html");
   const modules = readProjectFile("js/modules.js");
   assert.match(index, /data\/market-offers\.js\?v=4/);
-  assert.match(index, /js\/market-store\.js\?v=12/);
-  assert.match(index, /js\/modules\.js\?v=302/);
+  assert.match(index, /js\/market-store\.js\?v=13/);
+
+  assert.match(index, /js\/modules\.js\?v=309/);
   assert.match(modules, /data\/market-offers\.js\?v=4/);
-  assert.match(modules, /js\/market-store\.js\?v=12/);
-  assert.match(modules, /js\/housing\.js\?v=50/);
-  assert.match(modules, /js\/housing-market-runtime\.js\?v=4/);
+  assert.match(modules, /js\/market-store\.js\?v=13/);
+  assert.match(modules, /js\/housing\.js\?v=53/);
+  assert.match(modules, /js\/market-workspace-runtime\.js\?v=3/);
+
 });

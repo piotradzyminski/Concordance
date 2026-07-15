@@ -195,11 +195,11 @@ test("Housing UI exposes Household as a distinct section without owning another 
   const householdRuntime = read("js/housing-household-runtime.js");
   const index = read("index.html");
 
-  assert.match(housing, /data-housing-tab="HOUSEHOLD"/);
+  assert.match(housing, /data-housing-tab="HOUSEHOLD"|tab\("HOUSEHOLD"/);
   assert.match(housing, /renderHousingHouseholdTab/);
   assert.match(householdRuntime, /function renderHousingHouseholdTab\(/);
   assert.match(household, /commitItemInstanceTransaction/);
   assert.doesNotMatch(household, /localStorage|sessionStorage/);
   assert.doesNotMatch(householdRuntime, /localStorage|sessionStorage/);
-  assert.match(index, /js\/household-store\.js\?v=3/);
+  assert.match(index, /js\/household-store\.js\?v=4/);
 });

@@ -13,13 +13,16 @@ IMPLEMENTED RETURN/REFUND: patch_item_instance_transaction_compensation_6.2x
 IMPLEMENTED MARKET-SERVICE FULFILLMENT: patch_market_service_fulfillment_4.3x
 IMPLEMENTED PICKUP FULFILLMENT: patch_market_pickup_fulfillment_6.0x
 IMPLEMENTED PARTIAL RETURN/REFUND: patch_market_partial_return_refund_6.1x
+IMPLEMENTED WORKSPACE EXTRACTION: patch_market_workspace_extraction_6.4x
+IMPLEMENTED DATETIME SCHEDULER: patch_market_datetime_scheduler_6.5x
 CHECKOUT/FULFILLMENT: DELIVER_TO_HOUSING, PURCHASE_WITH_SERVICE AND PICKUP READY
 ```
 
 ## Domain ownership
 
 - Equipment Catalog owns static product definitions.
-- Market Store owns offers, offer indexes, cart drafts and checkout validation boundary.
+- Market Store owns offers, offer indexes, cart drafts, MarketOrders, stock, shipments, pickup state and checkout validation boundary.
+- Market Time Scheduler maps exact Market lifecycle timestamps to the shared World Time Scheduled Events queue.
 - Billing owns authorization, capture, void and refund.
 - ItemInstance Store owns physical item creation and mutation.
 - Housing owns storage lookup, placement validation, reservation and commit.
@@ -44,6 +47,21 @@ revision
 ```
 
 Default offers are deterministic projections over Equipment Catalog. `data/market-offers.js` contains commercial defaults and explicit overrides only. It must not duplicate product definitions.
+
+## Campaign Time and scheduling
+
+Market lifecycle timestamps are normalized to full UTC ISO-8601 values. Offer `activeFrom` / `expiresAt`, pickup `expiresAt`, shipment `etaAt` and Market record lifecycle fields use Campaign Time rather than wall-clock timers.
+
+`js/market-time-scheduler.js` registers the `market-time-scheduler` handler with the shared persistent World Time Scheduled Events queue and maps:
+
+```text
+MARKET_OFFER_ACTIVATES
+MARKET_OFFER_EXPIRES
+MARKET_PICKUP_EXPIRES
+MARKET_SHIPMENT_DUE
+```
+
+The queue owns event envelopes and receipts. Market Store remains the sole owner of domain mutation. Date-only legacy values normalize deterministically to midnight UTC; new records preserve exact hours and minutes.
 
 ## Indexes
 
@@ -114,7 +132,7 @@ createItemInstance
 removeItemInstance
 ```
 
-The command never falls back to direct `Citizen.credits`, legacy `citizen.marketOrders`, Billing history writes or parallel Equipment records. Offers with unresolved entitlement, license or access requirements remain blocked rather than bypassing authorization.
+The command never falls back to direct `Citizen.credits`, legacy `citizen.marketOrders` / `citizen.shipments`, Billing history writes or parallel Equipment records. Offers with unresolved entitlement, license or access requirements remain blocked rather than bypassing authorization.
 
 Checkout sequence:
 
@@ -150,13 +168,13 @@ refund failure → PAYMENT_RECOVERY_REQUIRED with compensationStatus = PARTIAL a
 - browsing, filtering, selection, cart update and quote never build EquipmentState;
 - Market lookup by ID never rebuilds/clones the full Equipment Catalog;
 - cart persistence is deferred and flushed on controlled lifecycle boundaries;
-- rendering Housing Market does not process due shipments or mutate stores;
+- rendering Market or Housing does not process due shipments or mutate stores;
 - physical Equipment invalidation is reserved for final ItemInstance creation plus placement commit;
 - one checkout retry key must eventually map to at most one Market order, Billing transaction and ItemInstance.
 
-## Legacy boundary
+## Retired legacy boundary
 
-`purchaseHousingMarketItem()` remains isolated as an internal compatibility path for pre-bridge shipment records. New Catalog/cart/checkout UI uses Market APIs and does not call the legacy purchase function.
+The standalone Market workspace does not read or write `citizen.marketOrders` or `citizen.shipments`. `purchaseHousingMarketItem()`, `createMarketOrderAndShipment()` and the legacy Housing shipment scheduler are retired from the active Market workspace. Canonical Catalog, Cart, Orders, Delivery, Pickup and Recovery use Market Store APIs only.
 ## Housing Market Storefront UI 5.0x
 
 Primary navigation:
@@ -196,11 +214,10 @@ rendered catalog product cards <= 6
 
 Orders rules:
 
-- canonical Market orders and legacy delivery records remain projected by Housing UI;
+- canonical Market orders are projected by the standalone Market Workspace; Housing may expose read-only delivery intake;
 - `ORDERS` shows active/recovery/refund-request records;
 - `DELIVERED` shows completed/failed/cancelled/refunded/history records;
 - rendering either view does not process shipments;
-- `PROCESS LEGACY DUE` remains an explicit compatibility action.
 
 
 ## Checkout / fulfillment 3.0x

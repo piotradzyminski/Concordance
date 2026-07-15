@@ -16,7 +16,7 @@ test("player workspace exposes keyboard-operable tabs, labelled panels and live 
   assert.match(source, /\["ArrowLeft", "ArrowRight", "Home", "End"\]/);
   assert.match(source, /role="status" aria-live="polite" aria-atomic="true"/);
   assert.match(source, /aria-expanded="\$\{isExpanded \? "true" : "false"\}"/);
-  assert.match(source, /subscriptions_responsive_accessibility_4_5/);
+  assert.match(source, /subscriptions_entitlement_projection_4_6/);
 });
 
 test("subscription profiles expose labelled regions and a semantic tier comparison", () => {
@@ -37,7 +37,7 @@ test("admin subscription contract index uses a keyboard listbox and restores int
   assert.match(source, /aria-selected=/);
   assert.match(source, /\["ArrowUp", "ArrowDown", "Home", "End"\]/);
   assert.match(source, /restoreInteractionFocus/);
-  assert.match(source, /subscriptions_responsive_accessibility_4_5/);
+  assert.match(source, /subscriptions_entitlement_projection_4_6/);
 });
 
 test("responsive CSS owns 980, 720 and 520 layouts, visible focus and reduced motion", () => {
@@ -54,9 +54,10 @@ test("responsive CSS owns 980, 720 and 520 layouts, visible focus and reduced mo
   assert.match(adminCss, /@media \(max-width: 720px\)/);
   assert.match(adminCss, /role="option"\]:focus-visible/);
   assert.match(modules, /css\/subscriptions\.css\?v=21/);
-  assert.match(modules, /js\/subscriptions\.js\?v=34/);
-  assert.match(modules, /js\/subscriptions-workspace\.js\?v=6/);
+  assert.match(modules, /js\/subscriptions\.js\?v=35/);
+  assert.match(modules, /js\/subscriptions-workspace\.js\?v=7/);
   assert.match(modules, /css\/admin-subscriptions\.css\?v=3/);
-  assert.match(modules, /js\/admin-subscriptions-control\.js\?v=4/);
-  assert.match(index, /js\/modules\.js\?v=302/);
+  assert.match(modules, /js\/admin-subscriptions-control\.js\?v=5/);
+  assert.match(index, /js\/modules\.js\?v=309/);
+
 });

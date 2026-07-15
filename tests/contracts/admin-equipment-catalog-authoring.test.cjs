@@ -35,7 +35,8 @@ test("Equipment Catalog Authoring extends the existing Catalog Management lazy b
 
 test("index changes are cache-only and the authoring store remains lazy", () => {
   const index = read("index.html");
-  assert.match(index, /js\/equipment-catalog-store\.js\?v=14/);
-  assert.match(index, /js\/modules\.js\?v=302/);
+  assert.match(index, /js\/equipment-catalog-store\.js\?v=15/);
+  assert.match(index, /js\/modules\.js\?v=309/);
+
   assert.doesNotMatch(index, /admin-equipment-catalog-authoring\.js/);
 });

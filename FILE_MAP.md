@@ -3,6 +3,6 @@
 Canonical file map: `docs/FILE_MAP.md`.
 
 ```text
-runtime baseline: Parallel Scope Merge 15.15x
+runtime baseline: Parallel Scope Merge 15.19x
 documentation baseline: Canonical Documentation 4.0x
 ```

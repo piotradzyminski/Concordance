@@ -244,9 +244,55 @@ function getSubscriptionTargetDisplay(subscription = {}, citizenId = "") {
   };
 }
 
+function getSubscriptionEntitlementEvaluationTime() {
+  return String(
+    window.WS_APP.getCampaignTimeIso?.()
+    || window.WS_APP.CAMPAIGN_TIME_ISO
+    || window.WS_APP.getCampaignDateIso?.()
+    || window.WS_APP.CAMPAIGN_DATE_ISO
+    || ""
+  ).trim();
+}
+
+function getSubscriptionEntitlementSnapshotForUi(subscription = {}, citizenId = "") {
+  const source = {
+    ...subscription,
+    citizenId: String(subscription.citizenId || citizenId || "").trim()
+  };
+  const atTime = getSubscriptionEntitlementEvaluationTime();
+  if (typeof window.WS_APP.getSubscriptionContractEntitlementSnapshot === "function") {
+    try {
+      const snapshot = window.WS_APP.getSubscriptionContractEntitlementSnapshot(source, atTime) || null;
+      if (snapshot && typeof snapshot === "object") return snapshot;
+    } catch (error) {
+      // Render paths remain read-only and fall back to persisted compatibility axes.
+    }
+  }
+
+  const status = subscriptionUiToken(
+    source.entitlementStatus
+    || (source.contractStatus === "CANCELLED" ? "CANCELLED" : source.billingStatus || source.status || "PENDING")
+  );
+  return {
+    allowed: ["ACTIVE", "GRACE_PERIOD"].includes(status),
+    status,
+    citizenId: source.citizenId,
+    subscriptionContractId: source.subscriptionContractId || source.id || null,
+    subscriptionCatalogId: source.subscriptionCatalogId || source.catalogId || null,
+    coverageTarget: getSubscriptionCoverageTargetForUi(source, source.citizenId),
+    reasons: [],
+    evaluatedAt: atTime || null,
+    currentPeriodEnd: source.currentPeriodEnd || source.endDate || source.renewalDate || null,
+    gracePeriodEndsAt: source.gracePeriodEndsAt || null
+  };
+}
+
 function getSubscriptionTargetDiagnostics(subscription = {}, citizenId = "") {
   const catalog = getSubscriptionCatalogForUi(subscription);
-  const target = getSubscriptionCoverageTargetForUi(subscription, citizenId);
+  const entitlementSnapshot = getSubscriptionEntitlementSnapshotForUi(subscription, citizenId);
+  const target = entitlementSnapshot.coverageTarget && typeof entitlementSnapshot.coverageTarget === "object"
+    ? entitlementSnapshot.coverageTarget
+    : getSubscriptionCoverageTargetForUi(subscription, citizenId);
   const validation = typeof window.WS_APP.validateSubscriptionCoverageTarget === "function"
     ? window.WS_APP.validateSubscriptionCoverageTarget({
       citizenId,
@@ -257,18 +303,22 @@ function getSubscriptionTargetDiagnostics(subscription = {}, citizenId = "") {
     })
     : { valid: target.type === "CITIZEN", errors: target.type === "CITIZEN" ? [] : ["SUBSCRIPTION_TARGET_VALIDATOR_UNAVAILABLE"], reasons: [] };
   const codes = Array.from(new Set([
+    ...(Array.isArray(entitlementSnapshot?.reasons) ? entitlementSnapshot.reasons.map((reason) => reason?.code || reason).filter(Boolean) : []),
     ...(Array.isArray(validation?.errors) ? validation.errors : []),
     ...(Array.isArray(validation?.reasons) ? validation.reasons.map((reason) => reason?.code).filter(Boolean) : [])
   ]));
-  const entitlementStatus = validation?.valid === false
-    ? "REVOKED"
-    : subscriptionUiToken(subscription.entitlementStatus || (subscription.active ? "ACTIVE" : "PENDING"));
+  const entitlementStatus = subscriptionUiToken(entitlementSnapshot.status || "NOT_FOUND");
   return {
     catalog,
     target,
     validation,
     valid: validation?.valid === true,
+    allowed: entitlementSnapshot.allowed === true,
     entitlementStatus,
+    entitlementSnapshot,
+    evaluatedAt: entitlementSnapshot.evaluatedAt || null,
+    currentPeriodEnd: entitlementSnapshot.currentPeriodEnd || subscription.currentPeriodEnd || subscription.endDate || subscription.renewalDate || null,
+    gracePeriodEndsAt: entitlementSnapshot.gracePeriodEndsAt || subscription.gracePeriodEndsAt || null,
     reasonCodes: codes
   };
 }
@@ -396,7 +446,7 @@ function renderSubscriptionAssetContractPanel(subscription = {}, citizenId = "",
   const diagnostics = getSubscriptionTargetDiagnostics(subscription, citizenId);
   const display = getSubscriptionTargetDisplay(subscription, citizenId);
   const entitlementCodes = getSubscriptionEntitlementCodesForUi(subscription, diagnostics.catalog);
-  const stateClass = diagnostics.valid ? "is-valid" : "is-revoked";
+  const stateClass = diagnostics.allowed ? "is-valid" : "is-revoked";
   const targetKind = diagnostics.target.type === "ITEM_INSTANCE" ? "ASSET CONTRACT" : "CITIZEN CONTRACT";
 
   return `
@@ -2229,7 +2279,10 @@ function renderPlayerSubscriptionProfile(user, subscriptionId, returnView = "") 
         </div>
         <div class="subscription-profile-hero-v41__status">
           ${renderSubscriptionProfileBadge(statusLabel, ["OVERDUE", "SUSPENDED", "CANCELLED"].includes(statusLabel) ? "danger" : statusLabel === "PENDING" ? "warn" : "ok")}
-          ${renderSubscriptionProfileBadge(diagnostics.entitlementStatus, diagnostics.valid ? "ok" : "danger")}
+          ${renderSubscriptionProfileBadge(
+            diagnostics.entitlementStatus,
+            diagnostics.allowed ? "ok" : diagnostics.entitlementStatus === "GRACE_PERIOD" ? "warn" : "danger"
+          )}
           <button class="module-back-button" type="button">Back</button>
         </div>
       </header>
@@ -2244,6 +2297,7 @@ function renderPlayerSubscriptionProfile(user, subscriptionId, returnView = "") 
               <div class="subscription-profile-data-list-v41">
                 ${renderDataRow("STATUS", statusLabel)}
                 ${renderDataRow("ENTITLEMENT", diagnostics.entitlementStatus)}
+                ${renderDataRow("ACCESS", diagnostics.allowed ? "ALLOWED" : "BLOCKED")}
                 ${renderDataRow("CONTRACT ID", subscription.id)}
                 ${renderDataRow("TIER", currentTierLabel)}
               </div>
@@ -2255,7 +2309,8 @@ function renderPlayerSubscriptionProfile(user, subscriptionId, returnView = "") 
                 ${renderDataRow("AMOUNT", formatCredits(subscription.amount))}
                 ${renderDataRow("CYCLE", subscription.cycle || "WEEKLY")}
                 ${renderDataRow("START", formatDateDisplay(subscription.startDate))}
-                ${renderDataRow("RENEWAL", formatDateDisplay(subscription.endDate || subscription.renewalDate))}
+                ${renderDataRow("PERIOD END", formatDateDisplay(diagnostics.currentPeriodEnd || subscription.endDate || subscription.renewalDate))}
+                ${diagnostics.gracePeriodEndsAt ? renderDataRow("GRACE END", formatDateDisplay(diagnostics.gracePeriodEndsAt)) : ""}
                 ${subscription.cancelledAt ? renderDataRow("CANCELLED", formatDateDisplay(subscription.cancelledAt)) : ""}
               </div>
             </section>
@@ -2272,7 +2327,11 @@ function renderPlayerSubscriptionProfile(user, subscriptionId, returnView = "") 
             </section>
 
             <section class="subscription-profile-section subscription-contract-card-v41">
-              ${renderSubscriptionProfileSectionHead("ACTIVE ENTITLEMENTS", "Resolved Access", `${entitlementCodes.length} CODE${entitlementCodes.length === 1 ? "" : "S"}`)}
+              ${renderSubscriptionProfileSectionHead(
+                diagnostics.allowed ? "ACTIVE ENTITLEMENTS" : "ENTITLEMENT CODES",
+                diagnostics.entitlementStatus,
+                `${entitlementCodes.length} CODE${entitlementCodes.length === 1 ? "" : "S"}`
+              )}
               ${renderSubscriptionProfileCodeList(entitlementCodes, "NO ENTITLEMENTS RESOLVED")}
             </section>
           </div>
@@ -2317,9 +2376,19 @@ function renderPlayerSubscriptionProfile(user, subscriptionId, returnView = "") 
           </section>
 
           <section class="subscription-profile-rail-card-v41">
-            ${renderSubscriptionProfileSectionHead("VALIDATION", diagnostics.valid ? "Coverage Ready" : "Attention Required")}
-            <p>${escapeHtml(diagnostics.valid ? "The current target satisfies the catalog policy and entitlement can be resolved." : "The current target does not satisfy the catalog policy. Review the diagnostic codes and rebind the contract.")}</p>
-            ${renderSubscriptionProfileCodeList(diagnostics.reasonCodes, "NO VALIDATION FINDINGS")}
+            ${renderSubscriptionProfileSectionHead(
+              "ENTITLEMENT RESOLUTION",
+              diagnostics.allowed ? "Access Granted" : diagnostics.valid ? "Access Blocked" : "Target Invalid"
+            )}
+            <p>${escapeHtml(
+              diagnostics.allowed
+                ? "The canonical entitlement resolver grants access for the current campaign time and target."
+                : diagnostics.valid
+                  ? "The target remains valid, but the canonical entitlement resolver blocks access. Review the status and reason codes."
+                  : "The current target does not satisfy the catalog policy. Review the reason codes and rebind the contract."
+            )}</p>
+            ${diagnostics.evaluatedAt ? renderDataRow("EVALUATED AT", formatDateDisplay(diagnostics.evaluatedAt)) : ""}
+            ${renderSubscriptionProfileCodeList(diagnostics.reasonCodes, "NO ENTITLEMENT FINDINGS")}
           </section>
         </aside>
       </div>

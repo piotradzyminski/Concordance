@@ -17,7 +17,7 @@ function getFunctionBlock(source, name, nextName) {
 }
 
 function marketSource() {
-  return `${read("js/market.js")}\n${read("js/housing-market-runtime.js")}`;
+  return `${read("js/market.js")}\n${read("js/market-workspace-runtime.js")}`;
 }
 
 test("Global Market renders a six-product paginated storefront", () => {
@@ -28,11 +28,12 @@ test("Global Market renders a six-product paginated storefront", () => {
   assert.match(source, /pagination\.totalItems = visibleItems\.length/);
 });
 
-test("Global Market navigation separates catalog, active orders and delivered history", () => {
+test("Global Market navigation separates catalog, secondary listings, active orders and delivered history", () => {
   const source = marketSource();
-  const tabs = getFunctionBlock(source, "renderHousingMarketModeTabs", "renderHousingMarketDepartmentNavigation");
-  assert.match(source, /const MARKET_MODES = \["CATALOG", "ORDERS", "DELIVERED"\]/);
+  const tabs = getFunctionBlock(source, "renderMarketWorkspaceModeTabs", "renderMarketWorkspaceDepartmentNavigation");
+  assert.match(source, /const MARKET_MODES = \["CATALOG", "SECONDARY", "ORDERS", "DELIVERED"\]/);
   assert.match(tabs, /id: "CATALOG"/);
+  assert.match(tabs, /id: "SECONDARY"/);
   assert.match(tabs, /id: "ORDERS"/);
   assert.match(tabs, /id: "DELIVERED"/);
   assert.match(source, /activeMode === "DELIVERED" \? "HISTORY" : "ACTIVE"/);
@@ -40,7 +41,7 @@ test("Global Market navigation separates catalog, active orders and delivered hi
 
 test("Global Market departments support equipment, cyberware, medical, food and household products", () => {
   const source = marketSource();
-  const classifier = getFunctionBlock(source, "getHousingMarketDepartment", "getHousingMarketSubcategory");
+  const classifier = getFunctionBlock(source, "getMarketWorkspaceDepartment", "getMarketWorkspaceSubcategory");
   assert.match(source, /const MARKET_DEPARTMENTS = \["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"\]/);
   assert.match(classifier, /return "CYBERWARE"/);
   assert.match(classifier, /return "MEDICAL"/);
@@ -53,14 +54,14 @@ test("Global Market departments support equipment, cyberware, medical, food and 
 
 test("Product cards prioritize shopping data and hide routine technical tags", () => {
   const source = marketSource();
-  const card = getFunctionBlock(source, "renderHousingMarketProductCard", "getHousingMarketPagination");
-  const commandBar = getFunctionBlock(source, "renderHousingMarketCommandBar", "renderHousingMarketTab");
+  const card = getFunctionBlock(source, "renderMarketWorkspaceProductCard", "getMarketWorkspacePagination");
+  const commandBar = getFunctionBlock(source, "renderMarketWorkspaceCommandBar", "renderMarketWorkspaceTab");
   assert.match(card, /housing-market-product-price/);
   assert.match(card, /ADD TO CART/);
-  assert.match(card, /getHousingMarketProductFacts/);
-  assert.match(card, /getHousingMarketProductRestrictions/);
-  assert.doesNotMatch(card, /getHousingMarketRequirementLabel/);
-  assert.doesNotMatch(card, /getHousingMarketFulfillmentLabel/);
+  assert.match(card, /getMarketWorkspaceProductFacts/);
+  assert.match(card, /getMarketWorkspaceProductRestrictions/);
+  assert.doesNotMatch(card, /getMarketWorkspaceRequirementLabel/);
+  assert.doesNotMatch(card, /getMarketWorkspaceFulfillmentLabel/);
   assert.doesNotMatch(commandBar, /INDEXED OFFERS/);
   assert.doesNotMatch(commandBar, /VISIBLE OFFERS/);
 });
@@ -75,7 +76,7 @@ test("Storefront layout is a department rail plus a two-column product grid", ()
 
 test("Order actions stay synchronized with the primary Orders and Delivered sections", () => {
   const source = marketSource();
-  assert.match(source, /function syncHousingMarketModeToOrder/);
+  assert.match(source, /function syncMarketWorkspaceModeToOrder/);
   assert.match(source, /view === "ACTIVE" \? "ORDERS" : "DELIVERED"/);
   assert.match(source, /currentMode === "DELIVERED" \? "DELIVERED" : "ORDERS"/);
   assert.doesNotMatch(source, /data-housing-market-order-view/);
@@ -83,6 +84,6 @@ test("Order actions stay synchronized with the primary Orders and Delivered sect
 
 test("The All department cannot retain a hidden legacy subcategory filter", () => {
   const source = marketSource();
-  const normalize = getFunctionBlock(source, "normalizeHousingMarketFilters", "getHousingMarketFilters");
+  const normalize = getFunctionBlock(source, "normalizeMarketWorkspaceFilters", "getMarketWorkspaceFilters");
   assert.match(normalize, /normalized\.type === "ALL"\) normalized\.category = "ALL"/);
 });

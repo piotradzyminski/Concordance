@@ -21,6 +21,9 @@ patch_terminal_inbox_content_ui_2.4x.zip
 CURRENT MARKET PRODUCER PATCH:
 patch_market_notification_producer_2.5x.zip
 
+CURRENT HOUSING EVENTS PATCH:
+patch_housing_notification_events_2.6x.zip
+
 CURRENT DATETIME PATCH:
 patch_terminal_inbox_datetime_1.0x.zip
 
@@ -35,11 +38,14 @@ Subscriptions
 Transactional Services
 World Bridge operation projection
 Market Orders
+Housing Shipments and Housing Storage capacity
 
 EVENT SOURCES CONSUMED:
 ws:world-bridge-operation-updated
 ws:cyberware-world-operation-updated
 ws:market-order-updated
+ws:market-shipment-updated
+ws:housing-shipment-updated
 ```
 
 The shared foundation provides the event registry, provider capability validation, versioned notification record and idempotent write API. Patch 2.1x adds the canonical World Bridge operation projection without taking ownership of orchestration, Billing, Services, Market, ItemInstance or recovery.
@@ -932,4 +938,116 @@ refund algorithms
 World Bridge operations
 ItemInstance
 ```
+
+---
+
+# 16. Housing notification events 2.6x
+
+## 16.1. Canonical source boundary
+
+Market Store remains the sole owner of shipment lifecycle, fulfillment, retries and recovery. Housing does not create a second shipment store. The read-only semantic bridge consumes only the persisted Market shipment event:
+
+```text
+ws:market-shipment-updated
+```
+
+After reading the canonical MarketShipment through `getMarketShipment()`, it emits:
+
+```text
+ws:housing-shipment-updated
+```
+
+The semantic event is emitted only for player-meaningful Housing outcomes. Technical placement reservation and persistence-recovery events are not Inbox sources.
+
+## 16.2. Event mapping
+
+```text
+DELIVERED
+  -> HOUSING.SHIPMENT.DELIVERED
+
+HELD + HOUSING_STORAGE_FULL / capacity reason
+  -> HOUSING.STORAGE.CAPACITY_WARNING
+
+HELD + other Housing placement blocker
+  -> HOUSING.SHIPMENT.HELD
+
+RECOVERY_REQUIRED + Housing-owned commit/reconciliation reason
+  -> HOUSING.SHIPMENT.HELD
+
+PENDING / PACKED / IN_TRANSIT / PROCESSING / CANCELLED
+  -> no Housing player card
+```
+
+The producer never subscribes to:
+
+```text
+ws:housing-placement-reservation-updated
+ws:housing-placement-persistence-recovered
+```
+
+Those events remain technical domain signals.
+
+## 16.3. Notification identity
+
+One shipment uses one Housing notification identity across hold, capacity warning and final delivery:
+
+```text
+dedupeKey = housing-shipment:<shipmentId>
+correlationId = shipmentId
+revision = MarketShipment.revision
+```
+
+A later successful delivery updates the existing held/capacity card rather than creating a second Housing card. MarketOrder notifications remain a separate domain projection and World Bridge ownership rules remain unchanged.
+
+## 16.4. Content and routing
+
+The content resolver reads only indexed canonical records:
+
+```text
+MarketShipment
+MarketOrder
+Housing Storage / Housing record
+ItemInstance
+Equipment Catalog
+Organization Store
+```
+
+Player-facing content includes:
+
+```text
+item summary
+delivery provider
+Housing Unit
+storage destination
+visible address
+delivery result or hold reason
+required next action
+```
+
+Raw Shipment, MarketOrder, ItemInstance and reservation identifiers remain technical metadata only.
+
+Routes:
+
+```text
+capacity warning -> Housing / STORAGE
+held or delivered -> Housing / DELIVERIES
+```
+
+## 16.5. Boundaries
+
+The semantic bridge, producer and resolver must not mutate:
+
+```text
+MarketShipment
+MarketOrder
+Housing placement reservations
+Housing storage occupancy
+ItemInstance
+Billing
+stock reservations
+Campaign Time
+World Bridge operations
+```
+
+They must not build EquipmentState, CyberGrid, Cyberware Runtime or any full catalog projection.
 

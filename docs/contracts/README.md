@@ -28,3 +28,27 @@ cyberware/cyberware_module_extraction_contract.md
 
 Knowledge sidecar presentation remains governed by the existing Knowledge Pack and relation contracts; no competing content contract was introduced.
 
+
+
+## Runtime 15.16x contract additions
+
+```text
+cyberware/cyberware_anatomy_bodymap_contract.md
+commerce/housing_rent_relocation_runtime_contract.md
+commerce/market_card_ui_contract.md
+core/world_time_scheduled_events_contract.md
+```
+
+The Knowledge article-index presentation remains governed by `knowledge/knowledge_relations_contract.md`; no competing Knowledge content contract was introduced.
+
+## Runtime 15.19x contract additions
+
+```text
+commerce/market_datetime_scheduler_contract.md
+commerce/market_secondary_listing_contract.md
+commerce/market_wishlist_contract.md
+commerce/housing_household_hub_contract.md
+cyberware/cyberware_upgrade_system_contract.md
+```
+
+The Knowledge 1.6x masking fix remains governed by `knowledge/knowledge_relations_contract.md`.

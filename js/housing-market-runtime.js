@@ -11,7 +11,6 @@ window.WS_APP = window.WS_APP || {};
       HOUSING_MARKET_ORDER_CLOSED_STATUSES,
       HOUSING_MARKET_ORDER_VIEWS,
       HOUSING_MARKET_PAGE_SIZE,
-      HOUSING_MARKET_PRODUCT_VISUAL_FALLBACKS,
       HOUSING_MARKET_SORTS,
       HOUSING_MARKET_STATUSES,
       HOUSING_MARKET_VENDOR_DEFAULTS,
@@ -1561,26 +1560,6 @@ window.WS_APP = window.WS_APP || {};
       return Math.max(1, Math.min(99, Math.max(0, Number(stock.availableQuantity || 0) - Number(stock.reservedQuantity || 0))));
     }
 
-  function getHousingMarketProductVisual(item = {}, view = "thumbnail") {
-      const profile = item.visualProfile && typeof item.visualProfile === "object" && !Array.isArray(item.visualProfile)
-        ? item.visualProfile
-        : {};
-      const department = getHousingMarketDepartment(item);
-      const requestedView = String(view || "thumbnail").trim().toLowerCase();
-      const preferred = requestedView === "detail"
-        ? String(profile.detail || profile.thumbnail || "").trim()
-        : String(profile.thumbnail || profile.detail || "").trim();
-      const fallback = HOUSING_MARKET_PRODUCT_VISUAL_FALLBACKS[department]
-        || HOUSING_MARKET_PRODUCT_VISUAL_FALLBACKS.DEFAULT;
-      const fit = String(profile.fit || "CONTAIN").trim().toUpperCase() === "COVER" ? "COVER" : "CONTAIN";
-      return {
-        src: preferred || fallback,
-        alt: String(profile.alt || `${item.name || "Market product"} product visual`).trim(),
-        fit,
-        fallback: !preferred
-      };
-    }
-
   function renderHousingMarketInspectorRows(rows = [], className = "") {
       if (!rows.length) return `<p class="file-empty">No additional data registered for this product.</p>`;
       return `
@@ -1601,23 +1580,12 @@ window.WS_APP = window.WS_APP || {};
       const availability = getHousingMarketAvailability(item);
       const offerId = String(item.marketOfferId || "").trim();
       const catalogId = getHousingMarketProductCatalogId(item);
-      const visual = getHousingMarketProductVisual(item, "detail");
       const facts = getHousingMarketInspectorFacts(item);
       const requirements = getHousingMarketInspectorRequirements(item, citizen);
       const fulfillment = getHousingMarketInspectorFulfillment(item, unit);
       const features = Array.isArray(item.specialFeatures) ? item.specialFeatures.map((feature) => String(feature || "").trim()).filter(Boolean) : [];
       const maxQuantity = getHousingMarketInspectorQuantityMax(item);
       const canAdd = Boolean(offerId && unit?.id && !availability.disabled);
-      const canAddWithService = Boolean(
-        offerId
-        && !availability.disabled
-        && Array.isArray(item.fulfillmentOptions)
-        && item.fulfillmentOptions.includes("PURCHASE_WITH_SERVICE")
-        && Array.isArray(item.linkedServiceDefinitionIds)
-        && item.linkedServiceDefinitionIds.length
-        && Array.isArray(item.linkedServiceProviderIds)
-        && item.linkedServiceProviderIds.length
-      );
       const price = getHousingMarketPrice(item);
       return `
         <header class="housing-market-product-inspector-head">
@@ -1630,9 +1598,6 @@ window.WS_APP = window.WS_APP || {};
         </header>
         <div class="housing-market-product-inspector-scroll" data-housing-market-product-inspector="${escapeHtml(catalogId)}">
           <div class="housing-market-product-inspector-hero">
-            <div class="housing-market-product-inspector-visual has-image ${visual.fallback ? "is-fallback" : ""} is-fit-${escapeHtml(visual.fit.toLowerCase())}">
-              <img src="${escapeHtml(visual.src)}" alt="${escapeHtml(visual.alt)}" loading="lazy" decoding="async">
-            </div>
             <div class="housing-market-product-inspector-summary">
               <span class="module-status-badge is-${escapeHtml(availability.code.toLowerCase().replace(/_/g, "-"))}">${escapeHtml(availability.label)}</span>
               <div><small>PRICE</small><b>${escapeHtml(formatCredits(price))}</b></div>
@@ -1674,10 +1639,8 @@ window.WS_APP = window.WS_APP || {};
           </label>
           <div class="housing-market-product-inspector-total"><small>ESTIMATED TOTAL</small><b data-housing-market-product-inspector-total data-unit-price="${escapeHtml(price)}">${escapeHtml(formatCredits(price))}</b></div>
           <div class="housing-market-product-inspector-actions">
-            <button class="housing-inline-action" type="button" data-housing-market-add-offer="${escapeHtml(offerId)}" ${canAdd ? "" : "disabled"}>${unit?.id ? (availability.disabled ? availability.label : "ADD TO CART") : "NO HOUSING TARGET"}</button>
-            ${Array.isArray(item.fulfillmentOptions) && item.fulfillmentOptions.includes("PURCHASE_WITH_SERVICE")
-              ? `<button class="housing-inline-action" type="button" data-housing-market-add-service-offer="${escapeHtml(offerId)}" ${canAddWithService ? "" : "disabled"}>${canAddWithService ? "BUY + INSTALL" : "SERVICE UNAVAILABLE"}</button>`
-              : ""}
+            <button class="housing-inline-action housing-market-ui-placeholder" type="button" data-housing-market-wishlist-ui aria-disabled="true" title="Wishlist UI placeholder">WISHLIST</button>
+            <button class="housing-inline-action housing-market-action-primary" type="button" data-housing-market-add-offer="${escapeHtml(offerId)}" ${canAdd ? "" : "disabled"} title="${escapeHtml(canAdd ? "Add selected quantity to cart" : availability.label)}">ADD TO CART</button>
           </div>
         </footer>
       `;
@@ -1743,33 +1706,12 @@ window.WS_APP = window.WS_APP || {};
       const offerId = String(item.marketOfferId || "").trim();
       const catalogId = getHousingMarketProductCatalogId(item);
       const canAdd = Boolean(offerId && unit?.id && !availability.disabled);
-      const canPickup = Boolean(
-        offerId
-        && !availability.disabled
-        && Array.isArray(item.fulfillmentOptions)
-        && item.fulfillmentOptions.includes("PICKUP")
-        && item.organizationLocationId
-      );
-      const canAddWithService = Boolean(
-        offerId
-        && !availability.disabled
-        && Array.isArray(item.fulfillmentOptions)
-        && item.fulfillmentOptions.includes("PURCHASE_WITH_SERVICE")
-        && Array.isArray(item.linkedServiceDefinitionIds)
-        && item.linkedServiceDefinitionIds.length
-        && Array.isArray(item.linkedServiceProviderIds)
-        && item.linkedServiceProviderIds.length
-      );
       const feature = Array.isArray(item.specialFeatures) ? item.specialFeatures.find(Boolean) : "";
       const note = String(item.shortDescription || item.description || item.notes || feature || "Product available through the indexed Market offer.").trim();
-      const visual = getHousingMarketProductVisual(item, "thumbnail");
       const facts = getHousingMarketProductFacts(item);
       const restrictions = getHousingMarketProductRestrictions(item, availability);
       return `
-        <article class="housing-market-product-card is-${escapeHtml(department.toLowerCase())} ${availability.disabled ? "is-unavailable" : ""}" data-housing-market-product-card="${escapeHtml(catalogId)}">
-          <button class="housing-market-product-mark has-image ${visual.fallback ? "is-fallback" : ""} is-fit-${escapeHtml(visual.fit.toLowerCase())}" type="button" data-housing-market-inspect="${escapeHtml(catalogId)}" aria-label="View details for ${escapeHtml(item.name)}">
-            <img src="${escapeHtml(visual.src)}" alt="" loading="lazy" decoding="async" aria-hidden="true">
-          </button>
+        <article class="housing-market-product-card ${availability.disabled ? "is-unavailable" : ""}" data-housing-market-product-card="${escapeHtml(catalogId)}" data-market-department="${escapeHtml(department)}">
           <div class="housing-market-product-head">
             <div>
               <p class="kicker">${escapeHtml(formatHousingMarketStoreLabel(department))} / ${escapeHtml(formatHousingMarketStoreLabel(kind))}</p>
@@ -1783,15 +1725,10 @@ window.WS_APP = window.WS_APP || {};
           ${restrictions.length ? `<div class="housing-market-product-tags">${restrictions.map((restriction) => `<span>${escapeHtml(formatHousingMarketStoreLabel(restriction))}</span>`).join("")}</div>` : ""}
           <div class="housing-market-product-buy-row">
             <div class="housing-market-product-price"><small>PRICE</small><b>${escapeHtml(formatCredits(getHousingMarketPrice(item)))}</b><span>${escapeHtml(availability.stockLabel)}</span></div>
-            <div class="housing-market-product-actions">
-              <button class="housing-inline-action housing-market-product-details" type="button" data-housing-market-inspect="${escapeHtml(catalogId)}">VIEW DETAILS</button>
-              <button class="housing-inline-action housing-market-add-cart" type="button" data-housing-market-add-offer="${escapeHtml(offerId)}" ${canAdd ? "" : "disabled"}>${unit?.id ? (availability.disabled ? availability.label : "ADD TO CART") : "NO HOUSING TARGET"}</button>
-              ${Array.isArray(item.fulfillmentOptions) && item.fulfillmentOptions.includes("PICKUP")
-                ? `<button class="housing-inline-action housing-market-add-cart" type="button" data-housing-market-add-pickup-offer="${escapeHtml(offerId)}" ${canPickup ? "" : "disabled"}>${canPickup ? "ADD FOR PICKUP" : "PICKUP UNAVAILABLE"}</button>`
-                : ""}
-              ${Array.isArray(item.fulfillmentOptions) && item.fulfillmentOptions.includes("PURCHASE_WITH_SERVICE")
-                ? `<button class="housing-inline-action housing-market-add-cart" type="button" data-housing-market-add-service-offer="${escapeHtml(offerId)}" ${canAddWithService ? "" : "disabled"}>${canAddWithService ? "BUY + INSTALL" : "SERVICE UNAVAILABLE"}</button>`
-                : ""}
+            <div class="housing-market-product-actions" aria-label="Product actions">
+              <button class="housing-inline-action housing-market-product-details" type="button" data-housing-market-inspect="${escapeHtml(catalogId)}">DETAILS</button>
+              <button class="housing-inline-action housing-market-ui-placeholder" type="button" data-housing-market-wishlist-ui aria-disabled="true" title="Wishlist UI placeholder">WISHLIST</button>
+              <button class="housing-inline-action housing-market-action-primary" type="button" data-housing-market-add-offer="${escapeHtml(offerId)}" ${canAdd ? "" : "disabled"} title="${escapeHtml(canAdd ? "Add product to cart" : availability.label)}">ADD TO CART</button>
             </div>
           </div>
         </article>
@@ -2778,12 +2715,8 @@ window.WS_APP = window.WS_APP || {};
       
       const inspectorButton = event.target.closest?.("[data-housing-market-inspect]");
       
-      const inspectorCard = event.target.closest?.("[data-housing-market-product-card]");
-      
-      const cardClick = inspectorCard && !event.target.closest?.("button, input, select, textarea, a");
-      
-      if (inspectorButton || cardClick) {
-              const catalogId = String((inspectorButton || inspectorCard).getAttribute(inspectorButton ? "data-housing-market-inspect" : "data-housing-market-product-card") || "");
+      if (inspectorButton) {
+              const catalogId = String(inspectorButton.getAttribute("data-housing-market-inspect") || "");
               const latestCitizen = window.WS_APP.getCitizenById?.(citizenId) || { id: citizenId };
               const { unit } = getHousingActiveStorageTarget(latestCitizen);
               openHousingMarketProductInspector(root, latestCitizen, catalogId, unit);
@@ -3017,7 +2950,6 @@ window.WS_APP = window.WS_APP || {};
       getHousingMarketInspectorRequirements,
       getHousingMarketInspectorFulfillment,
       getHousingMarketInspectorQuantityMax,
-      getHousingMarketProductVisual,
       renderHousingMarketInspectorRows,
       renderHousingMarketProductInspectorContent,
       renderHousingMarketProductInspectorLayer,

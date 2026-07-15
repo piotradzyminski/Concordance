@@ -23,6 +23,7 @@ window.WS_APP = window.WS_APP || {};
     "ws_market_carts_v1",
     "ws_market_orders_v1",
     "ws_market_stock_v1",
+    "ws_market_wishlists_v1",
     "ws_housing_placement_reservations_v1",
     "ws_world_bridge_operations_v1",
     "ws_app_calendar_reminders_v1",

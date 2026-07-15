@@ -3,10 +3,12 @@
 ## Baseline
 
 ```text
-runtime: Parallel Scope Merge 15.15x
+runtime: Parallel Scope Merge 15.19x
 documentation: Canonical Documentation 4.0x
 phase: pre-alpha
 ```
+
+
 
 ## Installed in 15.3x
 
@@ -147,7 +149,7 @@ Subscriptions Catalog Presentation normalizes benefits, limitations, usage, tier
 
 `css/system-tabs.css?v=8` is the eager shared owner of segment, inline and mode tab families. Housing, Market, Terminal, Subscriptions and other modules consume this component instead of duplicating base tab rules.
 
-Housing Household adds one campaign-persistent Household Store, floor-plan/furniture placement, safe-space readiness and `HOUSING_ROOM` location support. Housing Market is split into the lazy `housing-market-workspace`; `housing.js` remains the shell for Unit, Household and Storage.
+Housing Household adds one campaign-persistent Household Store, floor-plan/furniture placement, safe-space readiness and `HOUSING_ROOM` location support. Market is split into the lazy `market-workspace`; `housing.js` remains the shell for Unit, Household and Storage.
 
 Item Grid Presentation 1.0.1x is the cumulative final owner of empty-cell, footprint and concise item-label projection in Equipment and Housing Storage. It preserves the canonical grid engine and ItemInstance location model.
 
@@ -219,7 +221,7 @@ Campaign Time is a revisioned UTC timestamp with date-only compatibility project
 | Transactional services | ACTIVE / FROZEN | Service Bridge |
 | Services UI | ACTIVE / COLD ENTRY DEPENDENCIES STABILIZED / BROWSER VALIDATION REQUIRED | persistent shell + eager Citizen finance/date helpers + panel contexts/cache/pagination |
 | Market fulfillment | ACTIVE / DECOUPLED MODULE + DELIVERY + PICKUP + PARTIAL RETURNS / BROWSER VALIDATION REQUIRED | Market module + Market Store orchestration boundary |
-| Global Market storefront, starter consumables and product visuals | ACTIVE / SEPARATE LAZY MODULE / BROWSER VALIDATION REQUIRED | `js/market.js` + `js/housing-market-runtime.js` consuming Market Store APIs |
+| Global Market storefront, cart and canonical order workspace | ACTIVE / SEPARATE LAZY MODULE / BROWSER VALIDATION REQUIRED | `js/market.js` + `js/market-workspace-runtime.js` consuming Market Store APIs; no legacy Citizen order/shipment path |
 | Housing Unit / Household / Storage runtime | ACTIVE / SPLIT FOUNDATION / BROWSER VALIDATION REQUIRED | Housing shell + Household Store + `js/housing-storage-runtime.js` |
 | ItemInstance | ACTIVE / STABLE / VIEW CACHE WARMED | ItemInstance Store |
 | Item Type Framework | ACTIVE / OPERATIONS + DAILY USAGE LOG | Item Type Registry + Item Type Operations + ItemInstance Transaction Store |
@@ -486,4 +488,104 @@ unit: 77 / 77 PASS
 contracts: 276 / 276 PASS
 data-I/O: 2 / 2 PASS
 total: 355 / 355 PASS
+```
+
+
+## Installed in 15.16x
+
+```text
+Knowledge Relation Article Index Tabs 1.4x — presentation-only delta
+Cyberware Anatomy Bodymap 16.0x
+Housing Rent Relocation Runtime 3.3x
+World Time Scheduled Events 2.3x
+Market Product Card UI Reset 6.4x
+```
+
+Knowledge content and registry ownership are unchanged. The relation sidecar now behaves as article-anchored file-index tabs under the opaque reading panel.
+
+Cyberware Bodymap uses explicit AVIF layout declarations, independent Cyberware anchor ownership and transient per-Citizen navigation state. Housing relocation commits one physical ItemInstance transaction and supports compensation/recovery. Scheduled Events owns a persistent exact-time envelope and delegates execution to registered domain handlers. Market cards no longer depend on product artwork or `visualProfile` metadata.
+
+Validation:
+
+```text
+JavaScript syntax: 316 / 316 PASS
+unit: 86 / 86 PASS
+contracts: 291 / 291 PASS
+data-I/O: 3 / 3 PASS
+total: 380 / 380 PASS
+```
+
+## Installed in 15.17x
+
+```text
+Housing Furnishing Lifecycle 4.0x
+Market Workspace Extraction 6.4x
+Knowledge Relation Article Index Tabs 1.5x — presentation-only delta
+```
+
+Housing functional furniture is projected from canonical ItemInstances. Fixed fixtures, rental furnishings and Citizen furnishings have explicit ownership classes, grade, condition, weekly wear and bounded functional slots. Campaign Time applies grade-driven wear only while furniture is placed in `HOUSING_ROOM`; transitions to or from Housing Storage reset the wear anchor, so storage time is not charged retroactively. Installed modules remain separate ItemInstances in `INSTALLED_IN_ITEM`, add concrete capabilities and never reduce wear.
+
+The standalone Market renderer and command adapter is `js/market-workspace-runtime.js`, exposed only through `createMarketWorkspaceRuntime()`. `js/market-store.js` remains the sole owner of offers, carts, orders, stock, shipments, fulfillment and recovery. Housing does not load the Market workspace runtime. Legacy `js/housing-market-runtime.js` and old `citizen.marketOrders` / `citizen.shipments` workspace paths are retired.
+
+Knowledge 1.5x changes presentation only. Desktop relation tabs use one fixed `226px` length, extend beneath the opaque reading panel on a negative local stacking layer and wrap labels inside a dedicated bounded element. The relation heading has no background strip, and hover/focus does not alter tab geometry. Seed content, registry ownership, stable IDs, Knowledge Pack schema and the `SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX` split are unchanged.
+
+No source patch notes, completed audits or completed plans are canonical project content.
+
+Validation:
+
+```text
+JavaScript syntax: 320 / 320 PASS
+unit: 86 / 86 PASS
+contracts: 304 / 304 PASS
+data-I/O: 3 / 3 PASS
+total: 393 / 393 PASS
+focused merged scopes: 15 / 15 PASS
+```
+
+## Installed in 15.18x
+
+```text
+Housing Notification Events 2.6x
+Subscriptions Entitlement Projection 4.6
+```
+
+Housing shipment notifications are projected from persisted MarketShipment state without moving shipment ownership out of Market Store. `js/housing-shipment-event-bridge.js` consumes `ws:market-shipment-updated`, reads the canonical shipment and emits the semantic `ws:housing-shipment-updated` event only for delivered, held and Housing-capacity outcomes. `js/housing-notification-producer.js` writes through the existing Notification Registry/API. One shipment retains one `housing-shipment:<shipmentId>` notification identity across hold, capacity warning and final delivery; technical placement-reservation events remain outside the player Inbox.
+
+Player and Admin Subscription lists and profiles now consume one resolver-backed entitlement snapshot. Exact Campaign Time determines active, grace, expired and revoked states without persisting derived status during render. Resolver reason codes, current period boundaries and grace boundaries are available to the UI, while `EXPIRED`, `REVOKED` and `NOT_FOUND` are classified as attention states. SubscriptionAPI observes `ws:campaign-time-updated`; catalog, Billing and contract persistence ownership remain unchanged.
+
+Validation:
+
+```text
+JavaScript syntax: 324 / 324 PASS
+unit + contracts + data-I/O: 402 / 402 PASS
+retired Item Effect and Market artwork tests removed by canonical cleanup
+missing eager/lazy assets: 0
+browser E2E: not executed
+```
+
+## Installed in 15.19x
+
+```text
+Market Datetime Scheduler 6.5x
+Market Secondary Listing Foundation 7.0x
+Market Modal and Wishlist 6.5x
+Housing Household Hub 5.0x
+Cyberware Upgrade System 16.1x
+Knowledge Relation Article Index Tabs 1.6x — presentation-only delta
+```
+
+Market exact-time processing reuses the canonical World Time Scheduled Events queue. The Secondary Listing Store owns only persistent system-listing simulation; Market Store remains the sole owner of carts, orders, stock and fulfillment. Named wishlists are a separate persistent selection collection and move through the existing delivery cart rather than creating a competing checkout path.
+
+The Household Hub reads Housing, Terminal, Campaign Time and ItemInstance state without creating another Housing store. Weather is deterministic and global. Collection metadata is stored on the same physical ItemInstance, display placement uses real parent furniture and stable `INSTALLED_IN_ITEM` slots, and secure/archive status is derived from actual containers.
+
+Cyberware upgrades preserve the ItemInstance ownership model: the host remains an installed BODY ItemInstance, hardware modules remain child ItemInstances, firmware/calibration remain host state and player execution passes through Service and Cyberware World Bridge. Knowledge 1.6x changes only the desktop clip boundary of relation tabs and imports no records or lore.
+
+Validation:
+
+```text
+JavaScript syntax: 339 / 339 PASS
+unit + contracts + data-I/O: 429 / 429 PASS
+missing eager/lazy assets: 0
+unexpected Knowledge data changes: 0
+browser E2E: not executed
 ```

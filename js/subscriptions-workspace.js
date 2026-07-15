@@ -2,7 +2,7 @@ window.WS_APP = window.WS_APP || {};
 
 (function initSubscriptionsWorkspace() {
   const app = window.WS_APP;
-  if (app.subscriptionWorkspace?.version === "subscriptions_responsive_accessibility_4_5") return;
+  if (app.subscriptionWorkspace?.version === "subscriptions_entitlement_projection_4_6") return;
   const legacySubscriptionsRenderer = app.renderSubscriptionsModuleLegacy || app.renderSubscriptionsModule;
   app.renderSubscriptionsModuleLegacy = legacySubscriptionsRenderer;
   const CATALOG_SECTION_LIMIT = 6;
@@ -50,7 +50,7 @@ window.WS_APP = window.WS_APP || {};
   let searchRenderTimer = 0;
 
   const BILLING_ATTENTION_STATUSES = new Set(["PENDING", "OVERDUE", "SUSPENDED"]);
-  const ENTITLEMENT_ATTENTION_STATUSES = new Set(["PENDING", "SUSPENDED", "BLOCKED", "REVOKED", "INVALID", "PARTIAL"]);
+  const ENTITLEMENT_ATTENTION_STATUSES = new Set(["PENDING", "SUSPENDED", "BLOCKED", "REVOKED", "EXPIRED", "NOT_FOUND", "INVALID", "PARTIAL"]);
 
   function escapeWorkspaceHtml(value = "") {
     return String(value ?? "")
@@ -253,6 +253,35 @@ window.WS_APP = window.WS_APP || {};
   function getContractCatalogId(contract = {}) {
     return String(contract.subscriptionCatalogId || contract.catalogId || "").trim();
   }
+  function getContractEntitlementSnapshot(contract = {}) {
+    const atTime = String(
+      app.getCampaignTimeIso?.()
+      || app.CAMPAIGN_TIME_ISO
+      || app.getCampaignDateIso?.()
+      || app.CAMPAIGN_DATE_ISO
+      || ""
+    ).trim();
+    if (typeof app.getSubscriptionContractEntitlementSnapshot === "function") {
+      try {
+        const snapshot = app.getSubscriptionContractEntitlementSnapshot(contract, atTime) || null;
+        if (snapshot && typeof snapshot === "object") return snapshot;
+      } catch (error) {
+        // Read projection falls back to persisted compatibility axes.
+      }
+    }
+    const fallbackStatus = token(
+      contract.entitlementStatus
+      || (contract.contractStatus === "CANCELLED" ? "CANCELLED" : contract.billingStatus || contract.status || "PENDING"),
+      "PENDING"
+    );
+    return {
+      allowed: ["ACTIVE", "GRACE_PERIOD"].includes(fallbackStatus),
+      status: fallbackStatus,
+      reasons: [],
+      evaluatedAt: atTime || null
+    };
+  }
+
   function getContractStatusAxes(contract = {}) {
     const compatibilityStatus = token(contract.status || "", "");
     const contractStatus = token(
@@ -266,12 +295,21 @@ window.WS_APP = window.WS_APP || {};
       || (contract.active === true ? "PAID" : "PENDING"),
       "PENDING"
     );
+    const entitlementSnapshot = getContractEntitlementSnapshot(contract);
     const entitlementStatus = token(
-      contract.entitlementStatus
+      entitlementSnapshot.status
+      || contract.entitlementStatus
       || (billingStatus === "PAID" || billingStatus === "ACTIVE" ? "ACTIVE" : billingStatus),
       "PENDING"
     );
-    return { contractStatus, billingStatus, entitlementStatus };
+    return {
+      contractStatus,
+      billingStatus,
+      entitlementStatus,
+      entitlementAllowed: entitlementSnapshot.allowed === true,
+      entitlementReasons: Array.isArray(entitlementSnapshot.reasons) ? entitlementSnapshot.reasons : [],
+      entitlementEvaluatedAt: entitlementSnapshot.evaluatedAt || null
+    };
   }
 
   function isContractCancelled(contract = {}) {
@@ -312,6 +350,7 @@ window.WS_APP = window.WS_APP || {};
 
   function getContractSearchIndex(contract = {}, catalogById = getCatalogById()) {
     const service = catalogById.get(getContractCatalogId(contract));
+    const axes = getContractStatusAxes(contract);
     return normalizeSearchText([
       contract.id,
       contract.subscriptionContractId,
@@ -322,6 +361,8 @@ window.WS_APP = window.WS_APP || {};
       contract.contractStatus,
       contract.billingStatus,
       contract.entitlementStatus,
+      axes.entitlementStatus,
+      ...axes.entitlementReasons.map((reason) => reason?.code || reason),
       getTierLabel(contract, catalogById),
       getTargetType(contract),
       contract.coverageTarget?.id,
@@ -379,7 +420,7 @@ window.WS_APP = window.WS_APP || {};
         && (!query || getContractSearchIndex(contract, catalogById).includes(query));
     });
 
-    const statusOrder = { OVERDUE: 0, SUSPENDED: 1, PENDING: 2, PAID: 3, ACTIVE: 3, CANCELLED: 9 };
+    const statusOrder = { EXPIRED: 0, REVOKED: 1, OVERDUE: 2, SUSPENDED: 3, PENDING: 4, GRACE_PERIOD: 5, PAID: 6, ACTIVE: 6, CANCELLED: 9 };
     return filtered.sort((a, b) => {
       const sort = token(state.sort || "STATUS", "STATUS");
       if (sort === "NAME") return String(a.title || "").localeCompare(String(b.title || ""), "pl");
@@ -1151,7 +1192,7 @@ window.WS_APP = window.WS_APP || {};
 
   app.renderPlayerSubscriptionsWorkspace = renderPlayerSubscriptionsWorkspace;
   app.subscriptionWorkspace = {
-    version: "subscriptions_responsive_accessibility_4_5",
+    version: "subscriptions_entitlement_projection_4_6",
     groups: SUBSCRIPTION_GROUPS.map((group) => ({ ...group, categories: [...group.categories] })),
     getState: getWorkspaceState,
     normalizeSearchText,
@@ -1162,6 +1203,7 @@ window.WS_APP = window.WS_APP || {};
     getGroupForCategory,
     getTargetType,
     getLowestPrice,
+    getContractEntitlementSnapshot,
     getContractStatusAxes,
     getContractDisplayStatus,
     isContractCancelled,

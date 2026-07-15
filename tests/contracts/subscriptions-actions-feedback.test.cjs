@@ -98,8 +98,8 @@ test("Player and Admin bundles load one shared feedback controller before comman
   const adminEnd = modules.indexOf('\n  "admin-workspace-service"', adminStart);
   const adminBundle = modules.slice(adminStart, adminEnd);
 
-  assert.ok(playerBundle.indexOf("js/subscription-action-feedback.js?v=1") < playerBundle.indexOf("js/subscriptions.js?v=34"));
-  assert.ok(adminBundle.indexOf("js/subscription-action-feedback.js?v=1") < adminBundle.indexOf("js/admin-subscriptions-control.js?v=4"));
+  assert.ok(playerBundle.indexOf("js/subscription-action-feedback.js?v=1") < playerBundle.indexOf("js/subscriptions.js?v=35"));
+  assert.ok(adminBundle.indexOf("js/subscription-action-feedback.js?v=1") < adminBundle.indexOf("js/admin-subscriptions-control.js?v=5"));
   assert.match(read("css/subscription-action-feedback.css"), /Subscriptions Actions & Feedback 4\.3/);
   assert.match(read("js/subscriptions.js"), /presentSubscriptionActionResult/);
   assert.match(read("js/admin-subscriptions-control.js"), /getCommandPreview/);

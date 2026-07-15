@@ -3,7 +3,7 @@
 ## Status
 
 ```text
-schema: market_delivery_fulfillment_6_3x
+schema: market_delivery_fulfillment_6_3x + market_datetime_scheduler_6_5x
 owner: Market Store
 phase: pre-alpha
 ```
@@ -58,7 +58,7 @@ ItemInstance or Housing commit cannot be completed safely
 
 ```js
 {
-  schemaVersion: 1,
+  schemaVersion: 2,
   shipmentId,
   marketOrderId,
   citizenId,
@@ -106,8 +106,8 @@ Payload:
 
 ```js
 {
-  schemaVersion: 6,
-  shipmentSchemaVersion: 1,
+  schemaVersion: 7,
+  shipmentSchemaVersion: 2,
   orders: [],
   shipments: []
 }
@@ -153,7 +153,7 @@ INTER_AGGLOMERATION
 *_CONTROLLED
 ```
 
-ETA uses Campaign Time and is persisted on the shipment. Rendering the Market or Housing module must not advance or complete a shipment.
+ETA uses a full Campaign Time timestamp and preserves the checkout clock when shipping-day offsets are applied. `MARKET_SHIPMENT_DUE` is delivered through `js/market-time-scheduler.js` and the shared World Time Scheduled Events queue. Rendering the Market or Housing module must not advance or complete a shipment.
 
 ## Public API
 
@@ -171,14 +171,9 @@ forceProcessMarketShipment(shipmentId, input)
 
 ## Campaign Time processing
 
-`reconcileMarketShipments()` runs:
+`js/market-time-scheduler.js` schedules one exact `MARKET_SHIPMENT_DUE` event at `shipment.etaAt`. The shared World Time queue delivers the event chronologically for interval `(previousTimeIso, currentTimeIso]`; the Market handler then calls `reconcileMarketShipment()`.
 
-```text
-- during Market Store initialization;
-- in the deferred startup reconciliation pass;
-- after ws:campaign-date-updated;
-- through explicit recovery/debug commands.
-```
+`reconcileMarketShipments()` remains available for startup recovery and explicit debug/recovery commands. Market Store does not listen to `ws:campaign-date-updated` and does not use a browser timer as the game clock.
 
 Normal processing requires `Campaign Time >= etaAt`. `forceProcessMarketShipment()` may bypass ETA only after Admin authorization.
 

@@ -39,7 +39,7 @@ test("Equipment view lists populate and reuse ItemInstance view cache through ca
   const lookups = countCatalogLookups(runtime);
 
   const first = app.getCitizenEquipmentItemInstanceViews("citizen-b");
-  assert.equal(first.length, 62);
+  assert.equal(first.length, 74);
   assert.equal(lookups.count, first.length);
 
   const firstLookupCount = lookups.count;
@@ -80,7 +80,7 @@ test("idle warmup fills ItemInstance view cache before the first Equipment read"
 
   const beforeReads = lookups.count;
   assert.equal(app.getCitizenEquipmentItemInstanceViews("citizen-a").length, 33);
-  assert.equal(app.getCitizenEquipmentItemInstanceViews("citizen-b").length, 62);
+  assert.equal(app.getCitizenEquipmentItemInstanceViews("citizen-b").length, 74);
   assert.equal(app.getInstalledCyberwareInstanceViews("citizen-b").length, 2);
   assert.equal(lookups.count, beforeReads, "first module reads after warmup must be cache hits");
 });

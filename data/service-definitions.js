@@ -214,6 +214,15 @@ window.APP_DATA.serviceProviderCapabilityManifests = [
   }
 ];
 
+window.APP_DATA.serviceProviderCapabilityManifests.forEach((provider) => {
+  const capabilities = new Set(provider.capabilities || []);
+  if (capabilities.has("CYBERWARE_INSTALL")) capabilities.add("CYBERWARE_MODULE_INSTALL");
+  if (capabilities.has("CYBERWARE_DEINSTALL")) capabilities.add("CYBERWARE_MODULE_REMOVE");
+  if (capabilities.has("CYBERWARE_REPLACE")) capabilities.add("CYBERWARE_MODULE_REPLACE");
+  if (capabilities.has("CYBERWARE_REPAIR") || capabilities.has("CYBERWARE_CALIBRATE")) capabilities.add("CYBERWARE_PERMANENT_MODIFICATION");
+  provider.capabilities = [...capabilities];
+});
+
 window.APP_DATA.serviceDefinitions = [
   {
     serviceDefinitionId: "svc-cyberware-diagnostic-standard",
@@ -379,6 +388,62 @@ window.APP_DATA.serviceDefinitions = [
     riskModel: { formulaId: "cyberware_clean_risk_v1" },
     active: true,
     revision: 2
+  },
+  {
+    serviceDefinitionId: "svc-cyberware-module-install-standard",
+    displayName: "Cyberware Module Installation",
+    serviceType: "CYBERWARE_MODULE_INSTALL",
+    domain: "CYBERWARE",
+    requiredCapabilities: ["CYBERWARE_MODULE_INSTALL"],
+    entitlementPolicy: { targetStrategy: "SUBJECT_OR_CITIZEN", providerRules: [] },
+    subjectPolicy: { minInstanceCount: 2, maxInstanceCount: 2, returnLocationRequired: false },
+    durationModel: { type: "FORMULA", formulaId: "cyberware_module_install_duration_v1", baseMinutes: 45, perInstanceMinutes: 15 },
+    pricingModel: { type: "FORMULA", formulaId: "cyberware_module_install_price_v1", basePrice: 550, perInstancePrice: 125 },
+    riskModel: { formulaId: "cyberware_module_install_risk_v1" },
+    active: true,
+    revision: 1
+  },
+  {
+    serviceDefinitionId: "svc-cyberware-module-remove-standard",
+    displayName: "Cyberware Module Removal",
+    serviceType: "CYBERWARE_MODULE_REMOVE",
+    domain: "CYBERWARE",
+    requiredCapabilities: ["CYBERWARE_MODULE_REMOVE"],
+    entitlementPolicy: { targetStrategy: "SUBJECT_OR_CITIZEN", providerRules: [] },
+    subjectPolicy: { minInstanceCount: 2, maxInstanceCount: 2, returnLocationRequired: true },
+    durationModel: { type: "FORMULA", formulaId: "cyberware_module_remove_duration_v1", baseMinutes: 45, perInstanceMinutes: 10 },
+    pricingModel: { type: "FORMULA", formulaId: "cyberware_module_remove_price_v1", basePrice: 400, perInstancePrice: 75 },
+    riskModel: { formulaId: "cyberware_module_remove_risk_v1" },
+    active: true,
+    revision: 1
+  },
+  {
+    serviceDefinitionId: "svc-cyberware-module-replace-standard",
+    displayName: "Cyberware Module Replacement",
+    serviceType: "CYBERWARE_MODULE_REPLACE",
+    domain: "CYBERWARE",
+    requiredCapabilities: ["CYBERWARE_MODULE_REPLACE"],
+    entitlementPolicy: { targetStrategy: "SUBJECT_OR_CITIZEN", providerRules: [] },
+    subjectPolicy: { minInstanceCount: 3, maxInstanceCount: 3, returnLocationRequired: true },
+    durationModel: { type: "FORMULA", formulaId: "cyberware_module_replace_duration_v1", baseMinutes: 75, perInstanceMinutes: 15 },
+    pricingModel: { type: "FORMULA", formulaId: "cyberware_module_replace_price_v1", basePrice: 750, perInstancePrice: 100 },
+    riskModel: { formulaId: "cyberware_module_replace_risk_v1" },
+    active: true,
+    revision: 1
+  },
+  {
+    serviceDefinitionId: "svc-cyberware-permanent-modification-standard",
+    displayName: "Permanent Cyberware Modification",
+    serviceType: "CYBERWARE_PERMANENT_MODIFICATION",
+    domain: "CYBERWARE",
+    requiredCapabilities: ["CYBERWARE_PERMANENT_MODIFICATION"],
+    entitlementPolicy: { targetStrategy: "SUBJECT_OR_CITIZEN", providerRules: [] },
+    subjectPolicy: { minInstanceCount: 1, maxInstanceCount: 1, returnLocationRequired: false },
+    durationModel: { type: "FORMULA", formulaId: "cyberware_permanent_modification_duration_v1", baseMinutes: 120, perInstanceMinutes: 30 },
+    pricingModel: { type: "FORMULA", formulaId: "cyberware_permanent_modification_price_v1", basePrice: 4500, perInstancePrice: 500 },
+    riskModel: { formulaId: "cyberware_permanent_modification_risk_v1" },
+    active: true,
+    revision: 1
   },
   {
     serviceDefinitionId: "svc-firmware-update-standard",

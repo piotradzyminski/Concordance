@@ -55,18 +55,19 @@ const CYBERWARE_CATALOG_DATA_SCRIPTS = [
   "data/neurochip-catalog.js?v=3",
   "data/interface-catalog.js?v=3",
   "data/service-port-catalog.js?v=3",
-  "data/body-cyberware-catalog.js?v=3"
+  "data/body-cyberware-catalog.js?v=3",
+  "data/cyberware-upgrade-catalog.js?v=1"
 ];
 
 // Read-only catalog projection used by Housing Market. This bundle intentionally
 // excludes Cyberware UI, diagnostics, maintenance, operations and controller code.
 const CYBERWARE_MARKET_PROJECTION_SCRIPTS = [
   ...CYBERWARE_CATALOG_DATA_SCRIPTS,
-  "js/cyberware-store.js?v=9",
+  "js/cyberware-store.js?v=10",
   "js/cyberware-rules.js?v=7",
-  "js/subscription-entitlement.js?v=7",
+  "js/subscription-entitlement.js?v=8",
   "js/cyberware-bodymap-panel.js?v=2",
-  "js/cyberware-items-panel.js?v=2",
+  "js/cyberware-items-panel.js?v=3",
   "js/cyberware-market-projection.js?v=1"
 ];
 
@@ -75,18 +76,19 @@ const CYBERWARE_MARKET_PROJECTION_SCRIPTS = [
 const CYBERWARE_UI_RUNTIME_SCRIPTS = [
   ...CYBERWARE_CATALOG_DATA_SCRIPTS,
   "data/firmware-registry.js?v=1",
-  "js/cyberware-store.js?v=9",
+  "js/cyberware-store.js?v=10",
   "js/cyberware-rules.js?v=7",
-  "js/subscription-entitlement.js?v=7",
+  "js/subscription-entitlement.js?v=8",
   "js/firmware-registry.js?v=1",
   "js/cyberware-authorization.js?v=8",
-  "js/cyberware-runtime.js?v=2",
+  "js/cyberware-upgrade-system.js?v=1",
+  "js/cyberware-runtime.js?v=3",
   "js/cyberware-core-stack.js?v=3",
   "js/cyberware-diagnostics.js?v=2",
   "js/cyberware-maintenance.js?v=4",
   "js/cyberware-assignment.js?v=4",
   "js/cyberware-bodymap-panel.js?v=2",
-  "js/cyberware-items-panel.js?v=2",
+  "js/cyberware-items-panel.js?v=3",
   "js/cyberware-market-projection.js?v=1",
   "js/cyberware-actions.js?v=6",
   "js/cyberware.js?v=23"
@@ -112,15 +114,15 @@ const MODULE_BUNDLES = {
     scripts: [
       "data/subscription-catalog.js?v=13",
       "data/subscription-bridge-fixtures.js?v=1",
-      "js/subscription-entitlement.js?v=7",
+      "js/subscription-entitlement.js?v=8",
       "js/subscription-catalog-store.js?v=8",
-      "js/subscription-api.js?v=5",
+      "js/subscription-api.js?v=6",
       "js/coverage-resolver.js?v=2",
       "js/subscription-notification-producer.js?v=1",
       "js/subscription-bridge-readiness.js?v=2",
       "js/subscription-action-feedback.js?v=1",
-      "js/subscriptions.js?v=34",
-      "js/subscriptions-workspace.js?v=6"
+      "js/subscriptions.js?v=35",
+      "js/subscriptions-workspace.js?v=7"
     ]
   },
   service: {
@@ -129,7 +131,7 @@ const MODULE_BUNDLES = {
     ],
     scripts: [
       "data/service-database.js?v=6",
-      "js/subscription-entitlement.js?v=7",
+      "js/subscription-entitlement.js?v=8",
       "js/service-requirements.js?v=7",
       "js/service-offer-generator.js?v=8",
       "js/service.js?v=31"
@@ -144,7 +146,7 @@ const MODULE_BUNDLES = {
       "css/equipment.css?v=129"
     ],
     scripts: [
-      "data/item-type-catalog.js?v=4",
+      "data/item-type-catalog.js?v=5",
       "js/item-type-registry.js?v=2",
       "js/item-type-operations-ui.js?v=3",
       "js/equipment-render-utils.js?v=1",
@@ -165,35 +167,40 @@ const MODULE_BUNDLES = {
   cyberware: {
     styles: [
       "css/equipment.css?v=129",
-      "css/cyberware.css?v=1"
+      "css/cyberware.css?v=2",
+      "css/cyberware-anatomy-bodymap.css?v=1"
     ],
     scripts: [
       ...CYBERWARE_UI_RUNTIME_SCRIPTS,
+      "data/cyberware-bodymap-layouts.js?v=1",
+      "js/cyberware-anatomy-bodymap.js?v=1",
       "js/equipment-render-utils.js?v=1",
       "js/equipment-items-panel.js?v=30",
       "js/cyberware-index.js?v=2",
       "js/cyberware-planner.js?v=8",
-      "js/cyberware-workspace.js?v=1",
-      "js/cyberware-module.js?v=1"
+      "js/cyberware-workspace.js?v=3",
+      "js/cyberware-module.js?v=3"
     ]
   },
   market: {
-    styles: ["css/housing.css?v=34"],
+    styles: ["css/housing.css?v=38"],
     scripts: [
       ...CYBERWARE_MARKET_PROJECTION_SCRIPTS,
       "data/market-offers.js?v=4",
-      "js/market-store.js?v=12",
-      "js/housing-market-runtime.js?v=4",
-      "js/market.js?v=1"
+      "js/market-store.js?v=13",
+      "js/market-wishlist-store.js?v=1",
+      "js/market-workspace-runtime.js?v=3",
+      "js/market.js?v=4"
     ]
   },
   housing: {
-    styles: ["css/housing.css?v=34"],
+    styles: ["css/housing.css?v=38"],
     scripts: [
-      "data/item-type-catalog.js?v=4",
-      "data/equipment-catalog.js?v=25",
+      "data/item-type-catalog.js?v=5",
+      "data/equipment-catalog.js?v=28",
+      "data/housing-household-hub.js?v=1",
       "js/item-type-registry.js?v=2",
-      "js/equipment-catalog-store.js?v=14",
+      "js/equipment-catalog-store.js?v=15",
       "js/equipment-render-utils.js?v=1",
       "js/equipment-store.js?v=34",
       "js/equipment-inventory.js?v=20",
@@ -201,8 +208,9 @@ const MODULE_BUNDLES = {
       "js/grid-pointer-session.js?v=3",
       "js/housing-grid-engine-adapter.js?v=4",
       "js/housing-storage-runtime.js?v=3",
-      "js/housing-household-runtime.js?v=2",
-      "js/housing.js?v=50"
+      "js/housing-household-runtime.js?v=3",
+      "js/housing-household-hub.js?v=1",
+      "js/housing.js?v=53"
     ]
   },
   database: {
@@ -262,10 +270,10 @@ const MODULE_BUNDLES = {
   },
   "admin-workspace-citizens": {
     scripts: [
-      "data/item-type-catalog.js?v=4",
-      "data/equipment-catalog.js?v=25",
+      "data/item-type-catalog.js?v=5",
+      "data/equipment-catalog.js?v=28",
       "js/item-type-registry.js?v=2",
-      "js/equipment-catalog-store.js?v=14",
+      "js/equipment-catalog-store.js?v=15",
       "js/equipment-render-utils.js?v=1",
       "js/equipment-store.js?v=34",
       "js/equipment-inventory.js?v=20",
@@ -283,7 +291,7 @@ const MODULE_BUNDLES = {
     ],
     scripts: [
       "js/subscription-action-feedback.js?v=1",
-      "js/admin-subscriptions-control.js?v=4",
+      "js/admin-subscriptions-control.js?v=5",
       "js/admin/workspaces/admin-workspace-subscriptions.js?v=1"
     ]
   },
@@ -1100,9 +1108,9 @@ async function renderModuleDirect(moduleId, user, module = getModuleDefinition(m
         window.WS_APP.marketDeliveryHousingByCitizen[targetCitizenId] = String(params.deliveryHousingId || "").trim();
       }
       if (targetCitizenId && params.department) {
-        window.WS_APP.housingMarketFiltersByCitizen = window.WS_APP.housingMarketFiltersByCitizen || {};
-        window.WS_APP.housingMarketFiltersByCitizen[targetCitizenId] = {
-          ...(window.WS_APP.housingMarketFiltersByCitizen[targetCitizenId] || {}),
+        window.WS_APP.marketFiltersByCitizen = window.WS_APP.marketFiltersByCitizen || {};
+        window.WS_APP.marketFiltersByCitizen[targetCitizenId] = {
+          ...(window.WS_APP.marketFiltersByCitizen[targetCitizenId] || {}),
           type: String(params.department || "ALL").trim().toUpperCase(),
           category: "ALL",
           page: 1
@@ -1113,10 +1121,10 @@ async function renderModuleDirect(moduleId, user, module = getModuleDefinition(m
           ? String(entityRef.id || "").trim()
           : String(params.marketOrderId || "").trim();
         if (targetCitizenId) {
-          window.WS_APP.housingMarketModeByCitizen = window.WS_APP.housingMarketModeByCitizen || {};
-          window.WS_APP.housingMarketModeByCitizen[targetCitizenId] = "ORDERS";
-          window.WS_APP.housingSelectedMarketOrderByCitizen = window.WS_APP.housingSelectedMarketOrderByCitizen || {};
-          if (marketOrderId) window.WS_APP.housingSelectedMarketOrderByCitizen[targetCitizenId] = marketOrderId;
+          window.WS_APP.marketModeByCitizen = window.WS_APP.marketModeByCitizen || {};
+          window.WS_APP.marketModeByCitizen[targetCitizenId] = "ORDERS";
+          window.WS_APP.marketSelectedOrderByCitizen = window.WS_APP.marketSelectedOrderByCitizen || {};
+          if (marketOrderId) window.WS_APP.marketSelectedOrderByCitizen[targetCitizenId] = marketOrderId;
         }
       }
       if (window.WS_APP.renderMarketModule) window.WS_APP.renderMarketModule(user);

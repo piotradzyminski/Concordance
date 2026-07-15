@@ -3,7 +3,7 @@
 ## Baseline
 
 ```text
-runtime: Parallel Scope Merge 15.13x
+runtime: Parallel Scope Merge 15.19x
 phase: pre-alpha
 ```
 
@@ -165,7 +165,7 @@ Market Cart Navigation 6.3.1x
 Market Notification Producer 2.5x
   one standalone MarketOrder keeps one notification identity across revisions
   World Bridge-linked orders project to the parent operation card
-  action routing opens Housing Market with the target order selected
+  action routing opens Market with the target order selected
 
 Subscriptions Responsive Accessibility 4.5
   roving tabs, labelled tabpanels, result announcements and Admin listbox navigation work at 980/720/520 px
@@ -441,3 +441,122 @@ Knowledge Relation Sidecar Layering 1.3x
 ```
 
 A corrective follow-up is appropriate only for a reproduced browser failure in allocation, transition presentation or sidecar occlusion.
+
+
+## Installed scope verification — 15.16x
+
+```text
+Knowledge Relation Article Index Tabs 1.4x
+  presentation-only; no seed or registry model changes
+
+Cyberware Anatomy Bodymap 16.0x
+  hierarchical anatomy, clean AVIF masters, independent Cyberware anchors
+
+Housing Rent Relocation Runtime 3.3x
+  atomic ItemInstance movement, compensation and recovery
+
+World Time Scheduled Events 2.3x
+  persistent exact-time queue, stable handlers, receipts and Snapshot v6
+
+Market Product Card UI Reset 6.4x
+  neutral text-only cards; visual assets and visualProfile retired
+```
+
+A corrective follow-up is appropriate only for a reproduced browser, relocation recovery, scheduled-handler or anatomy calibration failure.
+
+## Market architecture continuation after Workspace Extraction 6.4x
+
+Installed:
+
+```text
+patch_market_workspace_extraction_6.4x.zip
+```
+
+Verified boundary:
+
+```text
+Market shell / workspace = renderer and command adapter only
+Market Store = offers, carts, orders, stock, shipments, fulfillment and recovery
+Housing = Unit, Household, Storage and read-only Deliveries
+no citizen.marketOrders / citizen.shipments path in Market runtime
+```
+
+Next patch:
+
+```text
+patch_market_datetime_scheduler_6.5x.zip
+```
+
+Scope: full Campaign Time timestamps and Market-owned scheduling for activation, expiry, pickup expiry, delivery ETA and future secondary-listing events. Do not add Secondary Market listings until the timestamp scheduler is canonical and idempotent.
+
+## Installed scope verification — 15.17x
+
+```text
+Housing Furnishing Lifecycle 4.0x
+  weekly wear is grade-driven and charged only while placed in HOUSING_ROOM
+  functional modules are separate ItemInstances and do not reduce wear
+  Citizen replacement/disposal preserve one physical-instance ownership path
+
+Market Workspace Extraction 6.4x
+  Market Store remains the sole commerce lifecycle owner
+  Market workspace is loaded only by the standalone Market module
+  legacy housing-market-runtime and citizen market-order/shipment paths are retired
+
+Knowledge Relation Article Index Tabs 1.5x
+  fixed 226px desktop tabs are occluded by the opaque article panel
+  labels wrap inside a bounded wrapper without changing tab geometry
+  no Knowledge data, registry ownership or canonical content changes
+```
+
+A corrective follow-up is appropriate only for a reproduced browser, lifecycle tick, Market navigation or Knowledge layering failure.
+
+## Installed scope verification — 15.18x
+
+```text
+Housing Notification Events 2.6x
+  persisted MarketShipment is the only shipment source
+  delivered, held and capacity outcomes update one Housing notification per shipment
+  placement reservation/recovery events remain technical and do not create Inbox cards
+  routes target Housing Storage or Deliveries without mutating Market or Housing state
+
+Subscriptions Entitlement Projection 4.6
+  player list/profile and Admin list/profile use the same canonical entitlement snapshot
+  exact Campaign Time drives expiry and grace transitions within the same campaign day
+  resolver reasons and period/grace boundaries are visible without render-time persistence
+  SubscriptionAPI observes ws:campaign-time-updated
+```
+
+Further work in both scopes is findings-driven. Housing notification expansion requires a persisted canonical source event. Subscriptions provider identity normalization remains a separate data-integrity scope and must not be mixed into entitlement projection fixes.
+
+## Installed scope verification — 15.19x
+
+```text
+Market Datetime Scheduler / Secondary Listing Foundation
+  exact events replay through the canonical scheduled-event queue
+  date-only legacy fields normalize deterministically to midnight UTC
+  system listings retain stable IDs, revisions and scheduled lifecycle
+  player purchase and player-created listings remain disabled in the foundation
+
+Market Modal and Wishlist
+  Product Inspector is modal and restores focus
+  named wishlists persist independently from the cart
+  moving a wishlist reuses the existing delivery cart and quantity limits
+
+Housing Household Hub
+  weather is global and deterministic from Campaign Time
+  collection metadata remains on canonical ItemInstances
+  display placement uses real furniture slots and INSTALLED_IN_ITEM
+  secure/archive protection derives from actual containers
+
+Cyberware Upgrade System
+  hardware modules remain physical child ItemInstances
+  typed slots and capacity are definition-owned
+  player changes route through Service and Cyberware World Bridge
+  firmware, calibration and permanent modifications remain distinct layers
+
+Knowledge Tabs 1.6x
+  desktop clipping hides the buried tab continuation at the article edge
+  no Knowledge records, lore or registry ownership changed
+```
+
+Recommended next work is findings-driven browser validation. After that, the natural Market continuation is `Market Secondary Fulfillment 7.1x`: reserve one active listing and reuse the existing Market cart/order/fulfillment contracts. Seller escrow, player-created listings and marketplace settlement should remain separate later scopes.

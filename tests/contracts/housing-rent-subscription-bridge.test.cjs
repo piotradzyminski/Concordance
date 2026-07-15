@@ -130,6 +130,32 @@ test("An area-changing tier update prepares relocation and an ItemInstance trans
   assert.deepEqual(after.rentTransition.transferManifest.instanceIds.sort(), ["placed-chair", "stored-item"]);
 });
 
+test("Relocation detaches Citizen modules from operator furnishings without moving the operator asset", () => {
+  const state = createRuntime();
+  const current = state.getCitizen().housing[0];
+  state.setInstances([
+    {
+      instanceId: "operator-bed",
+      ownerId: "citizen-rent-test",
+      location: { type: "HOUSING_ROOM", housingRecordId: current.id, roomId: "main" },
+      instanceData: { householdLifecycle: { ownershipType: "RENTAL_FURNISHING", housingRecordId: current.id } }
+    },
+    {
+      instanceId: "citizen-canopy",
+      ownerId: "citizen-rent-test",
+      location: { type: "INSTALLED_IN_ITEM", parentItemInstanceId: "operator-bed", moduleSlotId: "comfort-1" }
+    }
+  ]);
+  state.setContract({ tierId: "housing-g-t3", revision: 2 });
+  const result = state.runtime.window.WS_APP.reconcileHousingRentContract("rent-contract-test");
+  const manifest = state.getCitizen().housing[0].rentTransition.transferManifest;
+  assert.equal(result.resultCode, "HOUSING_RELOCATION_PREPARED");
+  assert.deepEqual(manifest.operatorInstanceIds, ["operator-bed"]);
+  assert.deepEqual(manifest.detachedOperatorModuleInstanceIds, ["citizen-canopy"]);
+  assert.ok(manifest.instanceIds.includes("citizen-canopy"));
+  assert.equal(manifest.instanceIds.includes("operator-bed"), false);
+});
+
 test("Cancellation keeps a non-empty unit in release-pending and finalizes after items are removed", () => {
   const state = createRuntime();
   const current = state.getCitizen().housing[0];
@@ -157,7 +183,8 @@ test("Market is included in visible module sections for Admin and Citizen", () =
 
 test("Rent bridge loads after SubscriptionAPI and before the module shell", () => {
   const index = read("index.html");
-  assert.match(index, /js\/housing-rent-subscription-bridge\.js\?v=1/);
-  assert.ok(index.indexOf("js/subscription-api.js?v=5") < index.indexOf("js/housing-rent-subscription-bridge.js?v=1"));
-  assert.ok(index.indexOf("js/housing-rent-subscription-bridge.js?v=1") < index.indexOf("js/modules.js?v=302"));
+  assert.match(index, /js\/housing-rent-subscription-bridge\.js\?v=3/);
+  assert.ok(index.indexOf("js/subscription-api.js?v=6") < index.indexOf("js/housing-rent-subscription-bridge.js?v=3"));
+  assert.ok(index.indexOf("js/housing-rent-subscription-bridge.js?v=3") < index.indexOf("js/modules.js?v=309"));
+
 });

@@ -7494,165 +7494,729 @@ window.APP_DATA.itemInstances = [
       "firmwareUpdateRequired": true
     }
   },
-{
-  "instanceId": "household-b-rest-cot",
-  "definitionId": "eqcat-household-rest-cot",
-  "schemaVersion": 1,
-  "ownerId": "citizen-b",
-  "quantity": 1,
-  "lifecycleState": "UNPACKAGED",
-  "location": {
-    "type": "HOUSING_STORAGE",
-    "storageUnitId": "housing-storage-citizen-b-furnishing",
-    "gridX": 1,
-    "gridY": 1,
-    "rotation": 0
+  {
+    "instanceId": "household-b-rest-cot",
+    "definitionId": "eqcat-household-rest-cot",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 1,
+      "gridY": 1,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": []
   },
-  "durability": {
-    "current": 100,
-    "maximumOverride": null
+  {
+    "instanceId": "household-b-med-locker",
+    "definitionId": "eqcat-household-med-locker",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 3,
+      "gridY": 1,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": []
   },
-  "hardwareIdentity": null,
-  "packaging": null,
-  "cyberwareState": null,
-  "authorizationRefs": null,
-  "flags": {
-    "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
+  {
+    "instanceId": "household-b-utility-chair",
+    "definitionId": "eqcat-household-utility-chair",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 4,
+      "gridY": 1,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": []
   },
-  "acquisition": {
-    "sourceType": "PRE_ALPHA_TEST_FIXTURE",
-    "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
-    "acquiredAt": "2109-02-13T00:00:00.000Z"
+  {
+    "instanceId": "household-b-utility-locker",
+    "definitionId": "eqcat-household-utility-locker",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 5,
+      "gridY": 1,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": []
   },
-  "serviceHistory": []
-},
-{
-  "instanceId": "household-b-med-locker",
-  "definitionId": "eqcat-household-med-locker",
-  "schemaVersion": 1,
-  "ownerId": "citizen-b",
-  "quantity": 1,
-  "lifecycleState": "UNPACKAGED",
-  "location": {
-    "type": "HOUSING_STORAGE",
-    "storageUnitId": "housing-storage-citizen-b-furnishing",
-    "gridX": 3,
-    "gridY": 1,
-    "rotation": 0
+  {
+    "instanceId": "household-b-fold-table",
+    "definitionId": "eqcat-household-fold-table",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_ROOM",
+      "housingRecordId": "housing-citizen-b-secured-test",
+      "roomId": "housing-citizen-b-secured-test-main",
+      "gridX": 2,
+      "gridY": 3,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": []
   },
-  "durability": {
-    "current": 100,
-    "maximumOverride": null
+  {
+    "instanceId": "household-b-underbed-storage-module",
+    "definitionId": "eqcat-household-underbed-storage-module",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 1,
+      "gridY": 4,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingLifecycle": "HOUSING_FURNISHING_LIFECYCLE_4_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_FURNISHING_LIFECYCLE_4_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Underbed Storage Module",
+      "category": "HOUSEHOLD",
+      "itemType": "GENERIC_ITEM",
+      "footprint": "1x1",
+      "tags": [
+        "HOUSEHOLD",
+        "FURNISHING_UPGRADE",
+        "STORAGE"
+      ],
+      "householdUpgradeProfile": {
+        "slotType": "STORAGE"
+      }
+    }
   },
-  "hardwareIdentity": null,
-  "packaging": null,
-  "cyberwareState": null,
-  "authorizationRefs": null,
-  "flags": {
-    "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
+  {
+    "instanceId": "household-b-acoustic-canopy-module",
+    "definitionId": "eqcat-household-acoustic-canopy-module",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 2,
+      "gridY": 4,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingLifecycle": "HOUSING_FURNISHING_LIFECYCLE_4_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_FURNISHING_LIFECYCLE_4_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Acoustic Privacy Canopy",
+      "category": "HOUSEHOLD",
+      "itemType": "GENERIC_ITEM",
+      "footprint": "1x1",
+      "tags": [
+        "HOUSEHOLD",
+        "FURNISHING_UPGRADE",
+        "COMFORT"
+      ],
+      "householdUpgradeProfile": {
+        "slotType": "COMFORT"
+      }
+    }
   },
-  "acquisition": {
-    "sourceType": "PRE_ALPHA_TEST_FIXTURE",
-    "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
-    "acquiredAt": "2109-02-13T00:00:00.000Z"
+  {
+    "instanceId": "household-b-terminal-dock-module",
+    "definitionId": "eqcat-household-terminal-dock-module",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 3,
+      "gridY": 4,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingLifecycle": "HOUSING_FURNISHING_LIFECYCLE_4_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_FURNISHING_LIFECYCLE_4_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Terminal Work Dock",
+      "category": "HOUSEHOLD",
+      "itemType": "GENERIC_ITEM",
+      "footprint": "1x1",
+      "tags": [
+        "HOUSEHOLD",
+        "FURNISHING_UPGRADE",
+        "UTILITY"
+      ],
+      "householdUpgradeProfile": {
+        "slotType": "UTILITY"
+      }
+    }
   },
-  "serviceHistory": []
-},
-{
-  "instanceId": "household-b-utility-chair",
-  "definitionId": "eqcat-household-utility-chair",
-  "schemaVersion": 1,
-  "ownerId": "citizen-b",
-  "quantity": 1,
-  "lifecycleState": "UNPACKAGED",
-  "location": {
-    "type": "HOUSING_STORAGE",
-    "storageUnitId": "housing-storage-citizen-b-furnishing",
-    "gridX": 4,
-    "gridY": 1,
-    "rotation": 0
+  {
+    "instanceId": "household-b-cold-compartment-module",
+    "definitionId": "eqcat-household-cold-compartment-module",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 4,
+      "gridY": 4,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingLifecycle": "HOUSING_FURNISHING_LIFECYCLE_4_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_FURNISHING_LIFECYCLE_4_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Cold Compartment Module",
+      "category": "HOUSEHOLD",
+      "itemType": "GENERIC_ITEM",
+      "footprint": "1x1",
+      "tags": [
+        "HOUSEHOLD",
+        "FURNISHING_UPGRADE",
+        "UTILITY"
+      ],
+      "householdUpgradeProfile": {
+        "slotType": "UTILITY"
+      }
+    }
   },
-  "durability": {
-    "current": 100,
-    "maximumOverride": null
+  {
+    "instanceId": "household-b-secure-lock-module",
+    "definitionId": "eqcat-household-secure-lock-module",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 5,
+      "gridY": 4,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingLifecycle": "HOUSING_FURNISHING_LIFECYCLE_4_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_FURNISHING_LIFECYCLE_4_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Secure Lock Module",
+      "category": "HOUSEHOLD",
+      "itemType": "GENERIC_ITEM",
+      "footprint": "1x1",
+      "tags": [
+        "HOUSEHOLD",
+        "FURNISHING_UPGRADE",
+        "SECURITY"
+      ],
+      "householdUpgradeProfile": {
+        "slotType": "SECURITY"
+      }
+    }
   },
-  "hardwareIdentity": null,
-  "packaging": null,
-  "cyberwareState": null,
-  "authorizationRefs": null,
-  "flags": {
-    "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
+  {
+    "instanceId": "household-b-display-rail-module",
+    "definitionId": "eqcat-household-display-rail-module",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 6,
+      "gridY": 4,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdFurnishingLifecycle": "HOUSING_FURNISHING_LIFECYCLE_4_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_FURNISHING_LIFECYCLE_4_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Display Rail Module",
+      "category": "HOUSEHOLD",
+      "itemType": "GENERIC_ITEM",
+      "footprint": "1x1",
+      "tags": [
+        "HOUSEHOLD",
+        "FURNISHING_UPGRADE",
+        "DISPLAY"
+      ],
+      "householdUpgradeProfile": {
+        "slotType": "DISPLAY"
+      }
+    }
   },
-  "acquisition": {
-    "sourceType": "PRE_ALPHA_TEST_FIXTURE",
-    "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
-    "acquiredAt": "2109-02-13T00:00:00.000Z"
+  {
+    "instanceId": "household-b-memory-shelf",
+    "definitionId": "eqcat-household-memory-shelf",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 3,
+      "gridY": 3,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdHub": "HOUSING_HOUSEHOLD_HUB_5_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_HOUSEHOLD_HUB_5_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Memory Display Shelf",
+      "category": "HOUSEHOLD",
+      "itemType": "HOUSEHOLD_FURNISHING",
+      "footprint": "2x1",
+      "tags": [
+        "HOUSEHOLD",
+        "FURNITURE",
+        "DISPLAY"
+      ],
+      "householdDisplayProfile": {
+        "slotCount": 4
+      }
+    }
   },
-  "serviceHistory": []
-},
-{
-  "instanceId": "household-b-utility-locker",
-  "definitionId": "eqcat-household-utility-locker",
-  "schemaVersion": 1,
-  "ownerId": "citizen-b",
-  "quantity": 1,
-  "lifecycleState": "UNPACKAGED",
-  "location": {
-    "type": "HOUSING_STORAGE",
-    "storageUnitId": "housing-storage-citizen-b-furnishing",
-    "gridX": 5,
-    "gridY": 1,
-    "rotation": 0
+  {
+    "instanceId": "household-b-secure-archive-cabinet",
+    "definitionId": "eqcat-household-secure-archive-cabinet",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 6,
+      "gridY": 1,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdHub": "HOUSING_HOUSEHOLD_HUB_5_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_HOUSEHOLD_HUB_5_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Secure Archive Cabinet",
+      "category": "HOUSEHOLD",
+      "itemType": "HOUSEHOLD_FURNISHING",
+      "footprint": "1x2",
+      "tags": [
+        "HOUSEHOLD",
+        "FURNITURE",
+        "SECURE_STORAGE",
+        "ARCHIVAL_STORAGE"
+      ],
+      "householdDisplayProfile": {
+        "slotCount": 1
+      }
+    }
   },
-  "durability": {
-    "current": 100,
-    "maximumOverride": null
+  {
+    "instanceId": "household-b-ambient-light-panel",
+    "definitionId": "eqcat-household-ambient-light-panel",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-furnishing",
+      "gridX": 5,
+      "gridY": 3,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdHub": "HOUSING_HOUSEHOLD_HUB_5_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_HOUSEHOLD_HUB_5_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Ambient Light Panel",
+      "category": "HOUSEHOLD",
+      "itemType": "HOUSEHOLD_FURNISHING",
+      "footprint": "1x1",
+      "tags": [
+        "HOUSEHOLD",
+        "FURNITURE",
+        "DECORATION",
+        "AMBIENT"
+      ]
+    }
   },
-  "hardwareIdentity": null,
-  "packaging": null,
-  "cyberwareState": null,
-  "authorizationRefs": null,
-  "flags": {
-    "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
+  {
+    "instanceId": "household-b-campaign-memento",
+    "definitionId": "eqcat-collectible-campaign-memento",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-secured",
+      "gridX": 4,
+      "gridY": 2,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdHub": "HOUSING_HOUSEHOLD_HUB_5_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_HOUSEHOLD_HUB_5_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Campaign Memento Token",
+      "category": "PERSONAL",
+      "itemType": "GENERIC_ITEM",
+      "footprint": "1x1",
+      "tags": [
+        "COLLECTIBLE",
+        "MEMENTO",
+        "DISPLAY_ITEM"
+      ],
+      "householdHub": {
+        "collection": true,
+        "important": true,
+        "category": "MEMENTO",
+        "note": "Pre-alpha collection fixture.",
+        "provenance": "Campaign record"
+      }
+    }
   },
-  "acquisition": {
-    "sourceType": "PRE_ALPHA_TEST_FIXTURE",
-    "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
-    "acquiredAt": "2109-02-13T00:00:00.000Z"
+  {
+    "instanceId": "household-b-memory-shard",
+    "definitionId": "eqcat-collectible-memory-shard",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-secured",
+      "gridX": 2,
+      "gridY": 3,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdHub": "HOUSING_HOUSEHOLD_HUB_5_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_HOUSEHOLD_HUB_5_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Recovered Memory Shard",
+      "category": "MEDIA",
+      "itemType": "GENERIC_ITEM",
+      "footprint": "1x1",
+      "tags": [
+        "COLLECTIBLE",
+        "MEDIA",
+        "MEMENTO",
+        "DISPLAY_ITEM"
+      ],
+      "householdHub": {
+        "collection": true,
+        "important": false,
+        "category": "MEDIA",
+        "note": "Test content; not canonical lore.",
+        "provenance": "Recovered media"
+      }
+    }
   },
-  "serviceHistory": []
-},
-{
-  "instanceId": "household-b-fold-table",
-  "definitionId": "eqcat-household-fold-table",
-  "schemaVersion": 1,
-  "ownerId": "citizen-b",
-  "quantity": 1,
-  "lifecycleState": "UNPACKAGED",
-  "location": {
-    "type": "HOUSING_ROOM",
-    "housingRecordId": "housing-citizen-b-secured-test",
-    "roomId": "housing-citizen-b-secured-test-main",
-    "gridX": 2,
-    "gridY": 3,
-    "rotation": 0
-  },
-  "durability": {
-    "current": 100,
-    "maximumOverride": null
-  },
-  "hardwareIdentity": null,
-  "packaging": null,
-  "cyberwareState": null,
-  "authorizationRefs": null,
-  "flags": {
-    "householdFurnishingFixture": "HOUSEHOLD_FURNISHING_WORKSPACE_2_1X"
-  },
-  "acquisition": {
-    "sourceType": "PRE_ALPHA_TEST_FIXTURE",
-    "sourceId": "HOUSEHOLD_FURNISHING_FIXTURE_2_1X",
-    "acquiredAt": "2109-02-13T00:00:00.000Z"
-  },
-  "serviceHistory": []
-}
+  {
+    "instanceId": "household-b-service-token",
+    "definitionId": "eqcat-collectible-service-token",
+    "schemaVersion": 1,
+    "ownerId": "citizen-b",
+    "quantity": 1,
+    "lifecycleState": "UNPACKAGED",
+    "location": {
+      "type": "HOUSING_STORAGE",
+      "storageUnitId": "housing-storage-citizen-b-secured",
+      "gridX": 3,
+      "gridY": 3,
+      "rotation": 0
+    },
+    "durability": {
+      "current": 100,
+      "maximumOverride": null
+    },
+    "hardwareIdentity": null,
+    "packaging": null,
+    "cyberwareState": null,
+    "authorizationRefs": null,
+    "flags": {
+      "householdHub": "HOUSING_HOUSEHOLD_HUB_5_0X"
+    },
+    "acquisition": {
+      "sourceType": "PRE_ALPHA_TEST_FIXTURE",
+      "sourceId": "HOUSING_HOUSEHOLD_HUB_5_0X",
+      "acquiredAt": "2109-02-13T00:00:00.000Z"
+    },
+    "serviceHistory": [],
+    "instanceData": {
+      "name": "Service Recognition Token",
+      "category": "PERSONAL",
+      "itemType": "GENERIC_ITEM",
+      "footprint": "1x1",
+      "tags": [
+        "COLLECTIBLE",
+        "TROPHY",
+        "DISPLAY_ITEM"
+      ],
+      "householdHub": {
+        "collection": true,
+        "important": false,
+        "category": "TROPHY",
+        "note": "Test content; not canonical lore.",
+        "provenance": "Service record"
+      }
+    }
+  }
 ];

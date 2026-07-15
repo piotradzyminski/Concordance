@@ -418,10 +418,10 @@ function renderSystemRelatedBlocks(article, user, registry) {
 function renderSystemRelatedTermBlock(references, user) {
   const links = references.map((reference) => {
     const entry = window.WS_APP.resolveEntryRef?.(reference, { includeArchived: user?.role === "admin" });
-    if (!entry) return `<span class="knowledge-related-missing">${escapeHtml(reference)}</span>`;
+    if (!entry) return `<span class="knowledge-related-missing"><span class="knowledge-related-link__label">${escapeHtml(reference)}</span></span>`;
     return `
       <button class="knowledge-related-link" type="button" data-related-entry-id="${escapeHtml(entry.id)}" title="Open ${escapeHtml(entry.term || entry.title || entry.id)}">
-        ${escapeHtml(entry.term || entry.title || reference)}
+        <span class="knowledge-related-link__label">${escapeHtml(entry.term || entry.title || reference)}</span>
       </button>
     `;
   }).join("");
@@ -437,10 +437,10 @@ function renderSystemRelatedTermBlock(references, user) {
 function renderSystemRelatedRecordBlock(label, references, user, registry) {
   const links = references.map((reference) => {
     const record = window.WS_APP.resolveSystemRecordRef?.(reference, { registry, includeArchived: user?.role === "admin" });
-    if (!record) return `<span class="knowledge-related-missing">${escapeHtml(reference)}</span>`;
+    if (!record) return `<span class="knowledge-related-missing"><span class="knowledge-related-link__label">${escapeHtml(reference)}</span></span>`;
     return `
       <button class="knowledge-related-link" type="button" data-related-system-id="${escapeHtml(record.id)}" title="Open ${escapeHtml(record.title || record.id)}">
-        ${escapeHtml(record.title || reference)}
+        <span class="knowledge-related-link__label">${escapeHtml(record.title || reference)}</span>
       </button>
     `;
   }).join("");

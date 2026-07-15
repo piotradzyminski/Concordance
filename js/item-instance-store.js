@@ -33,7 +33,8 @@ window.WS_APP.state = window.WS_APP.state || {};
     "name", "title", "summary", "description", "publicDescription",
     "primarySlot", "targetSlot", "slot", "slots", "compatibleSlots",
     "slotLevel", "descendantPolicy", "compatibilityGroup", "compatibleWith",
-    "requiredComponentStandards", "itemType", "itemTypeLabel", "itemTypeProfile", "capabilities"
+    "requiredComponentStandards", "itemType", "itemTypeLabel", "itemTypeProfile", "capabilities",
+    "moduleProfile", "upgradeCapacity", "moduleSlots", "moduleSlotCount", "firmwareCapacity", "permanentModificationCapacity"
   ];
 
   const LIFECYCLE_STATES = new Set([
@@ -357,6 +358,7 @@ window.WS_APP.state = window.WS_APP.state || {};
               installedBodySlots: normalizeStringList(location.bodySlots),
               installedModules: [],
               installedFirmware: [],
+              permanentModifications: [],
               calibration: { profile: "FACTORY", quality: 100 }
             }
           : null,
@@ -376,6 +378,7 @@ window.WS_APP.state = window.WS_APP.state || {};
         installedBodySlots: normalizeStringList(normalized.cyberwareState?.installedBodySlots || location.bodySlots),
         installedModules: Array.isArray(normalized.cyberwareState?.installedModules) ? clone(normalized.cyberwareState.installedModules) : [],
         installedFirmware: Array.isArray(normalized.cyberwareState?.installedFirmware) ? clone(normalized.cyberwareState.installedFirmware) : [],
+        permanentModifications: Array.isArray(normalized.cyberwareState?.permanentModifications) ? clone(normalized.cyberwareState.permanentModifications) : [],
         calibration: normalized.cyberwareState?.calibration && typeof normalized.cyberwareState.calibration === "object"
           ? clone(normalized.cyberwareState.calibration)
           : { profile: "FACTORY", quality: 100 }

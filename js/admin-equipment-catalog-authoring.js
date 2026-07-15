@@ -181,7 +181,6 @@ window.WS_APP = window.WS_APP || {};
     source.equipProfile = source.equipProfile && typeof source.equipProfile === "object" && !Array.isArray(source.equipProfile) ? clone(source.equipProfile) : {};
     source.containerProfile = source.containerProfile && typeof source.containerProfile === "object" && !Array.isArray(source.containerProfile) ? clone(source.containerProfile) : null;
     source.mountProfile = source.mountProfile && typeof source.mountProfile === "object" && !Array.isArray(source.mountProfile) ? clone(source.mountProfile) : null;
-    source.visualProfile = source.visualProfile && typeof source.visualProfile === "object" && !Array.isArray(source.visualProfile) ? clone(source.visualProfile) : {};
     return typeof app.normalizeEquipmentCatalogItem === "function"
       ? app.normalizeEquipmentCatalogItem(source)
       : source;

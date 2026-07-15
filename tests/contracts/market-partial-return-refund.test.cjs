@@ -6,7 +6,7 @@ const { readProjectFile, extractFunctionSource } = require("../helpers/source-co
 
 test("Market exposes a revisioned partial return API without replacing the full refund boundary", () => {
   const source = readProjectFile("js/market-store.js");
-  assert.match(source, /MARKET_ORDER_SCHEMA_VERSION = 6/);
+  assert.match(source, /MARKET_ORDER_SCHEMA_VERSION = 7/);
   assert.match(source, /partialReturns:/);
   assert.match(source, /quoteMarketOrderPartialReturn/);
   assert.match(source, /requestMarketOrderPartialReturn/);
@@ -44,7 +44,7 @@ test("Partial return recovery is idempotent and preserves completed per-line rec
 });
 
 test("Housing Market renders selectable units and request, execute, retry and withdraw commands", () => {
-  const source = readProjectFile("js/housing-market-runtime.js");
+  const source = readProjectFile("js/market-workspace-runtime.js");
   assert.match(source, /renderCanonicalMarketPartialReturnWorkspace/);
   assert.match(source, /data-housing-market-partial-return-instance/);
   assert.match(source, /REQUEST SELECTED RETURN/);
@@ -58,10 +58,12 @@ test("Housing Market renders selectable units and request, execute, retry and wi
 test("Partial return bundle versions are cache-busted consistently", () => {
   const index = readProjectFile("index.html");
   const modules = readProjectFile("js/modules.js");
-  assert.match(index, /js\/market-store\.js\?v=12/);
-  assert.match(index, /js\/modules\.js\?v=302/);
-  assert.match(modules, /css\/housing\.css\?v=34/);
-  assert.match(modules, /js\/market-store\.js\?v=12/);
-  assert.match(modules, /js\/housing\.js\?v=50/);
-  assert.match(modules, /js\/housing-market-runtime\.js\?v=4/);
+  assert.match(index, /js\/market-store\.js\?v=13/);
+  assert.match(index, /js\/modules\.js\?v=309/);
+  assert.match(modules, /css\/housing\.css\?v=38/);
+  assert.match(modules, /js\/market-store\.js\?v=13/);
+  assert.match(modules, /js\/housing\.js\?v=53/);
+  assert.match(modules, /js\/market-workspace-runtime\.js\?v=3/);
+
+
 });

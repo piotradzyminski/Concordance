@@ -165,8 +165,7 @@ window.WS_APP = window.WS_APP || {};
       itemTypeProfile: {},
       equipProfile: {},
       containerProfile: null,
-      mountProfile: null,
-      visualProfile: {}
+      mountProfile: null
     };
   }
 
@@ -270,9 +269,6 @@ window.WS_APP = window.WS_APP || {};
             </label>
             <label class="admin-form-field--wide">Mount profile JSON or null
               <textarea name="mountProfile" rows="5">${escapeHtml(jsonText(definition.mountProfile, null))}</textarea>
-            </label>
-            <label class="admin-form-field--wide">Visual profile JSON
-              <textarea name="visualProfile" rows="4">${escapeHtml(jsonText(definition.visualProfile, {}))}</textarea>
             </label>
             <label class="admin-form-field--wide">Operator note
               <input name="operatorNote" placeholder="Required for Save Draft and Publish; preview is read-only" />
@@ -532,8 +528,7 @@ window.WS_APP = window.WS_APP || {};
         itemTypeProfile: parseJsonField(formData, "itemTypeProfile", {}),
         equipProfile: parseJsonField(formData, "equipProfile", {}),
         containerProfile: parseJsonField(formData, "containerProfile", null),
-        mountProfile: parseJsonField(formData, "mountProfile", null),
-        visualProfile: parseJsonField(formData, "visualProfile", {})
+        mountProfile: parseJsonField(formData, "mountProfile", null)
       },
       sourceDefinitionId: String(formData.get("sourceDefinitionId") || ""),
       expectedRevision: Number(formData.get("expectedRevision") || 0),

@@ -77,9 +77,10 @@ test("Subscriptions workspace is the canonical four-view player shell", () => {
 
   assert.match(index, /css\/system-tabs\.css\?v=8/);
   assert.match(modules, /subscriptions:\s*\{[\s\S]*css\/subscription-action-feedback\.css\?v=1[\s\S]*css\/subscriptions\.css\?v=21/);
-  assert.match(modules, /js\/subscriptions-workspace\.js\?v=6/);
+  assert.match(modules, /js\/subscriptions-workspace\.js\?v=7/);
 
-  assert.match(index, /js\/modules\.js\?v=302/);
+  assert.match(index, /js\/modules\.js\?v=309/);
+
   assert.doesNotMatch(index, /<script[^>]+js\/subscriptions\.js/);
   assert.doesNotMatch(index, /<script[^>]+js\/subscriptions-workspace\.js/);
 });
@@ -234,7 +235,7 @@ test("Workspace CSS owns grouped layouts, filter chips and responsive breakpoint
   assert.match(workspaceSource, /Current cycle, coverage and payment status\./);
   assert.match(workspaceSource, /<b>₡<\/b>/);
   assert.match(workspaceSource, /cancelScheduledWorkspaceRender/);
-  assert.match(workspaceSource, /subscriptions_responsive_accessibility_4_5/);
+  assert.match(workspaceSource, /subscriptions_entitlement_projection_4_6/);
   assert.match(workspaceSource, /data-subscription-action-feedback-scope="PLAYER"/);
   assert.match(workspaceSource, /currentRoot !== workspaceRoot/);
   assert.match(workspaceSource, /captureWorkspaceScroll/);

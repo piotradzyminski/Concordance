@@ -148,7 +148,7 @@ If the supplied policy returns a future `NEXT_AVAILABLE` timestamp outside the c
 }
 ```
 
-Terminal Inbox does not persist a deferred queue in this patch. The owning domain must keep the future schedule and emit after it becomes due.
+Terminal Inbox does not persist a deferred queue. The owning domain may keep the future schedule in its own record or create a generic World Time Scheduled Event whose registered handler emits through Notification API after it becomes due. This patch does not automatically connect Inbox to that queue.
 
 ## Campaign Data I/O
 
@@ -162,7 +162,8 @@ This patch does not add:
 organization operating-hour records
 delivery scheduling
 message transport delay simulation
-a deferred Inbox queue
+an Inbox-owned deferred queue
 automatic domain-message generators
+organization or location operating-hour assignments
 Campaign Time mutation
 ```

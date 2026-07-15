@@ -28,9 +28,12 @@ test("Cyberware is registered as a standalone player module", () => {
   assert.match(cyberwareBundle, /js\/equipment-render-utils\.js\?v=1/);
   assert.match(cyberwareBundle, /js\/equipment-items-panel\.js\?v=30/);
   assert.match(cyberwareBundle, /js\/cyberware-index\.js\?v=2/);
+  assert.match(cyberwareBundle, /data\/cyberware-bodymap-layouts\.js\?v=1/);
+  assert.match(cyberwareBundle, /js\/cyberware-anatomy-bodymap\.js\?v=1/);
+  assert.match(cyberwareBundle, /css\/cyberware-anatomy-bodymap\.css\?v=1/);
   assert.match(cyberwareBundle, /js\/cyberware-planner\.js\?v=8/);
-  assert.match(cyberwareBundle, /js\/cyberware-workspace\.js\?v=1/);
-  assert.match(cyberwareBundle, /js\/cyberware-module\.js\?v=1/);
+  assert.match(cyberwareBundle, /js\/cyberware-workspace\.js\?v=3/);
+  assert.match(cyberwareBundle, /js\/cyberware-module\.js\?v=3/);
   assert.match(modules, /moduleId === "cyberware"/);
   assert.match(modules, /renderCyberwareModule/);
 });

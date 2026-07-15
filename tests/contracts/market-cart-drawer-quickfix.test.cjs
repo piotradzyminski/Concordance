@@ -17,9 +17,9 @@ function getFunctionBlock(source, name, nextName) {
 }
 
 test("Market cart summary is grouped in one sticky footer below the independently scrolling lines", () => {
-  const source = read("js/housing-market-runtime.js");
+  const source = read("js/market-workspace-runtime.js");
   const css = read("css/housing.css");
-  const drawer = getFunctionBlock(source, "renderHousingMarketCartDrawer", "getHousingShipmentRows");
+  const drawer = getFunctionBlock(source, "renderMarketWorkspaceCartDrawer", "getCanonicalMarketWorkspaceOrders");
 
   assert.match(drawer, /<footer class="housing-market-cart-summary">/);
   assert.match(drawer, /housing-market-cart-quote/);

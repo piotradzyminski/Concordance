@@ -56,7 +56,11 @@ window.WS_APP = window.WS_APP || {};
 
   function findLinkedRecordIndex(records = [], contractId = "") {
     const requested = id(contractId);
-    return records.findIndex((record) => id(record?.linkedSubscriptionId || record?.subscriptionContractId) === requested);
+    const candidates = records
+      .map((record, index) => ({ record, index }))
+      .filter(({ record }) => id(record?.linkedSubscriptionId || record?.subscriptionContractId) === requested);
+    const active = candidates.find(({ record }) => record?.archived !== true && token(record?.status) !== "RELEASED");
+    return active?.index ?? candidates[0]?.index ?? -1;
   }
 
   function makeUnitId(contract = {}) {
@@ -190,25 +194,56 @@ window.WS_APP = window.WS_APP || {};
 
   function getUnitItemManifest(citizenId = "", record = {}) {
     const storageIds = new Set((Array.isArray(record?.storageUnits) ? record.storageUnits : []).map((unit) => id(unit?.id)).filter(Boolean));
-    const instances = app.getCitizenEquipmentItemInstances?.(citizenId) || [];
+    const allInstances = app.getCitizenItemInstances?.(citizenId, { includeBody: true, includeDisposed: false })
+      || app.getCitizenEquipmentItemInstances?.(citizenId)
+      || [];
+    const instances = Array.isArray(allInstances) ? allInstances : [];
     const stored = [];
     const furnished = [];
     const other = [];
-    (Array.isArray(instances) ? instances : []).forEach((instance) => {
+    const operator = [];
+    const operatorInstanceIds = new Set();
+
+    instances.forEach((instance) => {
       const location = instance?.location || {};
       const type = token(location.type);
       const instanceId = id(instance.instanceId || instance.id);
       if (!instanceId) return;
-      if (type === "HOUSING_ROOM" && id(location.housingRecordId) === id(record.id)) furnished.push(instanceId);
-      else if (type === "HOUSING_STORAGE" && storageIds.has(id(location.storageUnitId || location.housingStorageId || location.containerInstanceId))) stored.push(instanceId);
-      else if (id(location.housingRecordId) === id(record.id)) other.push(instanceId);
+      const ownershipType = token(instance?.instanceData?.householdLifecycle?.ownershipType || instance?.flags?.housingOwnershipType || "CITIZEN_FURNISHING");
+      const belongsToUnit = (type === "HOUSING_ROOM" && id(location.housingRecordId) === id(record.id))
+        || (type === "HOUSING_STORAGE" && storageIds.has(id(location.storageUnitId || location.housingStorageId || location.containerInstanceId)))
+        || id(instance?.instanceData?.householdLifecycle?.housingRecordId) === id(record.id);
+      if (!belongsToUnit) return;
+      if (["FIXED_FIXTURE", "RENTAL_FURNISHING"].includes(ownershipType)) {
+        operator.push(instanceId);
+        operatorInstanceIds.add(instanceId);
+        return;
+      }
+      if (type === "HOUSING_ROOM") furnished.push(instanceId);
+      else if (type === "HOUSING_STORAGE") stored.push(instanceId);
+      else other.push(instanceId);
     });
+
+    const detachedOperatorModules = [];
+    instances.forEach((instance) => {
+      const instanceId = id(instance?.instanceId || instance?.id);
+      if (!instanceId || token(instance?.location?.type) !== "INSTALLED_IN_ITEM") return;
+      const parentInstanceId = id(instance.location?.parentItemInstanceId);
+      if (!operatorInstanceIds.has(parentInstanceId)) return;
+      const ownershipType = token(instance?.instanceData?.householdLifecycle?.ownershipType || instance?.flags?.housingOwnershipType || "CITIZEN_FURNISHING");
+      if (["FIXED_FIXTURE", "RENTAL_FURNISHING"].includes(ownershipType)) return;
+      detachedOperatorModules.push(instanceId);
+      other.push(instanceId);
+    });
+
     return {
       housingRecordId: id(record.id),
       storageUnitIds: Array.from(storageIds),
       storedInstanceIds: stored,
       furnishingInstanceIds: furnished,
-      otherInstanceIds: other,
+      otherInstanceIds: Array.from(new Set(other)),
+      operatorInstanceIds: operator,
+      detachedOperatorModuleInstanceIds: detachedOperatorModules,
       instanceIds: Array.from(new Set([...stored, ...furnished, ...other])),
       generatedAt: nowIso()
     };
@@ -237,8 +272,8 @@ window.WS_APP = window.WS_APP || {};
       defaultFurnishingGrade: profile.defaultFurnishingGrade,
       maintenanceCoverage: profile.maintenanceCoverage,
       household: clone(profile.household),
-      visibleAddress: id(contract.metadata?.targetVisibleAddress || ""),
-      traceAddress: id(contract.metadata?.targetTraceAddress || "")
+      visibleAddress: id(contract.metadata?.targetVisibleAddress || existing?.visibleAddress || ""),
+      traceAddress: id(contract.metadata?.targetTraceAddress || existing?.traceAddress || "")
     };
   }
 
@@ -399,7 +434,9 @@ window.WS_APP = window.WS_APP || {};
     if (!contract) return null;
     const citizen = getCitizen(contract.citizenId);
     if (!citizen) return null;
-    const record = getRawHousing(citizen).find((entry) => id(entry?.linkedSubscriptionId) === id(contract.subscriptionContractId));
+    const records = getRawHousing(citizen);
+    const index = findLinkedRecordIndex(records, contract.subscriptionContractId);
+    const record = index >= 0 ? records[index] : null;
     return record ? clone(record) : null;
   }
 

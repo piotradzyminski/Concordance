@@ -70,5 +70,6 @@ test("Admin bundle map loads dashboard with the shell and every other renderer t
   assert.match(modules, /admin-workspace-loader\.js\?v=2/);
   assert.match(modules, /admin-control\.js\?v=66/);
 
-  assert.match(index, /js\/modules\.js\?v=302/);
+  assert.match(index, /js\/modules\.js\?v=309/);
+
 });

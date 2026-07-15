@@ -265,29 +265,12 @@ function normalizeEquipmentCyberwareMeta(source = {}) {
     };
   }
 
-  function normalizeEquipmentVisualProfile(definition = {}) {
-    const source = definition && typeof definition === "object" && !Array.isArray(definition) ? definition : {};
-    const profile = source.visualProfile && typeof source.visualProfile === "object" && !Array.isArray(source.visualProfile)
-      ? source.visualProfile
-      : {};
-    const thumbnail = String(profile.thumbnail || "").trim();
-    const detail = String(profile.detail || thumbnail).trim();
-    const fitToken = String(profile.fit || "CONTAIN").trim().toUpperCase();
-    return {
-      thumbnail,
-      detail: detail || thumbnail,
-      alt: String(profile.alt || source.name || source.title || "Product visual").trim(),
-      fit: fitToken === "COVER" ? "COVER" : "CONTAIN"
-    };
-  }
-
   function normalizeEquipmentCatalogItem(definition = {}, index = 0) {
     const source = definition && typeof definition === "object" && !Array.isArray(definition) ? definition : {};
     const size = getEquipmentFootprintSize(source.footprint || source.size || "1x1");
     const equipProfile = normalizeEquipmentEquipProfile(source);
     const cyberwareMeta = normalizeEquipmentCyberwareMeta(source);
     const consumableProfile = normalizeEquipmentConsumableProfile(source);
-    const visualProfile = normalizeEquipmentVisualProfile(source);
     const itemType = typeof window.WS_APP.resolveItemTypeId === "function"
       ? window.WS_APP.resolveItemTypeId(source)
       : String(source.itemType || source.itemTypeId || "GENERIC_ITEM").trim().replace(/[\s-]+/g, "_").toUpperCase();
@@ -334,7 +317,6 @@ function normalizeEquipmentCyberwareMeta(source = {}) {
       marketSubcategory: String(source.marketSubcategory || source.storeCategory || "").trim().toUpperCase(),
       consumable: source.consumable === true || Array.isArray(source.tags) && source.tags.some((tag) => String(tag || "").trim().toUpperCase() === "CONSUMABLE"),
       consumableProfile,
-      visualProfile,
       packageQuantity: consumableProfile.packageQuantity,
       packageLabel: consumableProfile.packageLabel,
       dose: consumableProfile.dose,
@@ -476,7 +458,6 @@ function normalizeEquipmentCyberwareMeta(source = {}) {
   window.WS_APP.getEquipmentFootprintSize = getEquipmentFootprintSize;
   window.WS_APP.normalizeEquipmentContainerProfile = normalizeEquipmentContainerProfile;
   window.WS_APP.normalizeEquipmentCyberwareMeta = normalizeEquipmentCyberwareMeta;
-  window.WS_APP.normalizeEquipmentVisualProfile = normalizeEquipmentVisualProfile;
   window.WS_APP.normalizeEquipmentCatalogItem = normalizeEquipmentCatalogItem;
   window.WS_APP.getEquipmentCatalogItems = getEquipmentCatalogItems;
   window.WS_APP.getEquipmentCatalogItemById = getEquipmentCatalogItemById;
