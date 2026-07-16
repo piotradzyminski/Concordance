@@ -72,9 +72,7 @@ window.WS_APP = window.WS_APP || {};
     }
     const root = getCyberwareWorkspaceRoot(id);
     const workspace = getCyberwareWorkspaceElement(root);
-    const legacyScreen = root?.querySelector?.('[data-equipment-screen="CYBERWARE"]') || null;
     if (workspace) workspace.dataset.cyberwareWorkspaceDirty = "true";
-    if (legacyScreen) legacyScreen.dataset.equipmentScreenDirty = "true";
     const plannerHost = workspace?.querySelector?.("[data-cyberware-planner-host]") || null;
     if (plannerHost && options.planner !== false) plannerHost.dataset.cyberwarePlannerDirty = "true";
     const diagnosticsHost = workspace?.querySelector?.("[data-cyberware-diagnostics-host]") || null;
@@ -1987,7 +1985,6 @@ window.WS_APP = window.WS_APP || {};
     const id = String(citizenId || "").trim();
     const root = getCyberwareWorkspaceRoot(id);
     const workspace = getCyberwareWorkspaceElement(root);
-    const legacyScreen = root?.querySelector?.('[data-equipment-screen="CYBERWARE"]') || null;
     const citizen = getCitizen(id);
     if (!root || !workspace || !citizen) return false;
 
@@ -2032,7 +2029,6 @@ window.WS_APP = window.WS_APP || {};
     syncCyberwareUiView(id, { root, mount: false });
     refreshCyberwareOperationsContext(id, { root, citizen, runtime });
     workspace.dataset.cyberwareWorkspaceDirty = "false";
-    if (legacyScreen) legacyScreen.dataset.equipmentScreenDirty = "false";
     return true;
   }
 
@@ -2083,7 +2079,6 @@ window.WS_APP = window.WS_APP || {};
   };
 
   app.openCyberwareWorkspace = openCyberwareWorkspace;
-  app.openEquipmentWorkspace = openCyberwareWorkspace;
   app.renderCyberwareWorkspace = renderCyberwareWorkspace;
   app.renderEquipmentCyberwareWorkspace = (state = {}, citizen = {}, options = {}) => renderCyberwareWorkspace(citizen, { ...options, citizenId: state?.citizenId || citizen?.id || "" });
   app.renderCyberwarePlannerPanel = renderCyberwarePlannerPanel;

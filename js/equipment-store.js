@@ -1077,7 +1077,6 @@ window.WS_APP = window.WS_APP || {};
       summary,
       selections: {
         ...getEquipmentSelectionState(citizen?.id || ""),
-        activeWorkspaceView: getEquipmentWorkspaceView(citizen?.id || ""),
         selectedItemId: selectedItem ? selectedItem.id : "",
         selectedContainerId,
         inspectedContainerId
@@ -1139,27 +1138,6 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
-  function normalizeEquipmentWorkspaceView() {
-    // Cyberware is a standalone module. Legacy persisted CYBERWARE workspace
-    // values are intentionally normalized back to the Equipment-only Cybergrid.
-    return "CYBERGRID";
-  }
-
-  function getEquipmentWorkspaceView(citizenId = "") {
-    window.WS_APP.equipmentWorkspaceViewByCitizen = window.WS_APP.equipmentWorkspaceViewByCitizen || {};
-    const key = String(citizenId || "default");
-    const normalized = normalizeEquipmentWorkspaceView(window.WS_APP.equipmentWorkspaceViewByCitizen[key] || "CYBERGRID");
-    window.WS_APP.equipmentWorkspaceViewByCitizen[key] = normalized;
-    return normalized;
-  }
-
-  function setEquipmentWorkspaceView(citizenId = "", view = "CYBERGRID") {
-    window.WS_APP.equipmentWorkspaceViewByCitizen = window.WS_APP.equipmentWorkspaceViewByCitizen || {};
-    const key = String(citizenId || "default");
-    window.WS_APP.equipmentWorkspaceViewByCitizen[key] = normalizeEquipmentWorkspaceView(view);
-    return window.WS_APP.equipmentWorkspaceViewByCitizen[key];
-  }
-
   const equipmentStore = {
     version: EQUIPMENT_STATE_VERSION,
     status: EQUIPMENT_MODULE_STATUS,
@@ -1207,8 +1185,6 @@ window.WS_APP = window.WS_APP || {};
     setEquipmentItemIndexCategory,
     locateEquipmentItem,
     clearEquipmentSelection,
-    getEquipmentWorkspaceView,
-    setEquipmentWorkspaceView,
     getEquipmentTargetCitizen,
     getEquipmentCitizens
   };
@@ -1257,8 +1233,6 @@ window.WS_APP = window.WS_APP || {};
     setEquipmentItemIndexCategory,
     locateEquipmentItem,
     clearEquipmentSelection,
-    getEquipmentWorkspaceView,
-    setEquipmentWorkspaceView,
     getEquipmentTargetCitizen
   });
 

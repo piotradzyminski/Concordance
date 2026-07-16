@@ -88,53 +88,7 @@ window.APP_DATA.citizens = [
     "debt": "0 ₡",
     "status": "EQ test set A / mobile mounts",
     "note": "Pre-alpha EQ test set A: coverage reservations, direct-worn containers, bilateral mounts, held equipment, item-owned holster/sheath and condition edge cases.",
-    "subscriptions": [
-      {
-        "subscriptionContractId": "sub-citizen-a-mass-compression-capacity-licensed",
-        "subscriptionCatalogId": "sub-mass-compression-service",
-        "citizenId": "citizen-a",
-        "providerId": "provider-mass-compression-service",
-        "organizationId": "mass-compression",
-        "tierId": "capacity-licensed",
-        "contractStatus": "ACTIVE",
-        "billingStatus": "PAID",
-        "entitlementStatus": "ACTIVE",
-        "coverageTarget": {
-          "type": "CITIZEN",
-          "id": "citizen-a"
-        },
-        "startedAt": "2109-02-13",
-        "currentPeriodStart": "2109-02-13",
-        "currentPeriodEnd": "2109-02-20",
-        "gracePeriodEndsAt": null,
-        "cancelledAt": null,
-        "suspendedAt": null,
-        "billingAccountId": "billing-account-citizen-a",
-        "lastBillingTransactionId": null,
-        "amount": 800,
-        "currency": "CREDIT",
-        "billingCycle": "WEEKLY",
-        "lastPaidAt": "2109-02-13",
-        "lastSettlementAt": null,
-        "lastBilledAt": null,
-        "lastBilledAmount": 0,
-        "lastDebtIncrease": 0,
-        "billingHistory": [],
-        "displaySnapshot": {
-          "title": "Mass Compression Service",
-          "tierLabel": "T2 Licensed",
-          "category": "MASS_COMPRESSION",
-          "provider": "Mass Compression Service",
-          "market": "PRIVATE",
-          "logo": "CAPACITY_MODULE",
-          "description": "Seeded test coverage for Mass Compression Cube runtime validation."
-        },
-        "revision": 1,
-        "metadata": {
-          "seeded": true
-        }
-      }
-    ],
+    "subscriptions": [],
     "equipment": {
       "seedResetKey": "equipment-dual-test-loadouts-1.4.0x-a"
     },
@@ -175,98 +129,7 @@ window.APP_DATA.citizens = [
     "debt": "0 ₡",
     "status": "EQ test set B / heavy nested",
     "note": "Pre-alpha EQ test set B: complete independent wear layers, bilateral armor, blocked mounts, item-mounted chest rig, multi-level container nesting, rotation and Housing transfer coverage.",
-    "subscriptions": [
-      {
-        "subscriptionContractId": "sub-citizen-b-mass-compression-capacity-corporate",
-        "subscriptionCatalogId": "sub-mass-compression-service",
-        "citizenId": "citizen-b",
-        "providerId": "provider-mass-compression-service",
-        "organizationId": "mass-compression",
-        "tierId": "capacity-corporate",
-        "contractStatus": "ACTIVE",
-        "billingStatus": "PAID",
-        "entitlementStatus": "ACTIVE",
-        "coverageTarget": {
-          "type": "CITIZEN",
-          "id": "citizen-b"
-        },
-        "startedAt": "2109-02-13",
-        "currentPeriodStart": "2109-02-13",
-        "currentPeriodEnd": "2109-02-20",
-        "gracePeriodEndsAt": null,
-        "cancelledAt": null,
-        "suspendedAt": null,
-        "billingAccountId": "billing-account-citizen-b",
-        "lastBillingTransactionId": null,
-        "amount": 4200,
-        "currency": "CREDIT",
-        "billingCycle": "WEEKLY",
-        "lastPaidAt": "2109-02-13",
-        "lastSettlementAt": null,
-        "lastBilledAt": null,
-        "lastBilledAmount": 0,
-        "lastDebtIncrease": 0,
-        "billingHistory": [],
-        "displaySnapshot": {
-          "title": "Mass Compression Service",
-          "tierLabel": "T4 Corporate",
-          "category": "MASS_COMPRESSION",
-          "provider": "Mass Compression Service",
-          "market": "PRIVATE",
-          "logo": "CAPACITY_MODULE",
-          "description": "Seeded test coverage for Mass Compression Cube runtime validation."
-        },
-        "revision": 1,
-        "metadata": {
-          "seeded": true
-        }
-      },
-      {
-        "subscriptionContractId": "sub-citizen-b-habitat-secured",
-        "subscriptionCatalogId": "sub-housing-standard-c",
-        "citizenId": "citizen-b",
-        "providerId": "provider-habitat-ledger",
-        "organizationId": "habitat-market",
-        "tierId": "housing-c-t2",
-        "contractStatus": "ACTIVE",
-        "billingStatus": "PAID",
-        "entitlementStatus": "ACTIVE",
-        "coverageTarget": {
-          "type": "CITIZEN",
-          "id": "citizen-b"
-        },
-        "startedAt": "2109-02-13",
-        "currentPeriodStart": "2109-02-13",
-        "currentPeriodEnd": "2109-02-20",
-        "gracePeriodEndsAt": null,
-        "cancelledAt": null,
-        "suspendedAt": null,
-        "billingAccountId": "billing-account-citizen-b",
-        "lastBillingTransactionId": null,
-        "amount": 9800,
-        "currency": "CREDIT",
-        "billingCycle": "WEEKLY",
-        "lastPaidAt": "2109-02-13",
-        "lastSettlementAt": null,
-        "lastBilledAt": null,
-        "lastBilledAmount": 0,
-        "lastDebtIncrease": 0,
-        "billingHistory": [],
-        "displaySnapshot": {
-          "title": "Housing Standard C",
-          "tierLabel": "T2 Premium Adaptive",
-          "category": "RENT",
-          "provider": "Habitat Ledger",
-          "market": "SYSTEM",
-          "logo": "HAB",
-          "description": "Premium adaptive Housing tier seeded for Rent catalog and Household integration tests."
-        },
-        "revision": 1,
-        "metadata": {
-          "seeded": true
-        }
-      }
-    ],
+    "subscriptions": [],
     "equipment": {
       "seedResetKey": "equipment-dual-test-loadouts-1.4.0x-b"
     },
@@ -369,7 +232,7 @@ window.APP_DATA.citizens = [
         "status": "ACTIVE",
         "isPrimary": true,
         "provider": "Habitat Ledger",
-        "linkedSubscriptionId": "sub-citizen-b-habitat-secured",
+        "linkedSubscriptionId": "",
         "standardCode": "C",
         "standardTierId": "housing-c-t2",
         "areaM2": 35,
@@ -396,7 +259,9 @@ window.APP_DATA.citizens = [
           "layoutSeed": "LAYOUT-CITIZEN-B-C2",
           "layoutPolicy": "CHOICE_POOL",
           "variantFamily": "ALCOVE",
-          "residentIds": ["citizen-b"]
+          "residentIds": [
+            "citizen-b"
+          ]
         },
         "storageUnits": [
           {

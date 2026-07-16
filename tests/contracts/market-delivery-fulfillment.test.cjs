@@ -80,13 +80,13 @@ test("Delivery fulfillment bundle versions are cache-busted consistently", () =>
   const index = readProjectFile("index.html");
   const modules = readProjectFile("js/modules.js");
   assert.match(index, /data\/market-offers\.js\?v=4/);
-  assert.match(index, /js\/market-store\.js\?v=13/);
-  assert.match(index, /js\/modules\.js\?v=309/);
-  assert.match(modules, /css\/housing\.css\?v=38/);
+  assert.match(index, /js\/market-store\.js\?v=14/);
+  assert.match(index, /js\/modules\.js\?v=318/);
+  assert.match(modules, /css\/housing\.css\?v=40/);
 
 
   assert.match(modules, /data\/market-offers\.js\?v=4/);
-  assert.match(modules, /js\/market-store\.js\?v=13/);
-  assert.match(modules, /js\/market-workspace-runtime\.js\?v=3/);
+  assert.match(modules, /js\/market-store\.js\?v=14/);
+  assert.match(modules, /js\/market-workspace-runtime\.js\?v=6/);
   assert.match(index, /js\/market-time-scheduler\.js\?v=1/);
 });

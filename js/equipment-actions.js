@@ -959,7 +959,6 @@ window.WS_APP = window.WS_APP || {};
         event.preventDefault();
         const citizen = getActiveEquipmentCitizen(root, user);
         window.WS_APP.locateEquipmentItem?.(citizen, itemIndexLocate.dataset.equipmentItemIndexLocate || "");
-        window.WS_APP.setEquipmentWorkspaceView?.(citizenId, "CYBERGRID");
         rerenderEquipmentShell(user);
         return;
       }
@@ -994,22 +993,6 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
 
-      const workspaceButton = event.target.closest("[data-equipment-workspace-view]");
-      if (workspaceButton && !workspaceButton.disabled) {
-        event.preventDefault();
-        resetActiveGridDrag();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        const nextView = window.WS_APP.setEquipmentWorkspaceView?.(
-          citizenId,
-          workspaceButton.dataset.equipmentWorkspaceView || "CYBERGRID"
-        ) || "CYBERGRID";
-        if (typeof window.WS_APP.syncEquipmentWorkspaceShell === "function") {
-          window.WS_APP.syncEquipmentWorkspaceShell(nextView, { root, citizenId });
-        } else {
-          rerenderEquipmentShell(user);
-        }
-        return;
-      }
 
       const activateGridContainerButton = event.target.closest("[data-equipment-activate-grid-container]");
       if (activateGridContainerButton && !activateGridContainerButton.disabled) {
@@ -1226,14 +1209,6 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
 
-      const cyberwareButton = event.target.closest("[data-equipment-cyberware-link]");
-      if (cyberwareButton) {
-        event.preventDefault();
-        const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
-        if (!citizenId) return;
-        window.WS_APP.openCyberwareFromEquipment?.(citizenId);
-        return;
-      }
 
       const protectedSurface = event.target.closest([
         "[data-equipment-container-grid]",

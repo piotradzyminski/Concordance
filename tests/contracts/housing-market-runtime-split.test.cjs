@@ -33,10 +33,10 @@ test("Market runtime remains a factory-owned workspace with deterministic local 
   const runtime = context.window.WS_APP.createMarketWorkspaceRuntime({
     DEFAULT_STORAGE_UNIT_ID: "housing-storage-main",
     MARKET_DEFAULT_SHIPPING_DAYS: 1,
-    MARKET_DEPARTMENTS: ["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"],
-    MARKET_MODES: ["CATALOG", "ORDERS", "DELIVERED"],
+    MARKET_DEPARTMENTS: ["ALL", "HOUSEHOLD", "CYBERWARE", "GENERAL"],
+    MARKET_MODES: ["CATALOG", "SECONDARY", "ORDERS"],
     MARKET_ORDER_CLOSED_STATUSES: new Set(["COMPLETED", "REFUNDED", "FAILED", "CANCELLED"]),
-    MARKET_ORDER_VIEWS: ["ACTIVE", "HISTORY"],
+    MARKET_ORDER_VIEWS: ["ORDERED", "DELIVERED"],
     MARKET_PAGE_SIZE: 6,
     MARKET_SORTS: ["CATEGORY", "NAME"],
     MARKET_STATUSES: ["ALL", "BUYABLE"],
@@ -88,7 +88,7 @@ test("Global Market shell owns storefront rendering and Housing owns only delive
 
   assert.match(housing, /function renderHousingDeliveriesTab\(/);
   assert.match(housing, /data-housing-open-market/);
-  assert.match(housing, /"OVERVIEW", "UNIT", "HOUSEHOLD", "STORAGE", "COLLECTION", "DELIVERIES", "HISTORY"/);
+  assert.match(housing, /HOUSING_PRIMARY_TABS = \["OVERVIEW", "HOUSEHOLD", "STORAGE", "DELIVERIES"\]/);
   assert.doesNotMatch(housing, /housing-market-workspace/);
   assert.doesNotMatch(housing, /renderMarketWorkspaceWorkspace/);
   assert.doesNotMatch(housing, /delegateMarketWorkspaceEvent/);

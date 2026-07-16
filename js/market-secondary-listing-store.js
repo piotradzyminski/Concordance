@@ -3,11 +3,12 @@ window.WS_APP = window.WS_APP || {};
 (function initMarketSecondaryListingStore(app) {
   "use strict";
 
-  const SCHEMA_VERSION = "market_secondary_listing_foundation_7_0x";
+  const SCHEMA_VERSION = "market_secondary_fulfillment_7_1x";
   const STORAGE_KEY = "ws_market_secondary_listings_v1";
   const STORAGE_SCHEMA_KEY = "ws_market_secondary_listings_schema";
   const DEFAULT_ACTIVE_TARGET = 12;
   const REPLENISH_INTERVAL_HOURS = 6;
+  const RESERVATION_WINDOW_HOURS = 1;
   const LISTING_STATUSES = new Set(["ACTIVE", "RESERVED", "SOLD", "EXPIRED", "WITHDRAWN", "RECOVERY_REQUIRED"]);
   const LISTING_TYPES = new Set(["SYSTEM_GENERATED", "PLAYER_LISTING"]);
   const PRICING_STRATEGIES = new Set(["FIXED", "STEP_DOWN", "FAST_SALE", "PATIENT"]);
@@ -16,7 +17,8 @@ window.WS_APP = window.WS_APP || {};
     DEMAND_CHECK: "MARKET_SECONDARY_DEMAND_CHECK",
     PRICE_REVIEW: "MARKET_SECONDARY_PRICE_REVIEW",
     EXPIRES: "MARKET_SECONDARY_LISTING_EXPIRES",
-    REPLENISH: "MARKET_SECONDARY_REPLENISH"
+    REPLENISH: "MARKET_SECONDARY_REPLENISH",
+    RESERVATION_EXPIRES: "MARKET_SECONDARY_RESERVATION_EXPIRES"
   });
 
   let listingsById = Object.create(null);
@@ -37,6 +39,13 @@ window.WS_APP = window.WS_APP || {};
     demandChecks: 0,
     staleEventsIgnored: 0,
     persistenceFailures: 0,
+    sourceInstancesCreated: 0,
+    sourceInstancesRetired: 0,
+    reservationsCreated: 0,
+    reservationsReleased: 0,
+    playerSales: 0,
+    playerReturns: 0,
+    recoveryRequired: 0,
     lastReconcileAt: null
   };
 
@@ -100,6 +109,18 @@ window.WS_APP = window.WS_APP || {};
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "listing";
+  }
+
+  function makeSecondaryOfferId(listingId = "") {
+    return `market_offer_secondary_${slug(listingId)}`;
+  }
+
+  function makeSecondaryInstanceId(listingId = "") {
+    return `item_secondary_${slug(listingId)}`;
+  }
+
+  function makeSecondarySerialNumber(listingId = "") {
+    return `SECONDARY-${hash32(listingId).toString(36).toUpperCase().padStart(7, "0")}`;
   }
 
   function hash32(value = "") {
@@ -202,10 +223,28 @@ window.WS_APP = window.WS_APP || {};
     const listedAt = normalizeIso(source.listedAt || source.createdAt || nowIso()) || nowIso();
     const expiresAt = normalizeIso(source.expiresAt) || addHours(listedAt, 72);
     const normalizedStatus = LISTING_STATUSES.has(status) ? status : "ACTIVE";
+    const listingId = normalizeId(source.listingId);
+    const rawMarketOfferId = normalizeId(source.marketOfferId);
+    const sourceMarketOfferId = normalizeId(source.sourceMarketOfferId || (rawMarketOfferId && !rawMarketOfferId.startsWith("market_offer_secondary_") ? rawMarketOfferId : ""));
+    const reservationSource = source.reservation && typeof source.reservation === "object" && !Array.isArray(source.reservation) ? source.reservation : {};
+    const reservation = {
+      reservationId: normalizeId(reservationSource.reservationId),
+      idempotencyKey: normalizeId(reservationSource.idempotencyKey),
+      citizenId: normalizeId(reservationSource.citizenId),
+      cartId: normalizeId(reservationSource.cartId),
+      marketOrderId: normalizeId(reservationSource.marketOrderId),
+      status: normalizeToken(reservationSource.status || (normalizedStatus === "RESERVED" ? "RESERVED" : "NONE")),
+      reservedAt: normalizeIso(reservationSource.reservedAt) || null,
+      expiresAt: normalizeIso(reservationSource.expiresAt) || null,
+      committedAt: normalizeIso(reservationSource.committedAt) || null,
+      releasedAt: normalizeIso(reservationSource.releasedAt) || null,
+      releaseReason: normalizeToken(reservationSource.releaseReason || "") || null
+    };
     const listing = {
       schemaVersion: SCHEMA_VERSION,
-      listingId: normalizeId(source.listingId),
-      marketOfferId: normalizeId(source.marketOfferId),
+      listingId,
+      marketOfferId: rawMarketOfferId.startsWith("market_offer_secondary_") ? rawMarketOfferId : makeSecondaryOfferId(listingId),
+      sourceMarketOfferId,
       listingType: LISTING_TYPES.has(listingType) ? listingType : "SYSTEM_GENERATED",
       marketChannel: "SECONDARY",
       sellerRef: {
@@ -215,7 +254,7 @@ window.WS_APP = window.WS_APP || {};
       },
       definitionId: normalizeId(source.definitionId || source.catalogItemId),
       catalogItemId: normalizeId(source.catalogItemId || source.definitionId),
-      sourceInstanceId: normalizeId(source.sourceInstanceId) || null,
+      sourceInstanceId: normalizeId(source.sourceInstanceId) || (listingId ? makeSecondaryInstanceId(listingId) : null),
       catalogReferencePrice,
       listedPrice,
       conditionSnapshot: condition,
@@ -236,6 +275,16 @@ window.WS_APP = window.WS_APP || {};
       expiredAt: normalizeIso(source.expiredAt) || null,
       withdrawnAt: normalizeIso(source.withdrawnAt) || null,
       saleResolution: normalizeToken(source.saleResolution) || null,
+      reservation,
+      buyerRef: source.buyerRef && typeof source.buyerRef === "object" && !Array.isArray(source.buyerRef)
+        ? { type: normalizeToken(source.buyerRef.type || "CITIZEN"), id: normalizeId(source.buyerRef.id) }
+        : null,
+      saleMarketOrderId: normalizeId(source.saleMarketOrderId),
+      saleBillingTransactionId: normalizeId(source.saleBillingTransactionId),
+      saleItemTransactionId: normalizeId(source.saleItemTransactionId),
+      returnCount: clampInteger(source.returnCount || 0, 0, 999999, 0),
+      lastReturnedAt: normalizeIso(source.lastReturnedAt) || null,
+      recoveryCode: normalizeToken(source.recoveryCode || "") || null,
       priceHistory: Array.isArray(source.priceHistory)
         ? source.priceHistory.map((entry) => ({
             price: roundPrice(entry?.price || listedPrice),
@@ -247,10 +296,11 @@ window.WS_APP = window.WS_APP || {};
       createdAt: normalizeIso(source.createdAt || listedAt) || listedAt,
       updatedAt: normalizeIso(source.updatedAt || listedAt) || listedAt
     };
-    if (TERMINAL_STATUSES.has(normalizedStatus)) {
+    if (TERMINAL_STATUSES.has(normalizedStatus) || normalizedStatus === "RESERVED") {
       listing.nextDemandCheckAt = null;
       listing.nextPriceReviewAt = null;
     }
+    if (normalizedStatus !== "RESERVED" && reservation.status === "RESERVED") listing.reservation.status = normalizedStatus === "SOLD" ? "COMMITTED" : "RELEASED";
     return listing;
   }
 
@@ -334,6 +384,13 @@ window.WS_APP = window.WS_APP || {};
     return listing ? clone(listing) : null;
   }
 
+  function getListingByMarketOfferId(marketOfferId = "") {
+    const id = normalizeId(marketOfferId);
+    if (!id) return null;
+    const listing = Object.values(listingsById).map(normalizeListing).find((entry) => entry.marketOfferId === id) || null;
+    return listing ? clone(listing) : null;
+  }
+
   function filterListings(source = [], filters = {}) {
     const status = normalizeToken(filters.status);
     const listingType = normalizeToken(filters.listingType);
@@ -370,11 +427,34 @@ window.WS_APP = window.WS_APP || {};
     return storeRevision;
   }
 
+  function getSourceCatalogOffer(listing = {}) {
+    return app.getMarketOffer?.(listing.sourceMarketOfferId)
+      || app.getMarketOfferByCatalogItemId?.(listing.catalogItemId)
+      || null;
+  }
+
+  function validateSourceInstance(listingOrId = {}) {
+    const listing = typeof listingOrId === "string" ? getListing(listingOrId) : normalizeListing(listingOrId);
+    if (!listing?.listingId) return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_FOUND", listing: null, instance: null };
+    const instance = listing.sourceInstanceId ? app.getItemInstanceById?.(listing.sourceInstanceId) || null : null;
+    if (!instance) return { ok: false, reason: "MARKET_SECONDARY_SOURCE_INSTANCE_MISSING", listing, instance: null };
+    if (normalizeId(instance.definitionId) !== normalizeId(listing.definitionId)) return { ok: false, reason: "MARKET_SECONDARY_SOURCE_DEFINITION_MISMATCH", listing, instance };
+    const locationType = normalizeToken(instance.location?.type);
+    if (["ACTIVE", "RESERVED"].includes(listing.status)) {
+      if (normalizeId(instance.ownerId)) return { ok: false, reason: "MARKET_SECONDARY_SOURCE_OWNER_CONFLICT", listing, instance };
+      if (locationType !== "VENDOR") return { ok: false, reason: "MARKET_SECONDARY_SOURCE_LOCATION_CONFLICT", listing, instance };
+      if (normalizeId(instance.location?.secondaryListingId) !== listing.listingId) return { ok: false, reason: "MARKET_SECONDARY_SOURCE_LISTING_MISMATCH", listing, instance };
+    }
+    return { ok: true, reason: "MARKET_SECONDARY_SOURCE_INSTANCE_READY", listing, instance };
+  }
+
   function getCatalogProjection(listingOrId = {}) {
     const listing = typeof listingOrId === "string" ? getListing(listingOrId) : normalizeListing(listingOrId);
     if (!listing?.listingId) return null;
-    const offer = app.getMarketOfferByCatalogItemId?.(listing.catalogItemId) || app.getMarketOffer?.(listing.marketOfferId) || null;
+    const offer = getSourceCatalogOffer(listing);
     const item = offer?.catalogItem || app.getEquipmentCatalogItem?.(listing.catalogItemId) || null;
+    const sourceState = validateSourceInstance(listing);
+    const playerPurchaseAvailable = listing.status === "ACTIVE" && sourceState.ok && compareTimes(nowIso(), listing.expiresAt) < 0;
     return {
       ...clone(listing),
       item: item ? clone(item) : null,
@@ -383,9 +463,134 @@ window.WS_APP = window.WS_APP || {};
       category: normalizeToken(item?.category || "EQUIPMENT"),
       subtype: normalizeToken(item?.subtype || item?.kind || "USED_ITEM"),
       currency: offer?.pricing?.currency || "CREDIT",
-      playerPurchaseAvailable: false,
-      purchaseBlocker: "SECONDARY_FULFILLMENT_NOT_IMPLEMENTED"
+      playerPurchaseAvailable,
+      purchaseBlocker: playerPurchaseAvailable ? null : (listing.status === "RESERVED" ? "SECONDARY_LISTING_RESERVED" : listing.status !== "ACTIVE" ? `SECONDARY_LISTING_${listing.status}` : sourceState.reason)
     };
+  }
+
+  function projectMarketOffer(listingOrId = {}) {
+    const listing = typeof listingOrId === "string" ? getListing(listingOrId) : normalizeListing(listingOrId);
+    if (!listing?.listingId) return null;
+    const sourceOffer = getSourceCatalogOffer(listing);
+    const item = sourceOffer?.catalogItem || app.getEquipmentCatalogItem?.(listing.catalogItemId) || null;
+    const sourceState = validateSourceInstance(listing);
+    const active = listing.status === "ACTIVE" && sourceState.ok && compareTimes(nowIso(), listing.expiresAt) < 0;
+    return {
+      schemaVersion: 4,
+      marketOfferId: listing.marketOfferId,
+      offerSource: "SECONDARY",
+      marketChannel: "SECONDARY",
+      listingId: listing.listingId,
+      listingRevision: listing.revision,
+      sourceInstanceId: listing.sourceInstanceId,
+      sourceMarketOfferId: listing.sourceMarketOfferId,
+      vendorProviderId: listing.sellerRef?.id || "provider-secondary-exchange",
+      vendorDisplayName: listing.sellerRef?.displayName || "SECONDARY EXCHANGE",
+      organizationId: "",
+      organizationLocationId: sourceOffer?.organizationLocationId || "",
+      sourceInstitutionId: sourceOffer?.sourceInstitutionId || "",
+      sourceAddress: sourceOffer?.sourceAddress || "",
+      catalogItemId: listing.catalogItemId,
+      definitionId: listing.definitionId,
+      offerType: "PHYSICAL_ITEM",
+      availability: active ? "AVAILABLE" : (listing.status === "RESERVED" ? "OUT_OF_STOCK" : "UNAVAILABLE"),
+      stock: { mode: "FINITE", availableQuantity: active ? 1 : 0, reservedQuantity: listing.status === "RESERVED" ? 1 : 0 },
+      pricing: { basePrice: listing.catalogReferencePrice, currency: sourceOffer?.pricing?.currency || "CREDIT", modifiers: [{ code: "SECONDARY_CONDITION", value: listing.conditionSnapshot }], finalPrice: listing.listedPrice },
+      purchaseRequirements: clone(sourceOffer?.purchaseRequirements || { requiredLicenseCodes: [], requiredEntitlements: [], requiredAccessLevel: null, allowedCitizenClasses: [], blockers: [] }),
+      fulfillmentOptions: ["DELIVER_TO_HOUSING"],
+      linkedServiceDefinitionIds: [],
+      linkedServiceProviderIds: [],
+      activeFrom: listing.listedAt,
+      expiresAt: listing.expiresAt,
+      active,
+      revision: listing.revision,
+      catalogItem: item ? clone(item) : null,
+      secondaryListing: clone(listing)
+    };
+  }
+
+  function buildSourceInstance(listingOrId = {}) {
+    const listing = typeof listingOrId === "string" ? getListing(listingOrId) : normalizeListing(listingOrId);
+    if (!listing?.listingId) return null;
+    const sourceOffer = getSourceCatalogOffer(listing);
+    const item = sourceOffer?.catalogItem || app.getEquipmentCatalogItem?.(listing.catalogItemId) || {};
+    return {
+      ...clone(item),
+      instanceId: listing.sourceInstanceId || makeSecondaryInstanceId(listing.listingId),
+      id: listing.sourceInstanceId || makeSecondaryInstanceId(listing.listingId),
+      itemId: listing.catalogItemId,
+      catalogId: listing.catalogItemId,
+      definitionId: listing.definitionId,
+      ownerId: "",
+      quantity: 1,
+      lifecycleState: "PACKAGED",
+      location: {
+        type: "VENDOR",
+        vendorId: listing.sellerRef?.id || "provider-secondary-exchange",
+        vendorProviderId: listing.sellerRef?.id || "provider-secondary-exchange",
+        secondaryListingId: listing.listingId,
+        marketOfferId: listing.marketOfferId,
+        sourceMarketOfferId: listing.sourceMarketOfferId
+      },
+      durability: { current: listing.conditionSnapshot, maximumOverride: listing.conditionSnapshot },
+      hardwareIdentity: { serialNumber: makeSecondarySerialNumber(listing.listingId) },
+      acquisition: {
+        sourceType: "MARKET_SECONDARY_SYSTEM",
+        secondaryListingId: listing.listingId,
+        marketOfferId: listing.marketOfferId,
+        sourceMarketOfferId: listing.sourceMarketOfferId,
+        listedAt: listing.listedAt,
+        listedPrice: listing.listedPrice,
+        currency: sourceOffer?.pricing?.currency || "CREDIT"
+      },
+      flags: { secondaryListing: true, secondaryListingStatus: listing.status }
+    };
+  }
+
+  function ensureSourceInstance(listingOrId = {}, options = {}) {
+    const listing = typeof listingOrId === "string" ? getListing(listingOrId) : normalizeListing(listingOrId);
+    if (!listing?.listingId) return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_FOUND" };
+    const existing = listing.sourceInstanceId ? app.getItemInstanceById?.(listing.sourceInstanceId) || null : null;
+    if (existing) {
+      const validation = validateSourceInstance(listing);
+      if (validation.ok || ["SOLD", "EXPIRED", "WITHDRAWN"].includes(listing.status)) return { ok: true, operation: "IDEMPOTENT_REPLAY", listing, instance: existing };
+      return validation;
+    }
+    if (typeof app.commitItemInstanceTransaction !== "function") return { ok: false, reason: "ITEM_INSTANCE_TRANSACTION_API_REQUIRED" };
+    const source = buildSourceInstance(listing);
+    if (!source) return { ok: false, reason: "MARKET_SECONDARY_SOURCE_INSTANCE_BUILD_FAILED" };
+    const result = app.commitItemInstanceTransaction({
+      idempotencyKey: `market-secondary:${listing.listingId}:source-instance`,
+      sourceDomain: "MARKET_SECONDARY",
+      sourceRefId: listing.listingId,
+      citizenId: "",
+      changedDomains: ["ITEM_INSTANCE", "MARKET_SECONDARY"],
+      metadata: { operationType: "MARKET_SECONDARY_SOURCE_CREATE", listingId: listing.listingId, marketOfferId: listing.marketOfferId },
+      operations: [{ type: "CREATE", instanceId: source.instanceId, expected: { exists: false }, instance: source }]
+    });
+    if (!result?.ok || result.compensated) return { ok: false, reason: result?.reason || "MARKET_SECONDARY_SOURCE_INSTANCE_CREATE_FAILED", transaction: result?.transaction || null };
+    diagnostics.sourceInstancesCreated += 1;
+    return { ok: true, operation: "CREATED", listing, instance: app.getItemInstanceById?.(source.instanceId) || source, transaction: result.transaction };
+  }
+
+  function retireSourceInstance(listingOrId = {}, reason = "MARKET_SECONDARY_SOURCE_RETIRED") {
+    const listing = typeof listingOrId === "string" ? getListing(listingOrId) : normalizeListing(listingOrId);
+    if (!listing?.sourceInstanceId) return { ok: true, operation: "NOT_REQUIRED" };
+    const instance = app.getItemInstanceById?.(listing.sourceInstanceId) || null;
+    if (!instance) return { ok: true, operation: "IDEMPOTENT_REPLAY" };
+    if (normalizeId(instance.ownerId)) return { ok: false, reason: "MARKET_SECONDARY_SOURCE_INSTANCE_ALREADY_OWNED", instance };
+    if (typeof app.commitItemInstanceTransaction !== "function") return { ok: false, reason: "ITEM_INSTANCE_TRANSACTION_API_REQUIRED" };
+    const result = app.commitItemInstanceTransaction({
+      idempotencyKey: `market-secondary:${listing.listingId}:retire:${normalizeToken(reason)}`,
+      sourceDomain: "MARKET_SECONDARY",
+      sourceRefId: listing.listingId,
+      citizenId: "",
+      changedDomains: ["ITEM_INSTANCE", "MARKET_SECONDARY"],
+      metadata: { operationType: "MARKET_SECONDARY_SOURCE_RETIRE", listingId: listing.listingId, reason: normalizeToken(reason) },
+      operations: [{ type: "REMOVE", instanceId: listing.sourceInstanceId, expected: { ownerId: "", locationType: "VENDOR" } }]
+    });
+    if (result?.ok) diagnostics.sourceInstancesRetired += 1;
+    return result || { ok: false, reason: "MARKET_SECONDARY_SOURCE_INSTANCE_RETIRE_FAILED" };
   }
 
   function scheduleEvent(eventType = "", listing = {}, scheduledAt = "", extra = {}) {
@@ -413,11 +618,12 @@ window.WS_APP = window.WS_APP || {};
 
   function scheduleListingEvents(listingOrId = {}) {
     const listing = typeof listingOrId === "string" ? getListing(listingOrId) : normalizeListing(listingOrId);
-    if (!listing?.listingId || listing.status !== "ACTIVE") return { ok: true, reason: "MARKET_SECONDARY_LISTING_NOT_SCHEDULABLE", scheduled: [] };
+    if (!listing?.listingId || !["ACTIVE", "RESERVED"].includes(listing.status)) return { ok: true, reason: "MARKET_SECONDARY_LISTING_NOT_SCHEDULABLE", scheduled: [] };
     const scheduled = [];
-    if (listing.expiresAt) scheduled.push(scheduleEvent(EVENT_TYPES.EXPIRES, listing, listing.expiresAt));
-    if (listing.nextDemandCheckAt) scheduled.push(scheduleEvent(EVENT_TYPES.DEMAND_CHECK, listing, listing.nextDemandCheckAt));
-    if (listing.nextPriceReviewAt) scheduled.push(scheduleEvent(EVENT_TYPES.PRICE_REVIEW, listing, listing.nextPriceReviewAt));
+    if (listing.status === "ACTIVE" && listing.expiresAt) scheduled.push(scheduleEvent(EVENT_TYPES.EXPIRES, listing, listing.expiresAt));
+    if (listing.status === "ACTIVE" && listing.nextDemandCheckAt) scheduled.push(scheduleEvent(EVENT_TYPES.DEMAND_CHECK, listing, listing.nextDemandCheckAt));
+    if (listing.status === "ACTIVE" && listing.nextPriceReviewAt) scheduled.push(scheduleEvent(EVENT_TYPES.PRICE_REVIEW, listing, listing.nextPriceReviewAt));
+    if (listing.status === "RESERVED" && listing.reservation?.expiresAt) scheduled.push(scheduleEvent(EVENT_TYPES.RESERVATION_EXPIRES, listing, listing.reservation.expiresAt, { payload: { reservationId: listing.reservation.reservationId } }));
     return { ok: scheduled.every((entry) => entry?.ok), reason: "MARKET_SECONDARY_LISTING_EVENTS_SCHEDULED", scheduled };
   }
 
@@ -458,7 +664,9 @@ window.WS_APP = window.WS_APP || {};
     const listingId = `market_listing_system_${slug(definitionId)}_${String(sequence).padStart(6, "0")}`;
     const provisional = normalizeListing({
       listingId,
-      marketOfferId: normalizeId(offer.marketOfferId),
+      marketOfferId: makeSecondaryOfferId(listingId),
+      sourceMarketOfferId: normalizeId(offer.marketOfferId),
+      sourceInstanceId: makeSecondaryInstanceId(listingId),
       listingType: "SYSTEM_GENERATED",
       sellerRef: {
         type: "SYSTEM_VENDOR",
@@ -496,8 +704,13 @@ window.WS_APP = window.WS_APP || {};
     if (!offer) return { ok: false, reason: "MARKET_SECONDARY_SOURCE_OFFER_REQUIRED" };
     generatorState.sequence += 1;
     const listing = buildSystemListing(offer, generatorState.sequence, normalizeIso(input.listedAt || nowIso()));
-    const committed = commitListing(listing, "MARKET_SECONDARY_LISTING_CREATED", { source: input.source || "SYSTEM_GENERATOR" });
-    if (!committed.ok) return committed;
+    const materialized = ensureSourceInstance(listing);
+    if (!materialized.ok) return { ok: false, reason: materialized.reason || "MARKET_SECONDARY_SOURCE_INSTANCE_CREATE_FAILED", listing, materialized };
+    const committed = commitListing(listing, "MARKET_SECONDARY_LISTING_CREATED", { source: input.source || "SYSTEM_GENERATOR", sourceInstanceId: listing.sourceInstanceId });
+    if (!committed.ok) {
+      app.compensateItemInstanceTransaction?.(materialized.transaction?.transactionId, { idempotencyKey: `market-secondary:${listing.listingId}:source-instance-compensation` });
+      return committed;
+    }
     diagnostics.generated += 1;
     generatorState.lastGeneratedAt = listing.listedAt;
     scheduleListingEvents(listing);
@@ -535,6 +748,7 @@ window.WS_APP = window.WS_APP || {};
 
   function markExpired(listing = {}, effectiveAt = nowIso(), reason = "MARKET_SECONDARY_LISTING_EXPIRED") {
     if (!listing?.listingId) return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_FOUND" };
+    if (listing.status === "RESERVED") return { ok: false, reason: "MARKET_SECONDARY_LISTING_RESERVED", listing: clone(listing) };
     if (listing.status !== "ACTIVE") return { ok: true, reason: "MARKET_SECONDARY_LISTING_ALREADY_TERMINAL", listing: clone(listing) };
     const timestamp = normalizeIso(effectiveAt || listing.expiresAt || nowIso());
     const next = normalizeListing({
@@ -547,7 +761,15 @@ window.WS_APP = window.WS_APP || {};
       revision: listing.revision + 1
     });
     diagnostics.expired += 1;
-    return commitListing(next, reason);
+    const committed = commitListing(next, reason);
+    if (committed.ok) {
+      const retired = retireSourceInstance(committed.listing, "LISTING_EXPIRED");
+      if (!retired.ok) {
+        diagnostics.recoveryRequired += 1;
+        return commitListing({ ...committed.listing, status: "RECOVERY_REQUIRED", recoveryCode: retired.reason || "SOURCE_RETIRE_FAILED", revision: committed.listing.revision + 1, updatedAt: timestamp }, "MARKET_SECONDARY_LISTING_RECOVERY_REQUIRED");
+      }
+    }
+    return committed;
   }
 
   function resolveDemandCheck(listingId = "", options = {}) {
@@ -579,7 +801,15 @@ window.WS_APP = window.WS_APP || {};
         revision: listing.revision + 1
       });
       diagnostics.soldToWorld += 1;
-      return commitListing(sold, "MARKET_SECONDARY_LISTING_SOLD_TO_WORLD", { saleChance, roll });
+      const committed = commitListing(sold, "MARKET_SECONDARY_LISTING_SOLD_TO_WORLD", { saleChance, roll });
+      if (committed.ok) {
+        const retired = retireSourceInstance(committed.listing, "WORLD_BUYER_SALE");
+        if (!retired.ok) {
+          diagnostics.recoveryRequired += 1;
+          return commitListing({ ...committed.listing, status: "RECOVERY_REQUIRED", recoveryCode: retired.reason || "SOURCE_RETIRE_FAILED", revision: committed.listing.revision + 1, updatedAt: scheduledAt }, "MARKET_SECONDARY_LISTING_RECOVERY_REQUIRED");
+        }
+      }
+      return committed;
     }
     const nextInterval = resolveDemandIntervalHours(listing, scheduledAt);
     const nextCheckAt = addHours(scheduledAt, nextInterval);
@@ -593,6 +823,222 @@ window.WS_APP = window.WS_APP || {};
     const committed = commitListing(next, "MARKET_SECONDARY_DEMAND_CHECK_COMPLETED", { saleChance, roll });
     if (committed.ok && committed.listing.nextDemandCheckAt) scheduleEvent(EVENT_TYPES.DEMAND_CHECK, committed.listing, committed.listing.nextDemandCheckAt);
     return committed;
+  }
+
+  function restoreSourceVendorCustody(listingOrId = {}, reason = "MARKET_SECONDARY_SOURCE_RETURNED") {
+    const listing = typeof listingOrId === "string" ? getListing(listingOrId) : normalizeListing(listingOrId);
+    if (!listing?.listingId || !listing.sourceInstanceId) return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_FOUND" };
+    const instance = app.getItemInstanceById?.(listing.sourceInstanceId) || null;
+    if (!instance) return { ok: false, reason: "MARKET_SECONDARY_SOURCE_INSTANCE_MISSING", listing };
+    if (normalizeId(instance.ownerId) || normalizeToken(instance.location?.type) !== "VENDOR") return { ok: false, reason: "MARKET_SECONDARY_SOURCE_NOT_RETURNED_TO_VENDOR", listing, instance };
+    if (normalizeId(instance.location?.secondaryListingId) === listing.listingId && normalizeId(instance.location?.marketOfferId) === listing.marketOfferId) {
+      return { ok: true, operation: "IDEMPOTENT_REPLAY", listing, instance };
+    }
+    if (typeof app.commitItemInstanceTransaction !== "function") return { ok: false, reason: "ITEM_INSTANCE_TRANSACTION_API_REQUIRED", listing, instance };
+    const result = app.commitItemInstanceTransaction({
+      idempotencyKey: `market-secondary:${listing.listingId}:restore-vendor-custody:${listing.returnCount + 1}:${normalizeToken(reason)}`,
+      sourceDomain: "MARKET_SECONDARY",
+      sourceRefId: listing.listingId,
+      citizenId: "",
+      changedDomains: ["ITEM_INSTANCE", "MARKET_SECONDARY"],
+      metadata: { operationType: "MARKET_SECONDARY_SOURCE_RETURN", listingId: listing.listingId, reason: normalizeToken(reason) },
+      operations: [{
+        type: "MOVE",
+        instanceId: listing.sourceInstanceId,
+        ownerId: "",
+        expected: { ownerId: "", locationType: "VENDOR", lifecycleState: "PACKAGED" },
+        toLocation: {
+          type: "VENDOR",
+          vendorId: listing.sellerRef?.id || "provider-secondary-exchange",
+          vendorProviderId: listing.sellerRef?.id || "provider-secondary-exchange",
+          secondaryListingId: listing.listingId,
+          marketOfferId: listing.marketOfferId,
+          sourceMarketOfferId: listing.sourceMarketOfferId
+        },
+        lifecycleState: "PACKAGED",
+        patch: {
+          acquisition: { secondaryListingId: listing.listingId, marketOfferId: listing.marketOfferId, sourceMarketOfferId: listing.sourceMarketOfferId },
+          flags: { secondaryListing: true, secondaryListingStatus: "ACTIVE", returnedToVendor: true }
+        }
+      }]
+    });
+    return result?.ok
+      ? { ok: true, operation: "RESTORED", listing, instance: app.getItemInstanceById?.(listing.sourceInstanceId) || instance, transaction: result.transaction }
+      : { ok: false, reason: result?.reason || "MARKET_SECONDARY_SOURCE_CUSTODY_RESTORE_FAILED", listing, instance };
+  }
+
+  function reserveListing(input = {}) {
+    const listing = getListing(input.listingId) || getListingByMarketOfferId(input.marketOfferId);
+    const idempotencyKey = normalizeId(input.idempotencyKey);
+    const reservationId = normalizeId(input.reservationId) || `secondary_reservation_${hash32(idempotencyKey || listing?.listingId || "reservation").toString(36)}`;
+    if (!listing) return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_FOUND" };
+    if (!idempotencyKey) return { ok: false, reason: "IDEMPOTENCY_KEY_REQUIRED", listing };
+    if (input.expectedRevision != null && Number(input.expectedRevision) !== listing.revision) return { ok: false, reason: "MARKET_SECONDARY_LISTING_REVISION_CONFLICT", expectedRevision: Number(input.expectedRevision), actualRevision: listing.revision, listing };
+    if (["RESERVED", "SOLD"].includes(listing.status) && (listing.reservation?.idempotencyKey === idempotencyKey || listing.reservation?.reservationId === reservationId)) {
+      return { ok: true, operation: "IDEMPOTENT_REPLAY", listing, reservation: clone(listing.reservation) };
+    }
+    if (listing.status !== "ACTIVE") return { ok: false, reason: `MARKET_SECONDARY_LISTING_${listing.status}`, listing };
+    const current = normalizeIso(input.reservedAt || nowIso());
+    if (listing.expiresAt && compareTimes(current, listing.expiresAt) >= 0) return markExpired(listing, listing.expiresAt);
+    const source = validateSourceInstance(listing);
+    if (!source.ok) return source;
+    const requestedExpiry = addHours(current, RESERVATION_WINDOW_HOURS);
+    const expiresAt = listing.expiresAt && compareTimes(listing.expiresAt, requestedExpiry) < 0 ? listing.expiresAt : requestedExpiry;
+    const next = normalizeListing({
+      ...listing,
+      status: "RESERVED",
+      reservation: {
+        reservationId,
+        idempotencyKey,
+        citizenId: normalizeId(input.citizenId),
+        cartId: normalizeId(input.cartId),
+        marketOrderId: normalizeId(input.marketOrderId),
+        status: "RESERVED",
+        reservedAt: current,
+        expiresAt
+      },
+      nextDemandCheckAt: null,
+      nextPriceReviewAt: null,
+      updatedAt: current,
+      revision: listing.revision + 1
+    });
+    diagnostics.reservationsCreated += 1;
+    const committed = commitListing(next, "MARKET_SECONDARY_LISTING_RESERVED", { reservationId, marketOrderId: next.reservation.marketOrderId, citizenId: next.reservation.citizenId });
+    if (committed.ok) scheduleEvent(EVENT_TYPES.RESERVATION_EXPIRES, committed.listing, expiresAt, { payload: { reservationId } });
+    return { ...committed, reservation: committed.ok ? clone(committed.listing.reservation) : null };
+  }
+
+  function commitListingSale(input = {}) {
+    const listing = getListing(input.listingId) || getListingByMarketOfferId(input.marketOfferId);
+    const idempotencyKey = normalizeId(input.idempotencyKey);
+    if (!listing) return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_FOUND" };
+    if (!idempotencyKey) return { ok: false, reason: "IDEMPOTENCY_KEY_REQUIRED", listing };
+    if (listing.status === "SOLD" && listing.saleResolution === "PLAYER_BUYER" && (listing.reservation?.idempotencyKey === input.reservationIdempotencyKey || listing.saleMarketOrderId === normalizeId(input.marketOrderId))) {
+      return { ok: true, operation: "IDEMPOTENT_REPLAY", listing };
+    }
+    if (listing.status !== "RESERVED") return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_RESERVED", listing };
+    if (normalizeId(input.reservationId) && listing.reservation?.reservationId !== normalizeId(input.reservationId)) return { ok: false, reason: "MARKET_SECONDARY_RESERVATION_MISMATCH", listing };
+    if (normalizeId(input.marketOrderId) && listing.reservation?.marketOrderId && listing.reservation.marketOrderId !== normalizeId(input.marketOrderId)) return { ok: false, reason: "MARKET_SECONDARY_ORDER_MISMATCH", listing };
+    const instance = app.getItemInstanceById?.(listing.sourceInstanceId) || null;
+    const buyerCitizenId = normalizeId(input.buyerCitizenId || listing.reservation?.citizenId);
+    if (!instance) return { ok: false, reason: "MARKET_SECONDARY_SOURCE_INSTANCE_MISSING", listing };
+    if (normalizeId(instance.ownerId) !== buyerCitizenId) return { ok: false, reason: "MARKET_SECONDARY_BUYER_OWNERSHIP_NOT_COMMITTED", listing, instance };
+    if (normalizeToken(instance.location?.type) !== "VENDOR") return { ok: false, reason: "MARKET_SECONDARY_BUYER_CUSTODY_INVALID", listing, instance };
+    const soldAt = normalizeIso(input.soldAt || nowIso());
+    const next = normalizeListing({
+      ...listing,
+      status: "SOLD",
+      soldAt,
+      saleResolution: "PLAYER_BUYER",
+      buyerRef: { type: "CITIZEN", id: buyerCitizenId },
+      saleMarketOrderId: normalizeId(input.marketOrderId),
+      saleBillingTransactionId: normalizeId(input.billingTransactionId),
+      saleItemTransactionId: normalizeId(input.itemTransactionId),
+      reservation: { ...listing.reservation, status: "COMMITTED", committedAt: soldAt },
+      updatedAt: soldAt,
+      revision: listing.revision + 1
+    });
+    diagnostics.playerSales += 1;
+    return commitListing(next, "MARKET_SECONDARY_LISTING_SOLD_TO_PLAYER", { marketOrderId: next.saleMarketOrderId, buyerCitizenId, sourceInstanceId: listing.sourceInstanceId });
+  }
+
+  function releaseListingReservation(input = {}) {
+    const listing = getListing(input.listingId) || getListingByMarketOfferId(input.marketOfferId);
+    if (!listing) return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_FOUND" };
+    const reservationId = normalizeId(input.reservationId);
+    if (reservationId && listing.reservation?.reservationId && reservationId !== listing.reservation.reservationId) return { ok: false, reason: "MARKET_SECONDARY_RESERVATION_MISMATCH", listing };
+    const committedRollback = listing.status === "SOLD" && listing.saleResolution === "PLAYER_BUYER" && input.allowCommittedRollback === true;
+    if (!["RESERVED", "SOLD"].includes(listing.status) || (listing.status === "SOLD" && !committedRollback)) {
+      return { ok: true, operation: "IDEMPOTENT_REPLAY", listing };
+    }
+    const instance = app.getItemInstanceById?.(listing.sourceInstanceId) || null;
+    if (!instance || normalizeId(instance.ownerId) || normalizeToken(instance.location?.type) !== "VENDOR") return { ok: false, reason: "MARKET_SECONDARY_SOURCE_NOT_RETURNED_TO_VENDOR", listing, instance };
+    const restored = restoreSourceVendorCustody(listing, input.reason || "RESERVATION_RELEASED");
+    if (!restored.ok) return restored;
+    const releasedAt = normalizeIso(input.releasedAt || nowIso());
+    const expired = listing.expiresAt && compareTimes(releasedAt, listing.expiresAt) >= 0;
+    const provisional = normalizeListing({
+      ...listing,
+      status: expired ? "EXPIRED" : "ACTIVE",
+      soldAt: null,
+      saleResolution: null,
+      buyerRef: null,
+      saleMarketOrderId: "",
+      saleBillingTransactionId: "",
+      saleItemTransactionId: "",
+      expiredAt: expired ? listing.expiresAt : null,
+      reservation: { ...listing.reservation, status: "RELEASED", releasedAt, releaseReason: normalizeToken(input.reason || "RESERVATION_RELEASED") },
+      updatedAt: releasedAt,
+      revision: listing.revision + 1
+    });
+    if (!expired) {
+      provisional.nextDemandCheckAt = addHours(releasedAt, resolveDemandIntervalHours(provisional, "reservation-release"));
+      const reviewHours = resolvePriceReviewIntervalHours(provisional.pricingStrategy);
+      provisional.nextPriceReviewAt = reviewHours && compareTimes(addHours(releasedAt, reviewHours), provisional.expiresAt) < 0 ? addHours(releasedAt, reviewHours) : null;
+    }
+    diagnostics.reservationsReleased += 1;
+    const committed = commitListing(provisional, expired ? "MARKET_SECONDARY_LISTING_EXPIRED_AFTER_RELEASE" : "MARKET_SECONDARY_LISTING_RESERVATION_RELEASED", { reservationId: listing.reservation?.reservationId, reason: normalizeToken(input.reason || "RESERVATION_RELEASED") });
+    if (committed.ok) {
+      if (expired) retireSourceInstance(committed.listing, "RESERVATION_RELEASED_AFTER_EXPIRY");
+      else scheduleListingEvents(committed.listing);
+    }
+    return committed;
+  }
+
+  function returnListingSale(input = {}) {
+    const listing = getListing(input.listingId) || getListingByMarketOfferId(input.marketOfferId);
+    if (!listing) return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_FOUND" };
+    if (listing.status === "ACTIVE" && listing.returnCount > 0) return { ok: true, operation: "IDEMPOTENT_REPLAY", listing };
+    if (listing.status !== "SOLD" || listing.saleResolution !== "PLAYER_BUYER") return { ok: false, reason: "MARKET_SECONDARY_PLAYER_SALE_REQUIRED", listing };
+    if (normalizeId(input.marketOrderId) && listing.saleMarketOrderId !== normalizeId(input.marketOrderId)) return { ok: false, reason: "MARKET_SECONDARY_ORDER_MISMATCH", listing };
+    const instance = app.getItemInstanceById?.(listing.sourceInstanceId) || null;
+    if (!instance || normalizeId(instance.ownerId) || normalizeToken(instance.location?.type) !== "VENDOR") return { ok: false, reason: "MARKET_SECONDARY_SOURCE_NOT_RETURNED_TO_VENDOR", listing, instance };
+    const restored = restoreSourceVendorCustody(listing, "MARKET_RETURN");
+    if (!restored.ok) return restored;
+    const returnedAt = normalizeIso(input.returnedAt || nowIso());
+    const expired = listing.expiresAt && compareTimes(returnedAt, listing.expiresAt) >= 0;
+    const next = normalizeListing({
+      ...listing,
+      status: expired ? "EXPIRED" : "ACTIVE",
+      soldAt: null,
+      saleResolution: null,
+      buyerRef: null,
+      saleMarketOrderId: "",
+      saleBillingTransactionId: "",
+      saleItemTransactionId: "",
+      expiredAt: expired ? listing.expiresAt : null,
+      reservation: { ...listing.reservation, status: "RETURNED", releasedAt: returnedAt, releaseReason: "MARKET_RETURN" },
+      returnCount: listing.returnCount + 1,
+      lastReturnedAt: returnedAt,
+      updatedAt: returnedAt,
+      revision: listing.revision + 1
+    });
+    if (!expired) {
+      next.nextDemandCheckAt = addHours(returnedAt, resolveDemandIntervalHours(next, "market-return"));
+      const reviewHours = resolvePriceReviewIntervalHours(next.pricingStrategy);
+      next.nextPriceReviewAt = reviewHours && compareTimes(addHours(returnedAt, reviewHours), next.expiresAt) < 0 ? addHours(returnedAt, reviewHours) : null;
+    }
+    diagnostics.playerReturns += 1;
+    const committed = commitListing(next, expired ? "MARKET_SECONDARY_LISTING_EXPIRED_AFTER_RETURN" : "MARKET_SECONDARY_LISTING_RETURNED", { marketOrderId: normalizeId(input.marketOrderId), sourceInstanceId: listing.sourceInstanceId });
+    if (committed.ok) {
+      if (expired) retireSourceInstance(committed.listing, "RETURN_AFTER_EXPIRY");
+      else scheduleListingEvents(committed.listing);
+    }
+    return committed;
+  }
+
+  function resolveReservationExpiry(listingId = "", options = {}) {
+    const listing = getListing(listingId);
+    if (!listing) return { ok: true, reason: "MARKET_SECONDARY_LISTING_NO_LONGER_EXISTS", listingId };
+    if (listing.status !== "RESERVED") return { ok: true, reason: "MARKET_SECONDARY_LISTING_NOT_RESERVED", listing };
+    const scheduledAt = normalizeIso(options.scheduledAt || options.currentTimeIso || nowIso());
+    if (!listing.reservation?.expiresAt || normalizeIso(listing.reservation.expiresAt) !== scheduledAt) {
+      diagnostics.staleEventsIgnored += 1;
+      return { ok: true, reason: "MARKET_SECONDARY_STALE_RESERVATION_EVENT", listing };
+    }
+    const order = listing.reservation.marketOrderId ? app.getMarketOrder?.(listing.reservation.marketOrderId) || null : null;
+    if (order && ["AUTHORIZED", "FULFILLING", "COMPLETED"].includes(normalizeToken(order.status))) return { ok: true, reason: "MARKET_SECONDARY_RESERVATION_HELD_BY_ORDER", listing, order };
+    return releaseListingReservation({ listingId, reservationId: listing.reservation.reservationId, reason: "RESERVATION_EXPIRED", releasedAt: scheduledAt });
   }
 
   function resolveReviewedPrice(listing = {}) {
@@ -668,6 +1114,11 @@ window.WS_APP = window.WS_APP || {};
     return resolveExpiry(listingId, { scheduledAt: context.scheduledAt || event.scheduledAt, currentTimeIso: context.currentTimeIso });
   }
 
+  async function handleReservationExpiryEvent(event = {}, context = {}) {
+    const listingId = normalizeId(event.payload?.listingId || event.payload?.entityId || event.entityId);
+    return resolveReservationExpiry(listingId, { scheduledAt: context.scheduledAt || event.scheduledAt, currentTimeIso: context.currentTimeIso });
+  }
+
   async function handleReplenishEvent(event = {}, context = {}) {
     const scheduledAt = normalizeIso(context.scheduledAt || event.scheduledAt || nowIso());
     if (generatorState.nextReplenishAt && normalizeIso(generatorState.nextReplenishAt) !== scheduledAt) {
@@ -683,6 +1134,7 @@ window.WS_APP = window.WS_APP || {};
       [EVENT_TYPES.DEMAND_CHECK, handleDemandEvent],
       [EVENT_TYPES.PRICE_REVIEW, handlePriceReviewEvent],
       [EVENT_TYPES.EXPIRES, handleExpiryEvent],
+      [EVENT_TYPES.RESERVATION_EXPIRES, handleReservationExpiryEvent],
       [EVENT_TYPES.REPLENISH, handleReplenishEvent]
     ];
     const results = handlers.map(([eventType, handler]) => app.registerMarketTimeEventHandler(eventType, handler, { replace: true }));
@@ -695,7 +1147,32 @@ window.WS_APP = window.WS_APP || {};
     let expired = 0;
     let scheduled = 0;
     Object.values(listingsById).map(normalizeListing).forEach((listing) => {
-      if (listing.status !== "ACTIVE") return;
+      if (["ACTIVE", "RESERVED"].includes(listing.status)) {
+        const normalizedOfferId = makeSecondaryOfferId(listing.listingId);
+        const normalizedInstanceId = listing.sourceInstanceId || makeSecondaryInstanceId(listing.listingId);
+        if (listing.marketOfferId !== normalizedOfferId || listing.sourceInstanceId !== normalizedInstanceId) {
+          const migrated = commitListing({ ...listing, marketOfferId: normalizedOfferId, sourceInstanceId: normalizedInstanceId, revision: listing.revision + 1, updatedAt: current }, "MARKET_SECONDARY_LISTING_FULFILLMENT_MIGRATED");
+          if (migrated.ok) listing = migrated.listing;
+        }
+        const materialized = ensureSourceInstance(listing);
+        if (!materialized.ok) {
+          diagnostics.recoveryRequired += 1;
+          commitListing({ ...listing, status: "RECOVERY_REQUIRED", recoveryCode: materialized.reason || "SOURCE_INSTANCE_RECOVERY_REQUIRED", revision: listing.revision + 1, updatedAt: current }, "MARKET_SECONDARY_LISTING_RECOVERY_REQUIRED");
+          return;
+        }
+      }
+      if (listing.status === "RESERVED") {
+        if (listing.reservation?.expiresAt && compareTimes(current, listing.reservation.expiresAt) >= 0) resolveReservationExpiry(listing.listingId, { scheduledAt: listing.reservation.expiresAt, currentTimeIso: current });
+        else {
+          const result = scheduleListingEvents(listing);
+          scheduled += result.scheduled?.filter((entry) => entry?.ok).length || 0;
+        }
+        return;
+      }
+      if (listing.status !== "ACTIVE") {
+        if (["EXPIRED", "WITHDRAWN"].includes(listing.status) || (listing.status === "SOLD" && listing.saleResolution === "WORLD_BUYER")) retireSourceInstance(listing, `RECONCILE_${listing.status}`);
+        return;
+      }
       if (listing.expiresAt && compareTimes(current, listing.expiresAt) >= 0) {
         const result = markExpired(listing, listing.expiresAt, "MARKET_SECONDARY_LISTING_EXPIRED_DURING_RECONCILE");
         if (result.ok) expired += 1;
@@ -743,7 +1220,7 @@ window.WS_APP = window.WS_APP || {};
     listingsById = Object.create(null);
     storeRevision = 0;
     generatorState = { sequence: 0, targetActiveCount: DEFAULT_ACTIVE_TARGET, lastGeneratedAt: null, nextReplenishAt: null };
-    diagnostics = { generated: 0, soldToWorld: 0, expired: 0, priceReviews: 0, demandChecks: 0, staleEventsIgnored: 0, persistenceFailures: 0, lastReconcileAt: null };
+    diagnostics = { generated: 0, soldToWorld: 0, expired: 0, priceReviews: 0, demandChecks: 0, staleEventsIgnored: 0, persistenceFailures: 0, sourceInstancesCreated: 0, sourceInstancesRetired: 0, reservationsCreated: 0, reservationsReleased: 0, playerSales: 0, playerReturns: 0, recoveryRequired: 0, lastReconcileAt: null };
     const persisted = options.persist === false || flushPersistence();
     if (options.generate === true) queueMicrotask(() => reconcileListings({ generate: true }));
     emitUpdated("MARKET_SECONDARY_STATE_RESET");
@@ -779,9 +1256,18 @@ window.WS_APP = window.WS_APP || {};
     resolveMarketSecondaryDailySaleChance: resolveDailySaleChance,
     resolveMarketSecondaryIntervalSaleChance: resolveIntervalSaleChance,
     getMarketSecondaryListing: getListing,
+    getMarketSecondaryListingByMarketOfferId: getListingByMarketOfferId,
     getMarketSecondaryListings: getListings,
     getMarketSecondaryListingRevision: getListingRevision,
     projectMarketSecondaryListing: getCatalogProjection,
+    projectMarketSecondaryOffer: projectMarketOffer,
+    validateMarketSecondarySourceInstance: validateSourceInstance,
+    ensureMarketSecondarySourceInstance: ensureSourceInstance,
+    reserveMarketSecondaryListing: reserveListing,
+    commitMarketSecondaryListingSale: commitListingSale,
+    releaseMarketSecondaryListingReservation: releaseListingReservation,
+    returnMarketSecondaryListingSale: returnListingSale,
+    resolveMarketSecondaryReservationExpiry: resolveReservationExpiry,
     createSystemMarketSecondaryListing: createSystemListing,
     generateSystemMarketSecondaryListings: generateListings,
     scheduleMarketSecondaryListingEvents: scheduleListingEvents,

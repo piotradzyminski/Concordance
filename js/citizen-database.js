@@ -235,7 +235,7 @@ function renderCitizenFileToolbar(state, user) {
       </label>
       ${canManageCitizenFiles(user) ? `
         <label class="citizen-file-archive-filter">
-          <input type="checkbox" data-citizen-file-filter="includeArchived" ${state.includeArchived ? "checked" : ""}>
+          <input class="ui-select-control" type="checkbox" data-citizen-file-filter="includeArchived" ${state.includeArchived ? "checked" : ""}>
           <span>Include archived</span>
         </label>
       ` : ""}
@@ -524,7 +524,7 @@ function renderCitizenFileEditor(user, fileId = null, returnView) {
           <legend>Related Case Files</legend>
           ${cases.length ? cases.map((record) => `
             <label>
-              <input type="checkbox" name="relatedCaseFileIds" value="${escapeHtml(record.id)}" ${(draft.relatedCaseFileIds || []).includes(record.id) ? "checked" : ""}>
+              <input class="ui-select-control" type="checkbox" name="relatedCaseFileIds" value="${escapeHtml(record.id)}" ${(draft.relatedCaseFileIds || []).includes(record.id) ? "checked" : ""}>
               <span>${escapeHtml(record.caseNumber || record.id)} — ${escapeHtml(record.title)}</span>
             </label>
           `).join("") : '<p class="file-empty">No Case Files available.</p>'}

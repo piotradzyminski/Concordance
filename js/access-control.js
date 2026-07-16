@@ -487,7 +487,7 @@ window.WS_APP = window.WS_APP || {};
             const type = String(item.type || item.category || "").trim();
             return `
               <label class="tag-picker-chip ${checked ? "is-selected" : ""}">
-                <input type="checkbox" name="${escapeHtmlLocal(name)}" value="${escapeHtmlLocal(id)}" ${checked ? "checked" : ""} />
+                <input class="ui-select-control" type="checkbox" name="${escapeHtmlLocal(name)}" value="${escapeHtmlLocal(id)}" ${checked ? "checked" : ""} />
                 <span>${escapeHtmlLocal(id)}</span>
                 ${display && display.toUpperCase() !== id.toUpperCase() ? `<small>${escapeHtmlLocal(display)}</small>` : ""}
                 ${type ? `<em>${escapeHtmlLocal(type)}</em>` : ""}
@@ -556,7 +556,7 @@ window.WS_APP = window.WS_APP || {};
                 const type = String(item.type || "custom").trim();
                 return `
                   <label class="tag-picker-chip is-compartment ${checked ? "is-selected" : ""}">
-                    <input type="checkbox" name="${escapeHtmlLocal(name)}" value="${escapeHtmlLocal(id)}" ${checked ? "checked" : ""} />
+                    <input class="ui-select-control" type="checkbox" name="${escapeHtmlLocal(name)}" value="${escapeHtmlLocal(id)}" ${checked ? "checked" : ""} />
                     <span>${escapeHtmlLocal(id)}</span>
                     ${display && display.toUpperCase() !== id ? `<small>${escapeHtmlLocal(display)}</small>` : ""}
                     ${type ? `<em>${escapeHtmlLocal(type)}</em>` : ""}

@@ -17,7 +17,7 @@ test("Admin Operations workspace is lazy, renderer-owned and uses canonical Worl
 
   assert.match(registry, /id: "operations"/);
   assert.match(registry, /bundleId: "admin-workspace-operations"/);
-  assert.match(modules, /"admin-workspace-operations":\s*\{[\s\S]*admin-operations-command\.js\?v=1[\s\S]*admin-workspace-operations\.js\?v=1/);
+  assert.match(modules, /"admin-workspace-operations":\s*\{[\s\S]*admin-operations-command\.js\?v=1[\s\S]*admin-workspace-operations\.js\?v=2/);
   assert.match(renderer, /registerRenderer\("operations"/);
   assert.match(renderer, /getWorldBridgeOperations/);
   assert.match(renderer, /AdminOperationsControl/);

@@ -3,7 +3,7 @@
 ## Baseline
 
 ```text
-runtime: Parallel Scope Merge 15.19x
+runtime: Parallel Scope Merge 15.23x
 documentation: Canonical Documentation 4.0x
 phase: pre-alpha
 ```
@@ -589,3 +589,109 @@ missing eager/lazy assets: 0
 unexpected Knowledge data changes: 0
 browser E2E: not executed
 ```
+
+
+## Installed in 15.20x
+
+```text
+Citizen Card Projection Boundary 1.0x
+Registry UI Dependency Foundation 1.0x
+Terminal Store Reactivity 1.0x
+Subscriptions Catalog Cleanup 4.7x
+```
+
+Citizen Card now uses three isolated read-only projection adapters for Equipment, active Subscriptions and installed Cyberware. The four Citizen record bundles no longer load the full Cyberware diagnostics, maintenance, planner, actions or controller runtime. Cold entry reads canonical ItemInstance, finance and entitlement state and does not overwrite full-domain globals.
+
+`js/registry-ui.js` is loaded eagerly after Terminal effects and before module routing. It owns shared registry confirmation, field rendering, list parsing and normalized search queries. Knowledge renderers, Citizen Records and Subscriptions call `WS_APP.registryUI` explicitly; `js/modules.js` no longer exports unrelated Knowledge form helpers.
+
+Terminal Hub installs one singleton listener pair for canonical Entry and Reminder events. Entry updates refresh navigation cards and the active Inbox projection only; Reminder updates refresh only the Calendar shell. Refreshes are microtask-coalesced, render-revision guarded and preserve mounted target, filters, selection, open menus, scroll and restorable focus.
+
+Subscriptions Catalog Cleanup removes the LearnMin provider/organization/notification manifest, the Skill Channel product and exact technical seed contracts. Catalog definitions use `catalogStatus` (`CANONICAL`, `PROVISIONAL`, `TEST_ONLY`, `DEPRECATED`), while player/runtime reads exclude test-only and deprecated records by default. Catalog storage advances to schema `subscription_catalog_cleanup_4_7x` with v5 keys; the obsolete v4 overlay is deleted rather than merged.
+
+Validation:
+
+```text
+JavaScript syntax: 348 / 348 PASS
+Node unit/contract/data-I/O: 445 / 445 PASS
+browser E2E: not executed
+```
+
+
+## Installed in 15.21x
+
+```text
+Terminal Render Scope 2.0x
+Registry Controls CSS Extraction 1.0x
+Citizen Card Renderer Split 2.0x
+Equipment Contract Cleanup 6.0x
+Equipment/Cyberware Stylesheet Boundary 6.1x
+Subscriptions Catalog Authoring 4.8x
+Admin Cyberware Runtime 1.0x
+Knowledge Relation Index Layout 2.0 — presentation-only delta
+Market Orders Catalog Structure 7.1x
+Market Secondary Fulfillment 7.1x
+```
+
+Terminal now has explicit domain refresh boundaries and no longer refreshes Calendar through generic panel updates. Shared registry controls are owned by eager `css/registry-controls.css`; the retired `css/encyclopedia.css` path is removed by the cleanup manifest.
+
+Citizen Card rendering is split into reusable detail renderers, a card shell/controller and a GM-only registry renderer. Equipment is reduced to its canonical CyberGrid screen, the obsolete Equipment/Cyberware navigation bridge is retired, and Equipment/Cyberware stylesheets are independent lazy assets.
+
+Admin Catalog Management authors Subscription definitions through the canonical Subscription Catalog Store. Admin Cyberware Runtime delegates world operations to Cyberware World Bridge and direct operations to existing Planner/Maintenance boundaries.
+
+Knowledge 2.0 changes only desktop layout. No Knowledge records, lore, stable relation IDs, registries or Knowledge Pack schema are imported or replaced.
+
+Market ORDERS owns internal Ordered/Delivered views. Secondary checkout is delivery-only and quantity-one, transfers the same concrete VENDOR ItemInstance, compensates failed checkout and restores listing custody after an eligible return. Player-created listings, seller payout, platform fees and marketplace settlement remain outside the scope.
+
+Validation:
+
+```text
+JavaScript syntax: 364 / 364 PASS
+unit: 101 / 101 PASS
+contracts: 382 / 382 PASS
+data-I/O: 3 / 3 PASS
+total: 486 / 486 PASS
+browser E2E: not executed
+```
+
+
+## Installed in 15.22x
+
+```text
+Housing Household UI Consolidation 5.1x
+UI Controls Single Owner 1.0x
+```
+
+Housing now exposes four primary Citizen sections: Overview, Household, Storage and Deliveries. Legacy Unit, History and Collection requests normalize into those surfaces. The Storage Item Index is a transient locator over canonical Housing, nested-container and ItemInstance state; it does not persist another index or move items outside existing commands.
+
+`css/ui-controls.css` is eager-loaded exactly once after `css/modules.css`. It is the only stylesheet permitted to define scrollbar appearance or native checkbox geometry/state. Housing keeps semantic `data-system-scroll` markers, while `css/modules.css` and domain CSS retain overflow/layout only.
+
+Validation:
+
+```text
+JavaScript syntax: 366 / 366 PASS
+unit: 101 / 101 PASS
+contracts: 386 / 386 PASS
+data-I/O: 3 / 3 PASS
+total: 490 / 490 PASS
+browser E2E: not executed
+```
+
+
+## Installed in 15.23x
+
+```text
+Terminal Inbox Canonical Model 3.0x
+Terminal Inbox Scalability 4.0x
+Cyberware Taxonomy Foundation 16.2x
+Cyberware Taxonomy Migration 16.3x
+Equipment CSS Consolidation 6.2
+Citizen Card Interaction Fast Path 2.1x
+Billing Marketplace Settlement 1.0x
+Citizen Store Subscription Adapter 1.2x
+```
+
+Terminal Inbox uses one schema-v4 compatibility adapter in Citizen Store and one bounded player projection in Terminal. Canonical filtering and card actions consume `domain`, `category`, `eventCode`, lifecycle, severity, tags and `actions[]`; legacy aliases are migration-only.
+
+Cyberware taxonomy is a vocabulary and migration layer over existing ItemInstance BODY ownership. It does not create a second anatomy store, occupancy map or item collection. Equipment remains a single CyberGrid workspace and its stylesheet contains no Cyberware presentation branch.
+
+Citizen Card presentation updates use mounted-section fast paths only. Billing owns marketplace account settlement and refunds, while Market retains listing/order/custody ownership. The Citizen Subscription Adapter is an injected command implementation, not a store; Citizen persistence and SubscriptionAPI ownership remain unchanged.

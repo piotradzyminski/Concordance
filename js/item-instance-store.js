@@ -283,6 +283,15 @@ window.WS_APP.state = window.WS_APP.state || {};
     return Object.fromEntries(Object.entries(clone(source) || {}).filter(([key]) => !CANONICAL_KEYS.has(key)));
   }
 
+  function normalizeAuthorizationRefs(value = null) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const refs = clone(value);
+    if (typeof window.WS_APP.cleanRetiredSubscriptionReference === "function") {
+      refs.subscriptionId = window.WS_APP.cleanRetiredSubscriptionReference(refs.subscriptionId, null);
+    }
+    return refs;
+  }
+
   function normalizeItemInstance(source = {}, index = 0, options = {}) {
     if (!source || typeof source !== "object" || Array.isArray(source)) return null;
     const ownerId = normalizeId(options.ownerId || source.ownerId || source.characterId);
@@ -362,9 +371,7 @@ window.WS_APP.state = window.WS_APP.state || {};
               calibration: { profile: "FACTORY", quality: 100 }
             }
           : null,
-      authorizationRefs: source.authorizationRefs && typeof source.authorizationRefs === "object" && !Array.isArray(source.authorizationRefs)
-        ? clone(source.authorizationRefs)
-        : null,
+      authorizationRefs: normalizeAuthorizationRefs(source.authorizationRefs),
       flags: source.flags && typeof source.flags === "object" && !Array.isArray(source.flags) ? clone(source.flags) : {},
       acquisition: source.acquisition && typeof source.acquisition === "object" && !Array.isArray(source.acquisition) ? clone(source.acquisition) : null,
       serviceHistory: Array.isArray(source.serviceHistory) ? clone(source.serviceHistory) : [],

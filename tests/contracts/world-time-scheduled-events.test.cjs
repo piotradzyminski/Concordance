@@ -23,7 +23,7 @@ test("Scheduled Events loads eagerly after Event Windows and before domain sched
   assert.ok(scheduledEvents > eventWindows);
   assert.ok(marketScheduler > scheduledEvents);
   assert.ok(serviceScheduler > marketScheduler);
-  assert.match(INDEX, /js\/campaign-data-io-adapters\.js\?v=11/);
+  assert.match(INDEX, /js\/campaign-data-io-adapters\.js\?v=12/);
 });
 
 test("Scheduled Events exposes one persistent queue and domain handler boundary", () => {

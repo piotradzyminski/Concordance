@@ -27,7 +27,11 @@ window.WS_APP = window.WS_APP || {};
       lastExportAt: source.lastExportAt || null,
       equipmentEditor: source.equipmentEditor || null,
       equipmentPreview: source.equipmentPreview || null,
-      equipmentResult: source.equipmentResult || null
+      equipmentResult: source.equipmentResult || null,
+      subscriptionEditor: source.subscriptionEditor || null,
+      subscriptionPreview: source.subscriptionPreview || null,
+      subscriptionResult: source.subscriptionResult || null,
+      subscriptionImportPreview: source.subscriptionImportPreview || null
     };
     app.adminCatalogManagementState = next;
     return next;
@@ -123,7 +127,7 @@ window.WS_APP = window.WS_APP || {};
       </section>
       <section class="admin-workspace-panel">
         <p class="kicker">AUTHORING POLICY</p>
-        <p>Equipment authoring is available through the canonical Equipment Catalog authoring store and exports replacement-ready data packs. Cyberware and Service authoring remain planned domain patches. The existing Subscription Catalog Editor remains canonical.</p>
+        <p>Equipment and Subscription authoring are available through their canonical catalog stores and export replacement-ready data packs. Cyberware and Service authoring remain planned domain patches. The legacy System Subscription editor is read-only.</p>
       </section>
     `;
   }
@@ -349,13 +353,16 @@ window.WS_APP = window.WS_APP || {};
         <p>${badge(descriptor.validationStatus || "UNKNOWN", descriptor.validationStatus === "ERROR" ? "locked" : descriptor.validationStatus === "WARNING" ? "warning" : "active")} ${escapeHtml(descriptor.definitionCount || 0)} canonical definitions · revision ${escapeHtml(descriptor.revision || "")}</p>
       </section>
       ${catalogId === "equipment" ? renderEquipmentAuthoringPanel() : ""}
+      ${catalogId === "subscriptions" ? (app.AdminSubscriptionCatalogAuthoring?.renderAuthoringPanel?.({ state: state(), selectedDefinition: getSelectedDefinition() }) || "") : ""}
       <section class="admin-workspace-panel">
         <div class="admin-record-list">
           ${definitions.slice(0, 250).map((definition) => `
             <button class="admin-record-row ${current.selectedDefinitionId === definition._definitionId ? "is-selected" : ""}" type="button" data-admin-catalog-inspect="${escapeHtml(definition._definitionId)}" data-admin-catalog-id="${escapeHtml(catalogId)}">
               <span><b>${escapeHtml(definition._title)}</b><small>${escapeHtml(definition._definitionId)}</small></span>
               <span>${escapeHtml(definitionCategory(catalogId, definition))}</span>
-              <span>${definition.archived === true || definition.active === false ? badge("ARCHIVED", "neutral") : badge("ACTIVE", "active")}</span>
+              <span>${catalogId === "subscriptions"
+                ? `${badge(definition.catalogStatus || "PROVISIONAL", definition.catalogStatus === "CANONICAL" ? "active" : definition.catalogStatus === "DEPRECATED" ? "locked" : "warning")} ${definition.archived === true || definition.active === false ? badge("ARCHIVED", "neutral") : badge("ACTIVE", "active")}`
+                : (definition.archived === true || definition.active === false ? badge("ARCHIVED", "neutral") : badge("ACTIVE", "active"))}</span>
             </button>
           `).join("") || `<p class="file-empty">No definitions match the current filter.</p>`}
         </div>
@@ -405,7 +412,7 @@ window.WS_APP = window.WS_APP || {};
       </section>
       <section class="admin-workspace-panel">
         <p class="kicker">APPLY POLICY</p>
-        <p>${badge("PREVIEW ONLY", "warning")} Cross-domain packs remain preview-only. Equipment definitions can be created and published through the Equipment authoring panel; Cyberware and Service still require their domain authoring stores. Subscription definitions continue to use the existing Subscription Catalog Editor.</p>
+        <p>${badge("DOMAIN APPLY", "warning")} Cross-domain packs remain preview-only. Equipment and Subscription packs can be applied only through their dedicated authoring panels; Cyberware and Service still require domain authoring stores.</p>
       </section>
     `;
   }
@@ -586,6 +593,12 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function bind(container, user) {
+    app.AdminSubscriptionCatalogAuthoring?.bindAuthoring?.(container, user, {
+      getState: state,
+      patchState,
+      getSelectedDefinition,
+      rerender: () => app.renderAdminControlCenter?.(user, "catalog-management")
+    });
     container.querySelectorAll("[data-admin-catalog-section]").forEach((button) => {
       if (button.dataset.adminRuntimeBound === "catalog-section") return;
       button.dataset.adminRuntimeBound = "catalog-section";

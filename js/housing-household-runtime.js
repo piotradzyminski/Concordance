@@ -183,7 +183,7 @@ window.WS_APP = window.WS_APP || {};
         </section>
       `;
       return `
-        <aside class="housing-household-library">
+        <aside class="housing-household-library system-scroll-surface" data-system-scroll>
           <header class="housing-household-library-head">
             <div><p class="kicker">FURNISHING LIBRARY</p><h5>Storage / Placed Items</h5></div>
             <span class="module-status-badge">${escapeHtml(entries.length)} ITEMS</span>
@@ -234,7 +234,7 @@ window.WS_APP = window.WS_APP || {};
             <span><small>CAPABILITIES</small><b>${escapeHtml((lifecycle?.capabilities || profile.capabilities || []).join(" / ") || "NONE")}</b></span>
           </div>
           <div class="housing-household-selection-actions">
-            ${movable ? `<button class="housing-inline-action" type="button" data-household-rotate>ROTATE 90°</button>` : ""}
+            ${movable ? `<button class="housing-inline-action" type="button" data-household-rotate>ROTATE</button>` : ""}
             <button class="housing-inline-action" type="button" data-household-clear-selection>CLEAR</button>
             ${isPlaced && movable ? `
               <label class="housing-household-return-target">
@@ -243,11 +243,11 @@ window.WS_APP = window.WS_APP || {};
                   ${storageUnits.map((unit) => `<option value="${escapeHtml(unit.id)}" ${unit.id === state.storageUnitId ? "selected" : ""}>${escapeHtml(unit.label || unit.id)}</option>`).join("")}
                 </select>
               </label>
-              <button class="housing-inline-action" type="button" data-household-return-item="${escapeHtml(instance.instanceId)}">RETURN TO STORAGE</button>
+              <button class="housing-inline-action" type="button" data-household-return-item="${escapeHtml(instance.instanceId)}">RETURN</button>
             ` : ""}
-            ${lifecycle?.repairable ? `<button class="housing-inline-action" type="button" data-household-repair-item="${escapeHtml(instance.instanceId)}">REPAIR TO 100%</button>` : ""}
+            ${lifecycle?.repairable ? `<button class="housing-inline-action" type="button" data-household-repair-item="${escapeHtml(instance.instanceId)}">REPAIR</button>` : ""}
             ${lifecycle?.serviceRequired ? `<span class="housing-household-service-required">OPERATOR SERVICE REQUIRED</span>` : ""}
-            ${lifecycle?.disposable ? `<button class="housing-inline-action is-danger" type="button" data-household-dispose-item="${escapeHtml(instance.instanceId)}">INCINERATE / +5 ₡</button>` : ""}
+            ${lifecycle?.disposable ? `<button class="housing-inline-action is-danger" type="button" data-household-dispose-item="${escapeHtml(instance.instanceId)}">DISPOSE</button>` : ""}
           </div>
           ${moduleSlots.length ? `
             <div class="housing-household-lifecycle-section">
@@ -258,7 +258,7 @@ window.WS_APP = window.WS_APP || {};
                     return `<span class="housing-household-slot"><small>${escapeHtml(slot.slotType)}</small><b>${escapeHtml(getItemName(slot.installedModule))}</b><button type="button" class="housing-inline-action" data-household-remove-module data-parent-instance-id="${escapeHtml(instance.instanceId)}" data-slot-id="${escapeHtml(slot.slotId)}">REMOVE</button></span>`;
                   }
                   const candidates = window.WS_APP.getHousingFurnishingModuleCandidates?.(instance.ownerId, instance.instanceId, slot.slotId) || [];
-                  return `<span class="housing-household-slot"><small>${escapeHtml(slot.slotType)}</small><b>EMPTY</b>${candidates.map((candidate) => `<button type="button" class="housing-inline-action" data-household-install-module data-parent-instance-id="${escapeHtml(instance.instanceId)}" data-module-instance-id="${escapeHtml(candidate.instanceId)}" data-slot-id="${escapeHtml(slot.slotId)}">INSTALL ${escapeHtml(getItemName(candidate))}</button>`).join("") || "<em>NO COMPATIBLE MODULE IN STORAGE</em>"}</span>`;
+                  return `<span class="housing-household-slot"><small>${escapeHtml(slot.slotType)}</small><b>EMPTY</b>${candidates.length ? `<span class="housing-household-slot-candidates">${candidates.map((candidate) => `<span class="housing-household-action-row"><b>${escapeHtml(getItemName(candidate))}</b><button type="button" class="housing-inline-action" data-household-install-module data-parent-instance-id="${escapeHtml(instance.instanceId)}" data-module-instance-id="${escapeHtml(candidate.instanceId)}" data-slot-id="${escapeHtml(slot.slotId)}">INSTALL</button></span>`).join("")}</span>` : "<em>NO COMPATIBLE MODULE IN STORAGE</em>"}</span>`;
                 }).join("")}
               </div>
             </div>
@@ -267,7 +267,7 @@ window.WS_APP = window.WS_APP || {};
             <div class="housing-household-lifecycle-section">
               <p class="kicker">REPLACE STANDARD</p>
               <div class="housing-household-replacement-list">
-                ${replacementCandidates.map((candidate) => `<button type="button" class="housing-inline-action" data-household-replace-item data-current-instance-id="${escapeHtml(instance.instanceId)}" data-replacement-instance-id="${escapeHtml(candidate.instanceId)}">REPLACE WITH ${escapeHtml(getItemName(candidate))}</button>`).join("")}
+                ${replacementCandidates.map((candidate) => `<span class="housing-household-action-row"><b>${escapeHtml(getItemName(candidate))}</b><button type="button" class="housing-inline-action" data-household-replace-item data-current-instance-id="${escapeHtml(instance.instanceId)}" data-replacement-instance-id="${escapeHtml(candidate.instanceId)}">REPLACE</button></span>`).join("")}
               </div>
             </div>
           ` : ""}
@@ -331,7 +331,7 @@ window.WS_APP = window.WS_APP || {};
       const legend = (household.rooms || []).map((room) => `<span class="is-${escapeHtml(String(room.type || "room").toLowerCase().replace(/_/g, "-"))}"><b>${escapeHtml(room.label)}</b><small>${escapeHtml(room.type.replace(/_/g, " "))}</small></span>`).join("");
       return `
         <div class="housing-household-room-legend">${legend}</div>
-        <div class="housing-household-floor" data-household-floor style="--household-floor-columns:${escapeHtml(household.floorPlan.width)};--household-floor-rows:${escapeHtml(household.floorPlan.height)}">
+        <div class="housing-household-floor system-scroll-surface" data-system-scroll data-household-floor style="--household-floor-columns:${escapeHtml(household.floorPlan.width)};--household-floor-rows:${escapeHtml(household.floorPlan.height)}">
           ${cells.join("")}
           ${placedEntries.map((entry) => renderFloorItem(entry, selectedInstanceId)).join("")}
           <div class="housing-household-room-preview" data-household-preview hidden><b>PREVIEW</b><small></small></div>
@@ -358,7 +358,7 @@ window.WS_APP = window.WS_APP || {};
         result: window.WS_APP.resolveHouseholdOperationReadiness?.({ citizenId: citizen.id, housingRecordId: activeRecord.id, operationType }) || { ok: false, reason: "HOUSEHOLD_API_UNAVAILABLE" }
       }));
       return `
-        <div class="housing-household-tab" data-household-workspace data-housing-record-id="${escapeHtml(activeRecord.id)}">
+        <div class="housing-household-tab" data-household-workspace data-household-record-id="${escapeHtml(activeRecord.id)}">
           ${typeof renderHousingFeedback === "function" ? renderHousingFeedback(citizen.id) : ""}
           <section class="housing-module-panel housing-household-summary">
             <header class="housing-module-panel-head">
@@ -420,7 +420,7 @@ window.WS_APP = window.WS_APP || {};
       return {
         workspace,
         citizenId: normalizeId(citizenId),
-        housingRecordId: normalizeId(workspace?.getAttribute?.("data-housing-record-id"))
+        housingRecordId: normalizeId(workspace?.getAttribute?.("data-household-record-id"))
       };
     }
 

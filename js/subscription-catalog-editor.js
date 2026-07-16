@@ -393,22 +393,27 @@ window.WS_APP = window.WS_APP || {};
     if (isSubscriptionCatalogRecord(article)) {
       const definitions = window.WS_APP.getSubscriptionCatalogDefinitions?.() || article.definitions || {};
       const subscriptions = Array.isArray(definitions.subscriptions) ? definitions.subscriptions : [];
+      const summary = window.WS_APP.getSubscriptionCatalogStatusSummary?.() || {};
 
       return `
         <section class="system-definition-editor subscription-catalog-editor" data-definition-type="subscriptions">
           <header>
             <div>
               <p class="kicker">SYSTEM / SUBSCRIPTION CATALOG</p>
-              <h5>Available subscriptions</h5>
+              <h5>Catalog authoring moved to Admin</h5>
             </div>
-            <button type="button" class="definition-editor-action" data-add-subscription-definition>Add Subscription</button>
+            <button type="button" class="definition-editor-action" data-open-admin-subscription-authoring>Open Catalog Management</button>
           </header>
           <div class="subscription-editor-note">
-            Edit each provider/service as a separate catalog card. Logo accepts relative paths like <code>assets/logos/corp/lp.png</code> or text fallback.
+            This legacy System form is read-only. Canonical product, provider, target-policy, presentation and tier mutations are owned by Admin / Catalog Management / Subscriptions.
           </div>
-          <div class="definition-editor-list subscription-editor-list" data-definition-list="subscriptions">
-            ${subscriptions.map((definition) => renderSubscriptionDefinitionEditorRow(definition)).join("")}
-          </div>
+          <dl class="admin-snapshot-list">
+            <div><dt>Total definitions</dt><dd>${escapeHtml(subscriptions.length)}</dd></div>
+            <div><dt>Canonical</dt><dd>${escapeHtml(summary.CANONICAL || 0)}</dd></div>
+            <div><dt>Provisional</dt><dd>${escapeHtml(summary.PROVISIONAL || 0)}</dd></div>
+            <div><dt>Test only</dt><dd>${escapeHtml(summary.TEST_ONLY || 0)}</dd></div>
+            <div><dt>Deprecated</dt><dd>${escapeHtml(summary.DEPRECATED || 0)}</dd></div>
+          </dl>
         </section>
       `;
     }
@@ -605,73 +610,23 @@ window.WS_APP = window.WS_APP || {};
       .filter(Boolean);
   }
 
-  function collectSystemSubscriptionDefinitions(form) {
-    const subscriptions = Array.from(form.querySelectorAll("[data-definition-row='subscription']")).map((row) => {
-      const title = readDefinitionField(row, "title") || "New Subscription";
-      const market = normalizeSubscriptionMarketInput(readDefinitionField(row, "market"));
-      const tiers = parseSubscriptionTiers(readDefinitionField(row, "tiers"));
-      const definition = {
-        id: row.dataset.definitionId || slugifyDefinition(`sub-${title}`),
-        title,
-        provider: readDefinitionField(row, "provider") || "LOCAL LEDGER",
-        category: readDefinitionField(row, "category") || "OTHER",
-        market,
-        logo: window.WS_APP.normalizeSubscriptionLogoPath?.(readDefinitionField(row, "logo")) || readDefinitionField(row, "logo"),
-        tags: [market],
-        description: readDefinitionField(row, "description"),
-        summary: readDefinitionField(row, "summary"),
-        targetPolicy: (() => {
-          const allowedTargetTypes = targetModeToAllowedTypes(readDefinitionField(row, "targetMode"));
-          const requestedDefault = String(readDefinitionField(row, "defaultTargetType") || allowedTargetTypes[0]).toUpperCase();
-          return {
-            allowedTargetTypes,
-            defaultTargetType: allowedTargetTypes.includes(requestedDefault) ? requestedDefault : allowedTargetTypes[0],
-            maximumTargets: clampNumber(readDefinitionField(row, "maximumTargets") || 1, 1, 100),
-            itemEligibility: {
-              requireOwnedByCitizen: readDefinitionCheckbox(row, "requireOwnedByCitizen"),
-              blockedLifecycleStates: readDefinitionList(row, "blockedLifecycleStates"),
-              allowedDefinitionIds: readDefinitionList(row, "allowedDefinitionIds"),
-              allowedCategories: readDefinitionList(row, "allowedCategories"),
-              allowedSubtypes: readDefinitionList(row, "allowedSubtypes"),
-              requiredTagsAny: readDefinitionList(row, "requiredTagsAny"),
-              requiredTagsAll: readDefinitionList(row, "requiredTagsAll"),
-              allowedManufacturerIds: readDefinitionList(row, "allowedManufacturerIds"),
-              allowedProviderIds: readDefinitionList(row, "allowedProviderIds")
-            }
-          };
-        })(),
-        tiers: tiers.length ? tiers : [{ id: "tier-default", label: "T1", amount: 0, cycle: "WEEKLY", durationDays: 7, description: "" }],
-        archived: readDefinitionCheckbox(row, "archived")
-      };
-      return window.WS_APP.normalizeSubscriptionDefinition?.(definition) || definition;
-    });
-
-    return window.WS_APP.normalizeSubscriptionCatalogDefinitions?.({ subscriptions }) || { subscriptions };
+  function collectSystemSubscriptionDefinitions(_form) {
+    // Catalog authoring is owned by Admin Catalog Management. System record saves
+    // preserve the current canonical definitions without rebuilding lossy rows.
+    return window.WS_APP.getSubscriptionCatalogDefinitions?.() || { subscriptions: [] };
   }
 
   function bindSubscriptionCatalogDefinitionEditor(form) {
     if (!form || form.dataset.definitionEditor !== "subscription-catalog") return false;
-
-    form.addEventListener("click", (event) => {
-      const addSubscription = event.target?.closest?.("[data-add-subscription-definition]");
-      const duplicateSubscription = event.target?.closest?.("[data-duplicate-subscription-definition]");
-      const removeSubscription = event.target?.closest?.("[data-delete-subscription-definition]");
-
-      if (addSubscription) {
-        const list = form.querySelector("[data-definition-list='subscriptions']");
-        list?.insertAdjacentHTML("beforeend", renderSubscriptionDefinitionEditorRow({}));
-        return;
-      }
-
-      if (duplicateSubscription) {
-        const row = duplicateSubscription.closest(".definition-editor-row");
-        if (row) row.insertAdjacentHTML("afterend", row.outerHTML.replace(/data-definition-id="[^"]*"/, 'data-definition-id=""'));
-        return;
-      }
-
-      if (removeSubscription) removeSubscription.closest(".definition-editor-row")?.remove();
+    form.querySelector("[data-open-admin-subscription-authoring]")?.addEventListener("click", () => {
+      window.WS_APP.adminCatalogManagementState = {
+        ...(window.WS_APP.adminCatalogManagementState || {}),
+        section: "subscriptions",
+        selectedCatalogId: "subscriptions",
+        selectedDefinitionId: ""
+      };
+      window.WS_APP.renderAdminControlCenter?.(window.WS_APP.currentUser, "catalog-management");
     });
-
     return true;
   }
 

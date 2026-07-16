@@ -39,8 +39,8 @@ test("Market datetime scheduler loads after the shared queue and before Service 
   assert.ok(queueIndex >= 0);
   assert.ok(marketIndex > queueIndex);
   assert.ok(serviceIndex > marketIndex);
-  assert.match(index, /js\/market-store\.js\?v=13/);
-  assert.match(index, /js\/modules\.js\?v=309/);
+  assert.match(index, /js\/market-store\.js\?v=14/);
+  assert.match(index, /js\/modules\.js\?v=318/);
 });
 
 test("Active documentation defines the Market datetime ownership boundary", () => {

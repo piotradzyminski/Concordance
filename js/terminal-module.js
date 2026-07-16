@@ -11,7 +11,12 @@ window.WS_APP = window.WS_APP || {};
   ];
 
   const TERMINAL_REMINDER_COLORS = Array.from({ length: 6 }, (_, index) => index);
-  const TERMINAL_MODULE_VERSION = "5.3.0x";
+  const TERMINAL_MODULE_VERSION = "5.7.0x";
+  const TERMINAL_STORE_EVENT_NAMES = Object.freeze({
+    entries: "ws:terminal-entries-updated",
+    reminders: "ws:calendar-reminders-updated"
+  });
+  const TERMINAL_INBOX_PAGE_SIZE = 50;
 
   function escapeHtml(value = "") {
     if (typeof window.WS_APP.escapeHtml === "function") return window.WS_APP.escapeHtml(value);
@@ -106,6 +111,272 @@ window.WS_APP = window.WS_APP || {};
     return window.WS_APP.terminalCalendarState[id];
   }
 
+  function getTerminalStoreReactivityState() {
+    const current = window.WS_APP.terminalStoreReactivity;
+    const state = current && typeof current === "object" ? current : {};
+    if (!(state.refreshKinds instanceof Set)) state.refreshKinds = new Set();
+    state.renderRevision = Math.max(0, Number(state.renderRevision || 0) || 0);
+    state.refreshScheduled = state.refreshScheduled === true;
+    state.expectedRevision = Math.max(0, Number(state.expectedRevision || 0) || 0);
+    window.WS_APP.terminalStoreReactivity = state;
+    return state;
+  }
+
+  function markTerminalRender() {
+    const state = getTerminalStoreReactivityState();
+    state.renderRevision += 1;
+    window.WS_APP.terminalRenderRevision = state.renderRevision;
+    return state.renderRevision;
+  }
+
+  function getTerminalMountedContext() {
+    const root = document.querySelector("[data-terminal-root]");
+    const user = window.WS_APP.currentUser;
+    if (!root || !user || window.WS_APP.currentModuleId !== "terminal-hub") return null;
+
+    const citizen = getTerminalTargetCitizen(user);
+    if (!citizen || root.dataset.terminalCitizenId !== String(citizen.id || "")) return null;
+
+    return {
+      root,
+      user,
+      citizen,
+      activePanel: getSafeTerminalPanel(window.WS_APP.terminalActivePanel || "inbox")
+    };
+  }
+
+  function escapeTerminalSelectorValue(value = "") {
+    return String(value ?? "")
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"');
+  }
+
+  function getTerminalFocusSelector(element) {
+    if (!element || typeof element.getAttribute !== "function") return "";
+
+    const id = String(element.getAttribute("id") || "").trim();
+    if (id) return `[id="${escapeTerminalSelectorValue(id)}"]`;
+
+    const attributeNames = typeof element.getAttributeNames === "function" ? element.getAttributeNames() : [];
+    const terminalAttribute = attributeNames.find((name) => String(name).startsWith("data-terminal-"));
+    if (terminalAttribute) {
+      const value = String(element.getAttribute(terminalAttribute) || "");
+      return value
+        ? `[${terminalAttribute}="${escapeTerminalSelectorValue(value)}"]`
+        : `[${terminalAttribute}]`;
+    }
+
+    const name = String(element.getAttribute("name") || "").trim();
+    return name ? `[name="${escapeTerminalSelectorValue(name)}"]` : "";
+  }
+
+  function captureTerminalHostUiState(host) {
+    if (!host) return null;
+    const activeElement = document.activeElement;
+    const focusInsideHost = Boolean(activeElement && typeof host.contains === "function" && host.contains(activeElement));
+    const filterMenu = host.querySelector?.("[data-terminal-inbox-type-filter-menu]");
+    const moduleGrid = document.querySelector("#module-grid");
+
+    return {
+      hostScrollTop: Number(host.scrollTop || 0),
+      moduleScrollTop: Number(moduleGrid?.scrollTop || 0),
+      filterMenuOpen: filterMenu?.open === true,
+      focusSelector: focusInsideHost ? getTerminalFocusSelector(activeElement) : "",
+      selectionStart: focusInsideHost && Number.isInteger(activeElement?.selectionStart) ? activeElement.selectionStart : null,
+      selectionEnd: focusInsideHost && Number.isInteger(activeElement?.selectionEnd) ? activeElement.selectionEnd : null
+    };
+  }
+
+  function restoreTerminalHostUiState(host, state = null) {
+    if (!host || !state) return;
+    host.scrollTop = Number(state.hostScrollTop || 0);
+    const moduleGrid = document.querySelector("#module-grid");
+    if (moduleGrid) moduleGrid.scrollTop = Number(state.moduleScrollTop || 0);
+
+    const filterMenu = host.querySelector?.("[data-terminal-inbox-type-filter-menu]");
+    if (filterMenu && state.filterMenuOpen) filterMenu.open = true;
+
+    if (!state.focusSelector) return;
+    const focusTarget = host.querySelector?.(state.focusSelector);
+    if (!focusTarget || typeof focusTarget.focus !== "function") return;
+
+    try {
+      focusTarget.focus({ preventScroll: true });
+    } catch (error) {
+      focusTarget.focus();
+    }
+
+    if (Number.isInteger(state.selectionStart) && typeof focusTarget.setSelectionRange === "function") {
+      focusTarget.setSelectionRange(state.selectionStart, Number.isInteger(state.selectionEnd) ? state.selectionEnd : state.selectionStart);
+    }
+  }
+
+  function syncTerminalPanelStatus(activePanel = window.WS_APP.terminalActivePanel || "inbox") {
+    const status = document.querySelector("#module-status");
+    if (status) status.textContent = `TERMINAL / ${getTerminalPanelTitle(getSafeTerminalPanel(activePanel))}`;
+  }
+
+  function refreshTerminalPanelNavigationProjection(user = window.WS_APP.currentUser, options = {}) {
+    const context = getTerminalMountedContext();
+    if (!context || (user && context.user !== user && context.user?.login !== user?.login)) return false;
+
+    const activePanel = getSafeTerminalPanel(options.panel || context.activePanel);
+    const cardsHost = context.root.querySelector("[data-terminal-panel-cards]");
+    if (!cardsHost) return false;
+
+    cardsHost.innerHTML = renderTerminalPanelCards(activePanel, context.citizen);
+    bindTerminalPanelNavigationActions(context.root, context.user, context.citizen);
+    syncTerminalPanelStatus(activePanel);
+    window.WS_APP.syncTerminalUnreadLabels?.();
+    window.WS_APP.syncTerminalUnreadPulse?.();
+    if (options.markRender !== false) markTerminalRender();
+    return true;
+  }
+
+  function refreshTerminalPanelContentProjection(user = window.WS_APP.currentUser, panel = window.WS_APP.terminalActivePanel || "inbox", options = {}) {
+    const context = getTerminalMountedContext();
+    if (!context || (user && context.user !== user && context.user?.login !== user?.login)) return false;
+
+    const activePanel = getSafeTerminalPanel(panel);
+    if (options.requireActive !== false && context.activePanel !== activePanel) return false;
+
+    const contentHost = context.root.querySelector("[data-terminal-panel-content]");
+    if (!contentHost) return false;
+
+    const preserveUiState = options.preserveUiState !== false;
+    const uiState = preserveUiState ? captureTerminalHostUiState(contentHost) : null;
+    contentHost.innerHTML = renderTerminalPanelContent(activePanel, context.user, context.citizen);
+    bindTerminalHubActions(context.user, context.citizen, {
+      activePanel,
+      bindNavigation: false,
+      bindCalendar: false
+    });
+    if (uiState) restoreTerminalHostUiState(contentHost, uiState);
+    window.WS_APP.syncTerminalUnreadLabels?.();
+    window.WS_APP.syncTerminalUnreadPulse?.();
+    if (options.markRender !== false) markTerminalRender();
+    return true;
+  }
+
+  function refreshTerminalDomainProjection(user, panel, options = {}) {
+    const context = getTerminalMountedContext();
+    const activePanel = getSafeTerminalPanel(panel);
+    if (!context || context.activePanel !== activePanel) return false;
+
+    let updated = false;
+    if (options.includeNavigation !== false) {
+      updated = refreshTerminalPanelNavigationProjection(user, {
+        panel: activePanel,
+        markRender: options.markRender
+      }) || updated;
+    }
+    updated = refreshTerminalPanelContentProjection(user, activePanel, {
+      preserveUiState: options.preserveUiState,
+      markRender: options.markRender
+    }) || updated;
+    return updated;
+  }
+
+  function refreshTerminalInboxProjection(user = window.WS_APP.currentUser, options = {}) {
+    return refreshTerminalDomainProjection(user, "inbox", options);
+  }
+
+  function refreshTerminalBillingProjection(user = window.WS_APP.currentUser, options = {}) {
+    return refreshTerminalDomainProjection(user, "billing", options);
+  }
+
+  function refreshTerminalRequestsProjection(user = window.WS_APP.currentUser, options = {}) {
+    return refreshTerminalDomainProjection(user, "requests", options);
+  }
+
+  function refreshTerminalCommandProjection(user = window.WS_APP.currentUser, options = {}) {
+    return refreshTerminalDomainProjection(user, "command", {
+      ...options,
+      includeNavigation: options.includeNavigation === true
+    });
+  }
+
+  function refreshTerminalEntriesProjection() {
+    const context = getTerminalMountedContext();
+    if (!context) return false;
+
+    let updated = refreshTerminalPanelNavigationProjection(context.user, {
+      panel: context.activePanel
+    });
+    if (context.activePanel === "inbox") {
+      updated = refreshTerminalPanelContentProjection(context.user, "inbox", {
+        preserveUiState: true
+      }) || updated;
+    }
+    return updated;
+  }
+
+  function refreshTerminalCalendarProjection() {
+    const context = getTerminalMountedContext();
+    if (!context) return false;
+
+    const { root, user, citizen } = context;
+    const calendarHost = root.querySelector("[data-terminal-calendar-shell]");
+    if (!calendarHost) return false;
+
+    const uiState = captureTerminalHostUiState(calendarHost);
+    calendarHost.innerHTML = renderTerminalCalendar(citizen);
+    bindTerminalCalendarActions(user, citizen, calendarHost);
+    restoreTerminalHostUiState(calendarHost, uiState);
+    markTerminalRender();
+    return true;
+  }
+
+  function flushTerminalStoreRefresh() {
+    const state = getTerminalStoreReactivityState();
+    state.refreshScheduled = false;
+    const kinds = Array.from(state.refreshKinds);
+    state.refreshKinds.clear();
+
+    if (state.expectedRevision !== state.renderRevision) return;
+    if (kinds.includes("entries")) refreshTerminalEntriesProjection();
+    if (kinds.includes("reminders")) refreshTerminalCalendarProjection();
+  }
+
+  function scheduleTerminalStoreRefresh(kind = "") {
+    if (!Object.prototype.hasOwnProperty.call(TERMINAL_STORE_EVENT_NAMES, kind)) return false;
+    const state = getTerminalStoreReactivityState();
+    state.refreshKinds.add(kind);
+    if (state.refreshScheduled) return true;
+
+    state.refreshScheduled = true;
+    state.expectedRevision = state.renderRevision;
+    if (typeof window.queueMicrotask === "function") window.queueMicrotask(flushTerminalStoreRefresh);
+    else Promise.resolve().then(flushTerminalStoreRefresh);
+    return true;
+  }
+
+  function initTerminalStoreReactivity() {
+    const state = getTerminalStoreReactivityState();
+    if (state.initialized === true) return state;
+
+    state.onEntriesUpdated = () => scheduleTerminalStoreRefresh("entries");
+    state.onRemindersUpdated = () => scheduleTerminalStoreRefresh("reminders");
+    window.addEventListener(TERMINAL_STORE_EVENT_NAMES.entries, state.onEntriesUpdated);
+    window.addEventListener(TERMINAL_STORE_EVENT_NAMES.reminders, state.onRemindersUpdated);
+    state.initialized = true;
+    return state;
+  }
+
+  function destroyTerminalStoreReactivity() {
+    const state = getTerminalStoreReactivityState();
+    if (!state.initialized) return false;
+
+    window.removeEventListener(TERMINAL_STORE_EVENT_NAMES.entries, state.onEntriesUpdated);
+    window.removeEventListener(TERMINAL_STORE_EVENT_NAMES.reminders, state.onRemindersUpdated);
+    state.initialized = false;
+    state.onEntriesUpdated = null;
+    state.onRemindersUpdated = null;
+    state.refreshKinds.clear();
+    state.refreshScheduled = false;
+    return true;
+  }
+
   function renderTerminalHubModule(user, panel = window.WS_APP.terminalActivePanel || "inbox") {
     const container = document.querySelector("#module-grid");
     const status = document.querySelector("#module-status");
@@ -156,9 +427,10 @@ window.WS_APP = window.WS_APP || {};
     `;
 
     window.WS_APP.bindModuleBackButton(user, () => window.WS_APP.renderModules(user));
-    bindTerminalHubActions(user, targetCitizen);
+    bindTerminalHubActions(user, targetCitizen, { activePanel });
     window.WS_APP.syncTerminalUnreadLabels?.();
     window.WS_APP.syncTerminalUnreadPulse?.();
+    markTerminalRender();
   }
 
   function getSafeTerminalPanel(panel) {
@@ -169,29 +441,26 @@ window.WS_APP = window.WS_APP || {};
     const root = document.querySelector("[data-terminal-root]");
     const cardsHost = root?.querySelector("[data-terminal-panel-cards]");
     const contentHost = root?.querySelector("[data-terminal-panel-content]");
-    const calendarHost = root?.querySelector("[data-terminal-calendar-shell]");
     const targetCitizen = getTerminalTargetCitizen(user);
+    const previousPanel = getSafeTerminalPanel(window.WS_APP.terminalActivePanel || "inbox");
     const activePanel = getSafeTerminalPanel(panel);
 
-    if (!root || !cardsHost || !contentHost || !calendarHost || !targetCitizen || root.dataset.terminalCitizenId !== String(targetCitizen.id || "")) {
+    if (!root || !cardsHost || !contentHost || !targetCitizen || root.dataset.terminalCitizenId !== String(targetCitizen.id || "")) {
       renderTerminalHubModule(user, activePanel);
       return;
     }
 
     window.WS_APP.currentModuleId = "terminal-hub";
     window.WS_APP.terminalActivePanel = activePanel;
-    const status = document.querySelector("#module-status");
-    if (status) {
-      status.textContent = `TERMINAL / ${getTerminalPanelTitle(activePanel)}`;
-    }
 
-    cardsHost.innerHTML = renderTerminalPanelCards(activePanel, targetCitizen);
-    contentHost.innerHTML = renderTerminalPanelContent(activePanel, user, targetCitizen);
-    calendarHost.innerHTML = renderTerminalCalendar(targetCitizen);
+    const navigationUpdated = refreshTerminalPanelNavigationProjection(user, {
+      panel: activePanel
+    });
+    const contentUpdated = refreshTerminalPanelContentProjection(user, activePanel, {
+      preserveUiState: previousPanel === activePanel
+    });
 
-    bindTerminalHubActions(user, targetCitizen);
-    window.WS_APP.syncTerminalUnreadLabels?.();
-    window.WS_APP.syncTerminalUnreadPulse?.();
+    if (!navigationUpdated || !contentUpdated) renderTerminalHubModule(user, activePanel);
   }
   function renderTerminalUnavailable(user) {
     return `
@@ -499,46 +768,142 @@ window.WS_APP = window.WS_APP || {};
     return setTerminalInboxSelectionState(citizenId, { active: false, ids: [] });
   }
 
-  function renderTerminalInboxPanel(user, citizen) {
+  function getTerminalInboxPaginationRegistry() {
+    const current = window.WS_APP.terminalInboxPagination;
+    const registry = current && typeof current === "object" && !Array.isArray(current) ? current : {};
+    window.WS_APP.terminalInboxPagination = registry;
+    return registry;
+  }
+
+  function buildTerminalInboxQuerySignature(citizenId, activeFolder, activeView, activeType, activeSort) {
+    return [
+      String(citizenId || "").trim(),
+      String(activeFolder || "INBOX").trim().toUpperCase(),
+      String(activeView || "ALL").trim().toUpperCase(),
+      normalizeTerminalInboxTypeFilter(activeType),
+      String(activeSort || "NEWEST").trim().toUpperCase()
+    ].join("|");
+  }
+
+  function getTerminalInboxPaginationState(citizenId = "", signature = "") {
+    const id = String(citizenId || "local").trim() || "local";
+    const registry = getTerminalInboxPaginationRegistry();
+    const current = registry[id];
+    if (!current || current.signature !== signature) {
+      registry[id] = { signature, limit: TERMINAL_INBOX_PAGE_SIZE };
+    } else {
+      current.limit = Math.max(TERMINAL_INBOX_PAGE_SIZE, Number(current.limit || 0) || TERMINAL_INBOX_PAGE_SIZE);
+    }
+    return registry[id];
+  }
+
+  function resetTerminalInboxPagination(citizenId = "") {
+    const id = String(citizenId || "local").trim() || "local";
+    delete getTerminalInboxPaginationRegistry()[id];
+    return true;
+  }
+
+  function expandTerminalInboxPagination(citizenId = "", signature = "") {
+    const state = getTerminalInboxPaginationState(citizenId, signature);
+    state.limit += TERMINAL_INBOX_PAGE_SIZE;
+    return state;
+  }
+
+  function getTerminalInboxProjectionModel(citizen = {}) {
     const storedView = String(window.WS_APP.terminalInboxView || "ALL").toUpperCase();
     const activeView = ["ALL", "UNREAD", "IMPORTANT", "READ", "TRASH"].includes(storedView) ? storedView : "ALL";
     const activeFolder = activeView === "TRASH" ? "TRASH" : "INBOX";
     const inboxEntries = window.WS_APP.getTerminalEntries?.(citizen.id, { folder: "INBOX" }) || [];
     const trashEntries = window.WS_APP.getTerminalEntries?.(citizen.id, { folder: "TRASH" }) || [];
     const sourceEntries = activeFolder === "TRASH" ? trashEntries : inboxEntries;
-    const activeType = String(window.WS_APP.terminalInboxTypeFilter || "ALL").toUpperCase();
+    const activeType = normalizeTerminalInboxTypeFilter(window.WS_APP.terminalInboxTypeFilter || "ALL");
     const activeSort = String(window.WS_APP.terminalInboxSort || "NEWEST").toUpperCase();
-    const unread = inboxEntries.filter((entry) => entry.read !== true).length;
-    const important = inboxEntries.filter((entry) => entry.important === true).length;
-    const read = inboxEntries.filter((entry) => entry.read === true).length;
-    const trash = trashEntries.length;
     const filteredEntries = sortTerminalInboxEntries(filterTerminalInboxEntries(sourceEntries, activeView, activeType), activeSort);
+    const signature = buildTerminalInboxQuerySignature(citizen.id, activeFolder, activeView, activeType, activeSort);
+    const pagination = getTerminalInboxPaginationState(citizen.id, signature);
+    const visibleEntries = filteredEntries.slice(0, pagination.limit);
     const selection = getTerminalInboxSelectionState(citizen.id);
-    const selectionIds = new Set(selection.ids);
-    const visibleIds = filteredEntries.map((entry) => entry.id).filter(Boolean);
-    const selectedVisibleCount = visibleIds.filter((id) => selectionIds.has(id)).length;
+    const visibleIds = visibleEntries.map((entry) => String(entry.id || "").trim()).filter(Boolean);
+    const selectedIds = new Set(selection.ids);
+
+    return {
+      activeView,
+      activeFolder,
+      activeType,
+      activeSort,
+      inboxEntries,
+      trashEntries,
+      sourceEntries,
+      filteredEntries,
+      visibleEntries,
+      visibleIds,
+      signature,
+      pagination,
+      selection,
+      counts: {
+        all: inboxEntries.length,
+        unread: inboxEntries.filter((entry) => entry.read !== true).length,
+        important: inboxEntries.filter((entry) => entry.important === true).length,
+        read: inboxEntries.filter((entry) => entry.read === true).length,
+        trash: trashEntries.length
+      },
+      selectedVisibleCount: visibleIds.filter((id) => selectedIds.has(id)).length,
+      hasMore: visibleEntries.length < filteredEntries.length,
+      remainingCount: Math.max(0, filteredEntries.length - visibleEntries.length)
+    };
+  }
+
+  function renderTerminalInboxPagination(model = {}) {
+    const rendered = Array.isArray(model.visibleEntries) ? model.visibleEntries.length : 0;
+    const total = Array.isArray(model.filteredEntries) ? model.filteredEntries.length : 0;
+    if (!total) return "";
+    const nextCount = Math.min(TERMINAL_INBOX_PAGE_SIZE, Math.max(0, total - rendered));
+    return `
+      <div class="terminal-inbox-pagination terminal-subpanel-actions" data-terminal-inbox-pagination>
+        <p class="file-empty" data-terminal-inbox-window-label>SHOWING ${escapeHtml(rendered)} OF ${escapeHtml(total)}</p>
+        ${model.hasMore ? `<button type="button" data-terminal-inbox-load-more>LOAD MORE +${escapeHtml(nextCount)}</button>` : ""}
+      </div>
+    `;
+  }
+
+  function renderTerminalInboxPanel(user, citizen) {
+    const model = getTerminalInboxProjectionModel(citizen);
+    const {
+      activeView,
+      activeFolder,
+      activeType,
+      activeSort,
+      inboxEntries,
+      sourceEntries,
+      filteredEntries,
+      visibleEntries,
+      visibleIds,
+      selection,
+      counts,
+      selectedVisibleCount
+    } = model;
     const hasSelection = selection.active && selection.ids.length > 0;
     const selectControlsDisabled = selection.active ? "" : "disabled";
     const bulkActionDisabled = hasSelection ? "" : "disabled";
     const emptyMessage = filteredEntries.length ? "" : renderTerminalInboxEmptyLabel(activeView, activeType);
 
     return `
-      <section class="terminal-subpanel terminal-inbox-panel ${selection.active ? "is-select-mode" : ""}">
+      <section class="terminal-subpanel terminal-inbox-panel ${selection.active ? "is-select-mode" : ""}" data-terminal-inbox-panel data-terminal-inbox-signature="${escapeHtml(model.signature)}">
         <header class="terminal-subpanel-head terminal-inbox-head">
           <div>
             <p class="kicker">TERMINAL / INBOX</p>
           </div>
           <div class="terminal-subpanel-actions terminal-inbox-actions">
             <button type="button" class="terminal-select-mode-toggle ${selection.active ? "is-active" : ""}" data-terminal-select-mode>${selection.active ? "EXIT SELECT" : "SELECT MODE"}</button>
-            <button type="button" data-terminal-mark-all-read ${activeFolder === "INBOX" && unread ? "" : "disabled"}>Mark All Read</button>
+            <button type="button" data-terminal-mark-all-read ${activeFolder === "INBOX" && counts.unread ? "" : "disabled"}>Mark All Read</button>
           </div>
         </header>
         <nav class="terminal-inbox-filter-tabs system-inline-tabs" role="tablist" aria-label="Terminal entry folders">
-          ${renderTerminalInboxFilterButton("ALL", "All", activeView, inboxEntries.length)}
-          ${renderTerminalInboxFilterButton("UNREAD", "Unread", activeView, unread)}
-          ${renderTerminalInboxFilterButton("IMPORTANT", "Important", activeView, important)}
-          ${renderTerminalInboxFilterButton("READ", "Read", activeView, read)}
-          ${renderTerminalInboxFilterButton("TRASH", "Trash", activeView, trash)}
+          ${renderTerminalInboxFilterButton("ALL", "All", activeView, counts.all)}
+          ${renderTerminalInboxFilterButton("UNREAD", "Unread", activeView, counts.unread)}
+          ${renderTerminalInboxFilterButton("IMPORTANT", "Important", activeView, counts.important)}
+          ${renderTerminalInboxFilterButton("READ", "Read", activeView, counts.read)}
+          ${renderTerminalInboxFilterButton("TRASH", "Trash", activeView, counts.trash)}
         </nav>
         <div class="terminal-inbox-bulk-actions ${selection.active ? "" : "is-disabled"}" data-terminal-bulk-actions data-visible-ids="${escapeHtml(visibleIds.join(","))}">
           <button type="button" data-terminal-select-visible ${selection.active && visibleIds.length ? "" : "disabled"}>${selectedVisibleCount === visibleIds.length && visibleIds.length ? "UNSELECT VISIBLE" : "SELECT VISIBLE"}</button>
@@ -551,7 +916,7 @@ window.WS_APP = window.WS_APP || {};
           ${activeFolder === "TRASH" ? `<button type="button" data-terminal-bulk-action="DELETE" ${bulkActionDisabled}>Delete permanently</button>` : ""}
         </div>
         <div class="terminal-inbox-list-toolbar">
-          <p class="file-empty terminal-inbox-result-state">${emptyMessage}</p>
+          <p class="file-empty terminal-inbox-result-state" data-terminal-inbox-result-state>${emptyMessage}</p>
           <div class="terminal-inbox-sort-controls">
             ${renderTerminalInboxTypeFilterMenu(activeType, sourceEntries)}
             <select data-terminal-inbox-sort aria-label="Sort terminal entries">
@@ -564,9 +929,10 @@ window.WS_APP = window.WS_APP || {};
             </select>
           </div>
         </div>
-        <div class="terminal-entry-list" data-terminal-entry-list>
-          ${filteredEntries.length ? filteredEntries.map((entry) => renderTerminalEntryCard(entry, activeFolder, selection, user)).join("") : ""}
+        <div class="terminal-entry-list" data-terminal-entry-list data-terminal-rendered-count="${escapeHtml(visibleEntries.length)}" data-terminal-total-count="${escapeHtml(filteredEntries.length)}">
+          ${visibleEntries.length ? visibleEntries.map((entry) => renderTerminalEntryCard(entry, activeFolder, selection, user)).join("") : ""}
         </div>
+        ${renderTerminalInboxPagination(model)}
       </section>
     `;
   }
@@ -583,33 +949,16 @@ window.WS_APP = window.WS_APP || {};
       .replace(/\s+/g, " ");
   }
 
-  function getTerminalInboxLegacyCategoryDefinitions() {
-    return [
-      { id: "BILLING", label: "BILLING", match: ({ type }) => type === "BILLING" },
-      { id: "PAYMENT", label: "PAYMENT", match: ({ subtype, tags }) => /PAYMENT|PAYOUT|SETTLEMENT/.test(subtype) || tags.some((tag) => /PAYMENT|PAYOUT|SETTLEMENT/.test(tag)) },
-      { id: "DEBT", label: "DEBT", match: ({ subtype, tags }) => /DEBT/.test(subtype) || tags.some((tag) => /DEBT/.test(tag)) },
-      { id: "SUBSCRIPTION", label: "SUBSCRIPTION", match: ({ type }) => type === "SUBSCRIPTION" },
-      { id: "SERVICE", label: "SERVICE", match: ({ type, subtype }) => type === "SERVICE" && !/INCOME_SOURCE/.test(subtype) },
-      { id: "INCOME", label: "INCOME", match: ({ subtype, tags }) => /INCOME_SOURCE|INCOME|COMMISSION_PAYOUT/.test(subtype) || tags.some((tag) => /INCOME|PAYOUT/.test(tag)) },
-      { id: "REQUEST", label: "REQUEST", match: ({ type }) => type === "REQUEST" },
-      { id: "CALENDAR", label: "CALENDAR", match: ({ type, subtype }) => type === "CALENDAR" || /DEADLINE|REMINDER|APPOINTMENT/.test(subtype) },
-      { id: "PROFILE", label: "PROFILE", match: ({ type, subtype }) => type === "PROFILE" && !/INCOME_SOURCE|RISK|COMPLIANCE/.test(subtype) },
-      { id: "RISK", label: "RISK", match: ({ subtype, tags }) => /RISK|COMPLIANCE/.test(subtype) || tags.some((tag) => /RISK|COMPLIANCE/.test(tag)) },
-      { id: "ACCESS", label: "ACCESS", match: ({ type, subtype }) => type === "ACCESS" || /ACCESS|CLEARANCE|VISIBILITY/.test(subtype) },
-      { id: "DATABASE", label: "DATABASE", match: ({ type, subtype }) => type === "DATABASE" || /DATABASE|RECORD|CASE_FILE|CITIZEN_FILE|CITIZEN_RECORD/.test(subtype) },
-      { id: "SYSTEM", label: "SYSTEM", match: ({ type }) => type === "SYSTEM" }
-    ];
-  }
-
   function getTerminalInboxEntryFilterContext(entry = {}) {
     return {
-      schemaVersion: Math.max(1, Number(entry.schemaVersion || 1) || 1),
-      eventCode: String(entry.eventCode || "").trim().toUpperCase(),
-      domain: String(entry.domain || entry.type || "SYSTEM").trim().toUpperCase(),
-      category: String(entry.category || entry.domain || entry.type || "SYSTEM").trim().toUpperCase(),
-      type: String(entry.type || "SYSTEM").trim().toUpperCase(),
-      subtype: String(entry.subtype || "").trim().toUpperCase(),
-      tags: (Array.isArray(entry.tags) ? entry.tags : []).map((tag) => String(tag || "").trim().toUpperCase()).filter(Boolean)
+      eventCode: String(entry.eventCode || "SYSTEM.NOTICE").trim().toUpperCase(),
+      domain: String(entry.domain || "SYSTEM").trim().toUpperCase(),
+      category: String(entry.category || "NOTICE").trim().toUpperCase(),
+      status: getTerminalEntryLifecycleStatus(entry),
+      severity: String(entry.severity || "INFO").trim().toUpperCase(),
+      tags: (Array.isArray(entry.tags) ? entry.tags : [])
+        .map((tag) => String(tag || "").trim().toUpperCase())
+        .filter(Boolean)
     };
   }
 
@@ -621,6 +970,9 @@ window.WS_APP = window.WS_APP || {};
     const domains = new Map();
     const categories = new Map();
     const events = new Map();
+    const statuses = new Map();
+    const severities = new Map();
+    const tags = new Map();
 
     contexts.forEach((context) => {
       if (context.domain) domains.set(context.domain, formatTerminalFilterLabel(context.domain));
@@ -629,86 +981,69 @@ window.WS_APP = window.WS_APP || {};
         const eventDefinition = eventMap.get(context.eventCode);
         events.set(context.eventCode, String(eventDefinition?.label || formatTerminalFilterLabel(context.eventCode)).trim());
       }
+      if (context.status) statuses.set(context.status, formatTerminalFilterLabel(context.status));
+      if (context.severity) severities.set(context.severity, formatTerminalFilterLabel(context.severity));
+      context.tags.forEach((tag) => tags.set(tag, formatTerminalFilterLabel(tag)));
     });
 
+    const sortEntries = (map) => Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
     return {
-      domains: Array.from(domains.entries()).sort((a, b) => a[1].localeCompare(b[1])),
-      categories: Array.from(categories.entries()).sort((a, b) => a[1].localeCompare(b[1])),
-      events: Array.from(events.entries()).sort((a, b) => a[1].localeCompare(b[1]))
+      domains: sortEntries(domains),
+      categories: sortEntries(categories),
+      events: sortEntries(events),
+      statuses: sortEntries(statuses),
+      severities: sortEntries(severities),
+      tags: sortEntries(tags)
     };
   }
 
   function normalizeTerminalInboxTypeFilter(value = "ALL") {
     const raw = String(value || "ALL").trim().toUpperCase();
     if (!raw || raw === "ALL") return "ALL";
-    if (/^(DOMAIN|EVENT_CATEGORY|EVENT|CATEGORY|TAG|TYPE|SUBTYPE):/.test(raw)) return raw;
-    const categoryIds = new Set(getTerminalInboxLegacyCategoryDefinitions().map((item) => item.id));
-    return categoryIds.has(raw) ? `CATEGORY:${raw}` : `TYPE:${raw}`;
+    const [rawScope, ...rest] = raw.split(":");
+    const expected = rest.join(":").trim();
+    const scopeAliases = {
+      EVENT_CATEGORY: "CATEGORY",
+      TYPE: "DOMAIN"
+    };
+    const scope = scopeAliases[rawScope] || rawScope;
+    if (!expected) return ["DOMAIN", "CATEGORY", "EVENT", "TAG", "STATUS", "SEVERITY"].includes(scope)
+      ? "ALL"
+      : `DOMAIN:${raw}`;
+    if (!["DOMAIN", "CATEGORY", "EVENT", "TAG", "STATUS", "SEVERITY"].includes(scope)) return "ALL";
+    return `${scope}:${expected}`;
   }
 
   function getTerminalInboxTypeFilterLabel(value = "ALL") {
     const normalized = normalizeTerminalInboxTypeFilter(value);
     if (normalized === "ALL") return "ALL TYPES";
-    const [scope, ...rest] = normalized.split(":");
-    const id = rest.join(":");
-    if (scope === "CATEGORY") {
-      return getTerminalInboxLegacyCategoryDefinitions().find((item) => item.id === id)?.label || formatTerminalFilterLabel(id);
-    }
-    if (scope === "TAG") return formatTerminalFilterLabel(id);
-    return formatTerminalFilterLabel(id);
+    const [, ...rest] = normalized.split(":");
+    return formatTerminalFilterLabel(rest.join(":"));
   }
 
   function renderTerminalInboxTypeFilterMenu(activeFilter = "ALL", entries = []) {
     const active = normalizeTerminalInboxTypeFilter(activeFilter);
-    const entryList = Array.isArray(entries) ? entries : [];
-    const catalogGroups = getTerminalInboxCatalogFilterGroups(entryList);
-    const legacyCategories = getTerminalInboxLegacyCategoryDefinitions().filter((category) => entryList.some((entry) => {
-      const context = getTerminalInboxEntryFilterContext(entry);
-      return context.schemaVersion < 2 && category.match(context);
-    }));
-    const tagMap = new Map();
-    entryList.forEach((entry) => getTerminalInboxEntryFilterContext(entry).tags.forEach((tag) => {
-      const mapped = getTerminalInboxTagFilterCategory(tag);
-      if (mapped) tagMap.set(mapped.id, mapped.label);
-    }));
-
+    const catalogGroups = getTerminalInboxCatalogFilterGroups(entries);
     const renderOption = (value, label) => `<button type="button" class="${active === value ? "is-selected" : ""}" data-terminal-inbox-type-option="${escapeHtml(value)}" aria-pressed="${active === value ? "true" : "false"}">${escapeHtml(label)}</button>`;
-    const domainOptions = catalogGroups.domains.map(([id, label]) => renderOption(`DOMAIN:${id}`, label)).join("");
-    const categoryOptions = catalogGroups.categories.map(([id, label]) => renderOption(`EVENT_CATEGORY:${id}`, label)).join("");
-    const eventOptions = catalogGroups.events.map(([id, label]) => renderOption(`EVENT:${id}`, label)).join("");
-    const legacyOptions = legacyCategories.map((item) => renderOption(`CATEGORY:${item.id}`, item.label)).join("");
-    const tagOptions = Array.from(tagMap.entries())
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([id, label]) => renderOption(`TAG:${id}`, label))
-      .join("");
+    const renderGroup = (label, scope, options) => options.length
+      ? `<span>${escapeHtml(label)}</span>${options.map(([id, optionLabel]) => renderOption(`${scope}:${id}`, optionLabel)).join("")}`
+      : "";
 
     return `
       <details class="terminal-inbox-filter-menu" data-terminal-inbox-type-filter-menu>
-        <summary aria-label="Filter terminal entries by event catalog">${escapeHtml(getTerminalInboxTypeFilterLabel(active))}</summary>
+        <summary aria-label="Filter terminal entries by canonical notification fields">${escapeHtml(getTerminalInboxTypeFilterLabel(active))}</summary>
         <div class="terminal-inbox-filter-menu-panel">
           ${renderOption("ALL", "ALL TYPES")}
-          ${domainOptions ? `<span>EVENT DOMAINS</span>${domainOptions}` : ""}
-          ${categoryOptions ? `<span>EVENT CATEGORIES</span>${categoryOptions}` : ""}
-          ${eventOptions ? `<span>EVENT TYPES</span>${eventOptions}` : ""}
-          ${legacyOptions ? `<span>LEGACY CATEGORIES</span>${legacyOptions}` : ""}
-          ${tagOptions ? `<span>ENTRY TAGS</span>${tagOptions}` : ""}
+          ${renderGroup("EVENT DOMAINS", "DOMAIN", catalogGroups.domains)}
+          ${renderGroup("EVENT CATEGORIES", "CATEGORY", catalogGroups.categories)}
+          ${renderGroup("EVENT TYPES", "EVENT", catalogGroups.events)}
+          ${renderGroup("LIFECYCLE STATUS", "STATUS", catalogGroups.statuses)}
+          ${renderGroup("SEVERITY", "SEVERITY", catalogGroups.severities)}
+          ${renderGroup("ENTRY TAGS", "TAG", catalogGroups.tags)}
         </div>
       </details>
     `;
   }
-
-  function getTerminalInboxTagFilterCategory(tag = "") {
-    const value = String(tag || "").trim().toUpperCase();
-    if (!value) return null;
-    if (/ACCESS|CLEARANCE/.test(value)) return { id: "ACCESS", label: "ACCESS" };
-    if (/CASE|CITIZEN|DATABASE|RECORD|FILE/.test(value)) return { id: "DATABASE", label: "DATABASE" };
-    if (/INCOME|PAYOUT/.test(value)) return { id: "INCOME", label: "INCOME" };
-    if (/SUBSCRIPTION|TIER|SERVICE|BILLING|PAYMENT|DEBT|REQUEST|CALENDAR|PROFILE|RISK|SYSTEM/.test(value)) {
-      return { id: value.replace(/\s+/g, "_"), label: value.replaceAll("_", " ") };
-    }
-    return { id: value.replace(/\s+/g, "_"), label: value.replaceAll("_", " ") };
-  }
-
 
   function filterTerminalInboxEntries(entries, view, type) {
     const activeFilter = normalizeTerminalInboxTypeFilter(type);
@@ -716,26 +1051,21 @@ window.WS_APP = window.WS_APP || {};
       if (view === "UNREAD" && entry.read === true) return false;
       if (view === "READ" && entry.read !== true) return false;
       if (view === "IMPORTANT" && entry.important !== true) return false;
-      if (activeFilter !== "ALL") {
-        const [scope, expected] = activeFilter.split(":");
-        const context = getTerminalInboxEntryFilterContext(entry);
-        if (scope === "CATEGORY") {
-          const category = getTerminalInboxLegacyCategoryDefinitions().find((item) => item.id === expected);
-          if (!category || !category.match(context)) return false;
-        }
-        if (scope === "DOMAIN" && context.domain !== expected) return false;
-        if (scope === "EVENT_CATEGORY" && context.category !== expected) return false;
-        if (scope === "EVENT" && context.eventCode !== expected) return false;
-        if (scope === "TYPE" && context.type !== expected) return false;
-        if (scope === "SUBTYPE" && context.subtype !== expected) return false;
-        if (scope === "TAG") {
-          const mappedTags = context.tags.map((tag) => getTerminalInboxTagFilterCategory(tag)?.id).filter(Boolean);
-          if (!context.tags.includes(expected) && !mappedTags.includes(expected)) return false;
-        }
-      }
+      if (activeFilter === "ALL") return true;
+
+      const [scope, ...rest] = activeFilter.split(":");
+      const expected = rest.join(":");
+      const context = getTerminalInboxEntryFilterContext(entry);
+      if (scope === "DOMAIN") return context.domain === expected;
+      if (scope === "CATEGORY") return context.category === expected;
+      if (scope === "EVENT") return context.eventCode === expected;
+      if (scope === "STATUS") return context.status === expected;
+      if (scope === "SEVERITY") return context.severity === expected;
+      if (scope === "TAG") return context.tags.includes(expected);
       return true;
     });
   }
+
 
   function getTerminalEntrySortIndex(entry = {}) {
     const explicit = Number(entry.sortIndex ?? entry.entryOrder ?? entry.orderIndex);
@@ -917,8 +1247,8 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function getTerminalDomainContentProfile(entry = {}, panels = [], finalRows = []) {
-    const type = String(entry.type || "SYSTEM").trim().toUpperCase();
-    const subtype = String(entry.subtype || "").trim().toUpperCase();
+    const domain = String(entry.domain || "SYSTEM").trim().toUpperCase();
+    const eventCode = String(entry.eventCode || "SYSTEM.NOTICE").trim().toUpperCase();
     const normalizedPanels = Array.isArray(panels) ? panels : [];
     const normalizedFinalRows = normalizeTerminalStructuredRowsForRender(finalRows, { hideEmpty: true });
     const panelCount = normalizedPanels.length;
@@ -932,8 +1262,8 @@ window.WS_APP = window.WS_APP || {};
       .some((row) => String(row.value || "").length > 72));
 
     return {
-      type,
-      subtype,
+      domain,
+      eventCode,
       panelCount,
       totalRows,
       maxPanelRows,
@@ -947,7 +1277,7 @@ window.WS_APP = window.WS_APP || {};
     const profile = getTerminalDomainContentProfile(entry, panels, finalRows);
     const columnsFor = (count) => Math.max(1, Math.min(3, count || 1));
 
-    if (profile.type === "SYSTEM") {
+    if (profile.domain === "SYSTEM") {
       return { mode: "single", columns: 1, variant: "system-notice", density: "compact" };
     }
 
@@ -962,7 +1292,7 @@ window.WS_APP = window.WS_APP || {};
 
     const columns = columnsFor(profile.panelCount);
     const density = profile.maxPanelRows <= 3 && profile.totalRows <= 8 ? "tight" : "standard";
-    return { mode: "grid", columns, variant: `${profile.type.toLowerCase()}-grid`, density };
+    return { mode: "grid", columns, variant: `${profile.domain.toLowerCase()}-grid`, density };
   }
 
   function getTerminalDomainPanelClass(panel = {}, contract = {}) {
@@ -1104,7 +1434,7 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function getTerminalEntryLifecycleStatus(entry = {}) {
-    return String(entry.lifecycle?.status || (entry.read ? "READ" : "NEW")).trim().toUpperCase() || "NEW";
+    return String(entry.lifecycle?.status || "NEW").trim().toUpperCase() || "NEW";
   }
 
   function getTerminalEntryAttention(entry = {}) {
@@ -1117,7 +1447,7 @@ window.WS_APP = window.WS_APP || {};
     const organization = source.organizationId
       ? window.WS_APP.getOrganizationById?.(source.organizationId)
       : (source.providerId ? window.WS_APP.getOrganizationByProviderId?.(source.providerId) : null);
-    const resolved = String(organization?.name || organization?.displayName || source.label || source.providerId || entry.createdBy || "SYSTEM").trim();
+    const resolved = String(organization?.name || organization?.displayName || source.label || source.providerId || "SYSTEM").trim();
     return resolved || "SYSTEM";
   }
 
@@ -1148,8 +1478,8 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function renderTerminalEntryStateRail(entry = {}) {
-    const domain = String(entry.domain || entry.type || "SYSTEM").trim().toUpperCase();
-    const category = String(entry.category || domain).trim().toUpperCase();
+    const domain = String(entry.domain || "SYSTEM").trim().toUpperCase();
+    const category = String(entry.category || "NOTICE").trim().toUpperCase();
     const attention = getTerminalEntryAttention(entry);
     const lifecycle = getTerminalEntryLifecycleStatus(entry);
     return `
@@ -1274,12 +1604,12 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function renderTerminalEntryCard(entry, folder = "INBOX", selection = { active: false, ids: [] }, user = {}) {
-    const links = Array.isArray(entry.links) ? entry.links : [];
+    const actions = Array.isArray(entry.actions) ? entry.actions : [];
     const isTrash = String(folder || entry.folder || "INBOX").toUpperCase() === "TRASH";
     const severity = String(entry.severity || "INFO").trim().toUpperCase();
-    const subtype = String(entry.subtype || "").trim().toUpperCase();
-    const domain = String(entry.domain || entry.type || "SYSTEM").trim().toUpperCase();
-    const category = String(entry.category || domain).trim().toUpperCase();
+    const domain = String(entry.domain || "SYSTEM").trim().toUpperCase();
+    const category = String(entry.category || "NOTICE").trim().toUpperCase();
+    const eventCode = String(entry.eventCode || "SYSTEM.NOTICE").trim().toUpperCase();
     const attention = getTerminalEntryAttention(entry);
     const lifecycle = getTerminalEntryLifecycleStatus(entry);
     const severityClass = ["INFO", "NOTICE", "WARNING", "CRITICAL"].includes(severity) ? `is-severity-${severity.toLowerCase()}` : "is-severity-info";
@@ -1332,21 +1662,21 @@ window.WS_APP = window.WS_APP || {};
         title: "Move to trash",
         "aria-label": "Move to trash"
       }));
-      links.forEach((link) => {
-        const entityRef = link?.entityRef && typeof link.entityRef === "object" ? link.entityRef : {};
-        const params = link?.params && typeof link.params === "object" ? link.params : {};
-        actionButtons.push(renderTerminalEntryActionButton(getTerminalEntryLinkActionLabel(link), {
+      actions.forEach((action) => {
+        const entityRef = action?.entityRef && typeof action.entityRef === "object" ? action.entityRef : {};
+        const params = action?.params && typeof action.params === "object" ? action.params : {};
+        actionButtons.push(renderTerminalEntryActionButton(getTerminalEntryLinkActionLabel(action), {
           "data-terminal-entry-link": true,
-          "data-module": link.module,
-          "data-panel": link.panel,
-          "data-section": link.section || "",
-          "data-route-id": link.routeId || "",
-          "data-route-citizen-id": link.citizenId || entry.citizenId || "",
+          "data-module": action.module,
+          "data-panel": action.panel,
+          "data-section": action.section || "",
+          "data-route-id": action.routeId || "",
+          "data-route-citizen-id": action.citizenId || entry.citizenId || "",
           "data-entity-type": entityRef.type || "",
           "data-entity-id": entityRef.id || "",
           "data-route-params": encodeURIComponent(JSON.stringify(params)),
-          title: link.label,
-          "aria-label": link.label
+          title: action.label,
+          "aria-label": action.label
         }));
       });
     } else {
@@ -1363,7 +1693,7 @@ window.WS_APP = window.WS_APP || {};
     }
 
     return `
-      <article class="terminal-entry-card ${entry.read ? "is-read" : "is-unread"} ${entry.important ? "is-important" : ""} ${isTrash ? "is-trash" : ""} ${selectMode ? "is-selectable" : ""} ${selected ? "is-selected" : ""} ${severityClass} ${attentionClass} ${lifecycleClass} ${structuredClass}" data-terminal-entry-id="${escapeHtml(entry.id)}" data-terminal-entry-type="${escapeHtml(entry.type)}" data-terminal-entry-subtype="${escapeHtml(subtype)}" data-terminal-entry-domain="${escapeHtml(domain)}" data-terminal-entry-category="${escapeHtml(category)}" data-terminal-entry-attention="${escapeHtml(attention)}" data-terminal-entry-lifecycle="${escapeHtml(lifecycle)}" data-terminal-entry-severity="${escapeHtml(severity)}">
+      <article class="terminal-entry-card ${entry.read ? "is-read" : "is-unread"} ${entry.important ? "is-important" : ""} ${isTrash ? "is-trash" : ""} ${selectMode ? "is-selectable" : ""} ${selected ? "is-selected" : ""} ${severityClass} ${attentionClass} ${lifecycleClass} ${structuredClass}" data-terminal-entry-id="${escapeHtml(entry.id)}" data-terminal-entry-event="${escapeHtml(eventCode)}" data-terminal-entry-domain="${escapeHtml(domain)}" data-terminal-entry-category="${escapeHtml(category)}" data-terminal-entry-attention="${escapeHtml(attention)}" data-terminal-entry-lifecycle="${escapeHtml(lifecycle)}" data-terminal-entry-severity="${escapeHtml(severity)}">
         ${selectMode ? `<button class="ui-select-button terminal-entry-select-box ${selected ? "is-selected" : ""}" type="button" data-terminal-entry-select="${escapeHtml(entry.id)}" aria-label="${selected ? "Unselect entry" : "Select entry"}" aria-pressed="${selected ? "true" : "false"}"><span aria-hidden="true"></span></button>` : ""}
         <header>
           <div class="terminal-entry-heading">
@@ -1480,80 +1810,336 @@ window.WS_APP = window.WS_APP || {};
     `;
   }
 
-  function bindTerminalHubActions(user, citizen) {
-    const root = document.querySelector("[data-terminal-root]");
+  function bindTerminalPanelNavigationActions(root, user, citizen) {
     if (!root) return;
     const renderPanel = (nextPanel = window.WS_APP.terminalActivePanel || "inbox") => renderTerminalPanelPartial(user, nextPanel);
-
-    const targetSelect = root.querySelector("[data-terminal-target-citizen]");
-    if (targetSelect && targetSelect.dataset.terminalBound !== "true") {
-      targetSelect.dataset.terminalBound = "true";
-      targetSelect.addEventListener("change", (event) => {
-        clearTerminalInboxSelection(citizen.id);
-        window.WS_APP.terminalTargetCitizenId = event.target.value;
-        renderTerminalHubModule(user, window.WS_APP.terminalActivePanel || "inbox");
-      });
-    }
-
     root.querySelectorAll("[data-terminal-panel]").forEach((button) => {
+      if (button.dataset.terminalPanelBound === "true") return;
+      button.dataset.terminalPanelBound = "true";
       button.addEventListener("click", () => {
-        window.WS_APP.terminalActivePanel = button.dataset.terminalPanel;
         renderPanel(button.dataset.terminalPanel);
       });
     });
+  }
 
-    window.WS_APP.bindTerminalBillingActions?.(root, user, citizen);
+  function bindTerminalCalendarActions(user, citizen, scope = document.querySelector("[data-terminal-calendar-shell]")) {
+    if (!scope) return;
+    const renderCalendar = () => refreshTerminalCalendarProjection();
 
-    root.querySelectorAll("[data-terminal-inbox-view]").forEach((button) => {
+    const reminderForm = scope.querySelector("[data-terminal-reminder-form]");
+    if (reminderForm && reminderForm.dataset.terminalReminderFormBound !== "true") {
+      reminderForm.dataset.terminalReminderFormBound = "true";
+      reminderForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const reminder = window.WS_APP.createTerminalCalendarReminder?.(citizen.id, {
+          title: form.elements.title?.value,
+          date: form.elements.date?.value,
+          notifyDaysBefore: form.elements.notifyDaysBefore?.value,
+          body: form.elements.body?.value,
+          colorIndex: form.elements.colorIndex?.value,
+          createdBy: user.login || user.displayName || "LOCAL USER"
+        });
+        if (reminder) {
+          window.WS_APP.appendTerminalLogLine?.(`CALENDAR REMINDER REGISTERED / ${reminder.title}`, { typed: true, speed: 8 });
+        }
+        renderCalendar();
+      });
+    }
+
+    scope.querySelectorAll("[data-terminal-reminder-close]").forEach((button) => {
+      if (button.dataset.terminalReminderCloseBound === "true") return;
+      button.dataset.terminalReminderCloseBound = "true";
       button.addEventListener("click", () => {
+        window.WS_APP.closeTerminalCalendarReminder?.(citizen.id, button.dataset.terminalReminderClose);
+        renderCalendar();
+      });
+    });
+
+    scope.querySelectorAll("[data-terminal-calendar-date]").forEach((button) => {
+      if (button.dataset.terminalCalendarDateBound === "true") return;
+      button.dataset.terminalCalendarDateBound = "true";
+      button.addEventListener("click", () => {
+        const iso = String(button.dataset.terminalCalendarDate || "").trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+        const selected = parseIsoDateUtc(iso);
+        if (selected) {
+          setTerminalCalendarUiState(citizen.id, {
+            selectedIso: iso,
+            monthIso: new Date(Date.UTC(selected.getUTCFullYear(), selected.getUTCMonth(), 1)).toISOString().slice(0, 10)
+          });
+        }
+        renderCalendar();
+      });
+    });
+
+    scope.querySelectorAll("[data-terminal-calendar-nav]").forEach((button) => {
+      if (button.dataset.terminalCalendarNavBound === "true") return;
+      button.dataset.terminalCalendarNavBound = "true";
+      button.addEventListener("click", () => {
+        const campaignIso = window.WS_APP.getCampaignDateIso?.() || window.WS_APP.CAMPAIGN_DATE_ISO || "2109-02-13";
+        const delta = Number(button.dataset.terminalCalendarNav || 0);
+        if (delta === 0) {
+          setTerminalCalendarUiState(citizen.id, { monthIso: campaignIso, selectedIso: campaignIso });
+        } else {
+          const calendarState = getTerminalCalendarUiState(citizen.id);
+          const base = parseIsoDateUtc(calendarState.monthIso || campaignIso) || parseIsoDateUtc(campaignIso);
+          const next = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + delta, 1));
+          setTerminalCalendarUiState(citizen.id, { monthIso: next.toISOString().slice(0, 10) });
+        }
+        renderCalendar();
+      });
+    });
+  }
+
+  function getTerminalInboxRenderedIds(panel) {
+    return Array.from(panel?.querySelectorAll?.("[data-terminal-entry-id]") || [])
+      .map((card) => String(card.dataset.terminalEntryId || "").trim())
+      .filter(Boolean);
+  }
+
+  function syncTerminalInboxSelectionUi(panel, citizen) {
+    if (!panel) return false;
+    const selection = getTerminalInboxSelectionState(citizen.id);
+    const selected = new Set(selection.ids);
+    const visibleIds = getTerminalInboxRenderedIds(panel);
+    const selectedVisibleCount = visibleIds.filter((id) => selected.has(id)).length;
+    const hasSelection = selection.active && selection.ids.length > 0;
+
+    panel.classList.toggle("is-select-mode", selection.active);
+    const modeButton = panel.querySelector("[data-terminal-select-mode]");
+    if (modeButton) {
+      modeButton.classList.toggle("is-active", selection.active);
+      modeButton.textContent = selection.active ? "EXIT SELECT" : "SELECT MODE";
+    }
+
+    panel.querySelectorAll("[data-terminal-entry-id]").forEach((card) => {
+      const entryId = String(card.dataset.terminalEntryId || "").trim();
+      const isSelected = selected.has(entryId);
+      card.classList.toggle("is-selected", isSelected);
+      const selectButton = card.querySelector("[data-terminal-entry-select]");
+      if (!selectButton) return;
+      selectButton.classList.toggle("is-selected", isSelected);
+      selectButton.setAttribute("aria-pressed", isSelected ? "true" : "false");
+      selectButton.setAttribute("aria-label", isSelected ? "Unselect entry" : "Select entry");
+    });
+
+    const bulk = panel.querySelector("[data-terminal-bulk-actions]");
+    if (bulk) {
+      bulk.dataset.visibleIds = visibleIds.join(",");
+      bulk.classList.toggle("is-disabled", !selection.active);
+    }
+    const selectVisible = panel.querySelector("[data-terminal-select-visible]");
+    if (selectVisible) {
+      selectVisible.disabled = !selection.active || visibleIds.length === 0;
+      selectVisible.textContent = visibleIds.length && selectedVisibleCount === visibleIds.length ? "UNSELECT VISIBLE" : "SELECT VISIBLE";
+    }
+    const clear = panel.querySelector("[data-terminal-select-clear]");
+    if (clear) clear.disabled = !selection.active;
+    panel.querySelectorAll("[data-terminal-bulk-action]").forEach((button) => {
+      button.disabled = !hasSelection;
+    });
+    return true;
+  }
+
+  function syncTerminalInboxMetaProjection(panel, model) {
+    if (!panel || !model) return false;
+    const countMap = {
+      ALL: model.counts.all,
+      UNREAD: model.counts.unread,
+      IMPORTANT: model.counts.important,
+      READ: model.counts.read,
+      TRASH: model.counts.trash
+    };
+    panel.querySelectorAll("[data-terminal-inbox-view]").forEach((button) => {
+      const view = String(button.dataset.terminalInboxView || "ALL").toUpperCase();
+      const count = button.querySelector(".system-inline-tab__count");
+      if (count) count.textContent = String(countMap[view] || 0);
+    });
+    const markAllRead = panel.querySelector("[data-terminal-mark-all-read]");
+    if (markAllRead) markAllRead.disabled = model.activeFolder !== "INBOX" || model.counts.unread === 0;
+    const resultState = panel.querySelector("[data-terminal-inbox-result-state]");
+    if (resultState) resultState.textContent = model.filteredEntries.length ? "" : renderTerminalInboxEmptyLabel(model.activeView, model.activeType);
+    const list = panel.querySelector("[data-terminal-entry-list]");
+    if (list) {
+      list.dataset.terminalRenderedCount = String(model.visibleEntries.length);
+      list.dataset.terminalTotalCount = String(model.filteredEntries.length);
+    }
+    const existingPagination = panel.querySelector("[data-terminal-inbox-pagination]");
+    const paginationMarkup = renderTerminalInboxPagination(model);
+    if (existingPagination) {
+      if (paginationMarkup) existingPagination.outerHTML = paginationMarkup;
+      else existingPagination.remove();
+    } else if (paginationMarkup && list) {
+      list.insertAdjacentHTML("afterend", paginationMarkup);
+    }
+    syncTerminalInboxSelectionUi(panel, { id: String(model.selection.citizenId || "") });
+    return true;
+  }
+
+  function refreshTerminalInboxListProjection(user, citizen, options = {}) {
+    const context = getTerminalMountedContext();
+    if (!context || context.activePanel !== "inbox" || String(context.citizen.id || "") !== String(citizen.id || "")) return false;
+    const panel = context.root.querySelector("[data-terminal-inbox-panel]");
+    const list = panel?.querySelector("[data-terminal-entry-list]");
+    if (!panel || !list) return false;
+
+    const model = getTerminalInboxProjectionModel(citizen);
+    const uiState = options.preserveUiState === false ? null : captureTerminalHostUiState(panel);
+    list.innerHTML = model.visibleEntries.map((entry) => renderTerminalEntryCard(entry, model.activeFolder, model.selection, user)).join("");
+    panel.dataset.terminalInboxSignature = model.signature;
+    syncTerminalInboxMetaProjection(panel, model);
+    if (options.includeNavigation !== false) {
+      refreshTerminalPanelNavigationProjection(user, { panel: "inbox", markRender: false });
+    }
+    if (uiState) restoreTerminalHostUiState(panel, uiState);
+    window.WS_APP.syncTerminalUnreadLabels?.();
+    window.WS_APP.syncTerminalUnreadPulse?.();
+    markTerminalRender();
+    return true;
+  }
+
+  function refreshTerminalInboxEntryProjection(user, citizen, entryId) {
+    const context = getTerminalMountedContext();
+    if (!context || context.activePanel !== "inbox") return false;
+    const panel = context.root.querySelector("[data-terminal-inbox-panel]");
+    if (!panel) return false;
+
+    const model = getTerminalInboxProjectionModel(citizen);
+    const escapedId = escapeTerminalSelectorValue(entryId);
+    const card = panel.querySelector(`[data-terminal-entry-id="${escapedId}"]`);
+    const cards = Array.from(panel.querySelectorAll("[data-terminal-entry-id]"));
+    const currentIndex = card ? cards.indexOf(card) : -1;
+    const expectedIndex = model.visibleEntries.findIndex((entry) => String(entry.id || "") === String(entryId || ""));
+    if (!card || expectedIndex < 0 || expectedIndex !== currentIndex) {
+      return refreshTerminalInboxListProjection(user, citizen);
+    }
+
+    const entry = model.visibleEntries[expectedIndex];
+    card.outerHTML = renderTerminalEntryCard(entry, model.activeFolder, model.selection, user);
+    syncTerminalInboxMetaProjection(panel, model);
+    refreshTerminalPanelNavigationProjection(user, { panel: "inbox", markRender: false });
+    window.WS_APP.syncTerminalUnreadLabels?.();
+    window.WS_APP.syncTerminalUnreadPulse?.();
+    markTerminalRender();
+    return true;
+  }
+
+  function loadMoreTerminalInboxEntries(user, citizen) {
+    const context = getTerminalMountedContext();
+    if (!context || context.activePanel !== "inbox") return false;
+    const panel = context.root.querySelector("[data-terminal-inbox-panel]");
+    const list = panel?.querySelector("[data-terminal-entry-list]");
+    if (!panel || !list) return false;
+
+    const before = getTerminalInboxProjectionModel(citizen);
+    if (!before.hasMore) return false;
+    const renderedBefore = before.visibleEntries.length;
+    expandTerminalInboxPagination(citizen.id, before.signature);
+    const after = getTerminalInboxProjectionModel(citizen);
+    const nextEntries = after.visibleEntries.slice(renderedBefore);
+    if (nextEntries.length) {
+      list.insertAdjacentHTML("beforeend", nextEntries.map((entry) => renderTerminalEntryCard(entry, after.activeFolder, after.selection, user)).join(""));
+    }
+    syncTerminalInboxMetaProjection(panel, after);
+    markTerminalRender();
+    return true;
+  }
+
+  function openTerminalEntryRoute(button, user, citizen, renderPanel) {
+    const moduleId = button.dataset.module || "terminal-hub";
+    const panel = button.dataset.panel || "";
+    const section = button.dataset.section || "";
+    const routeId = String(button.dataset.routeId || "").trim().toUpperCase();
+    const routeCitizenId = String(button.dataset.routeCitizenId || citizen.id || "").trim();
+    const entityType = String(button.dataset.entityType || "").trim().toUpperCase();
+    const entityId = String(button.dataset.entityId || "").trim();
+    let params = {};
+    try {
+      params = JSON.parse(decodeURIComponent(button.dataset.routeParams || "%7B%7D"));
+    } catch (error) {
+      params = {};
+    }
+    const entityRef = entityType && entityId ? { type: entityType, id: entityId } : null;
+    window.WS_APP.pushModuleView?.(() => renderTerminalHubModule(user, "inbox"));
+    if (moduleId === "terminal-hub") {
+      if (String(panel || "").trim().toLowerCase() === "billing" && section) {
+        window.WS_APP.terminalBillingSection = String(section).trim().toLowerCase();
+      }
+      renderPanel(panel || "inbox");
+      return;
+    }
+    window.WS_APP.openModule?.(moduleId, user, {
+      skipLoader: true,
+      panel,
+      section,
+      routeId,
+      citizenId: routeCitizenId || citizen.id,
+      entityRef,
+      params
+    });
+  }
+
+  function bindTerminalInboxDelegatedActions(root, user, citizen, renderPanel, refreshInbox) {
+    const panel = root.querySelector("[data-terminal-inbox-panel]");
+    if (!panel || panel.dataset.terminalInboxDelegated === "true") return;
+    panel.dataset.terminalInboxDelegated = "true";
+
+    panel.addEventListener("change", (event) => {
+      const sort = event.target.closest?.("[data-terminal-inbox-sort]");
+      if (!sort || !panel.contains(sort)) return;
+      window.WS_APP.terminalInboxSort = String(sort.value || "NEWEST").toUpperCase();
+      clearTerminalInboxSelection(citizen.id);
+      resetTerminalInboxPagination(citizen.id);
+      refreshInbox();
+    });
+
+    panel.addEventListener("click", async (event) => {
+      const button = event.target.closest?.("button");
+      if (!button || !panel.contains(button)) return;
+
+      if (button.matches("[data-terminal-inbox-view]")) {
         window.WS_APP.terminalInboxView = String(button.dataset.terminalInboxView || "ALL").toUpperCase();
         window.WS_APP.terminalInboxTypeFilter = "ALL";
         clearTerminalInboxSelection(citizen.id);
-        renderPanel("inbox");
-      });
-    });
-
-    root.querySelectorAll("[data-terminal-inbox-type-option]").forEach((button) => {
-      button.addEventListener("click", () => {
+        resetTerminalInboxPagination(citizen.id);
+        refreshInbox();
+        return;
+      }
+      if (button.matches("[data-terminal-inbox-type-option]")) {
         window.WS_APP.terminalInboxTypeFilter = normalizeTerminalInboxTypeFilter(button.dataset.terminalInboxTypeOption || "ALL");
         clearTerminalInboxSelection(citizen.id);
-        renderPanel("inbox");
-      });
-    });
-
-    root.querySelector("[data-terminal-inbox-sort]")?.addEventListener("change", (event) => {
-      window.WS_APP.terminalInboxSort = String(event.target.value || "NEWEST").toUpperCase();
-      clearTerminalInboxSelection(citizen.id);
-      renderPanel("inbox");
-    });
-
-    root.querySelector("[data-terminal-select-mode]")?.addEventListener("click", () => {
-      const current = getTerminalInboxSelectionState(citizen.id);
-      setTerminalInboxSelectionState(citizen.id, { active: !current.active, ids: [] });
-      renderPanel("inbox");
-    });
-
-    root.querySelector("[data-terminal-select-visible]")?.addEventListener("click", () => {
-      const current = getTerminalInboxSelectionState(citizen.id);
-      const visibleIds = String(root.querySelector("[data-terminal-bulk-actions]")?.dataset.visibleIds || "")
-        .split(",")
-        .map((entryId) => entryId.trim())
-        .filter(Boolean);
-      const selected = new Set(current.ids);
-      const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((entryId) => selected.has(entryId));
-      if (allVisibleSelected) visibleIds.forEach((entryId) => selected.delete(entryId));
-      else visibleIds.forEach((entryId) => selected.add(entryId));
-      setTerminalInboxSelectionState(citizen.id, { active: true, ids: Array.from(selected) });
-      renderPanel("inbox");
-    });
-
-    root.querySelector("[data-terminal-select-clear]")?.addEventListener("click", () => {
-      setTerminalInboxSelectionState(citizen.id, { active: true, ids: [] });
-      renderPanel("inbox");
-    });
-
-    root.querySelectorAll("[data-terminal-entry-select]").forEach((button) => {
-      button.addEventListener("click", (event) => {
+        resetTerminalInboxPagination(citizen.id);
+        refreshInbox();
+        return;
+      }
+      if (button.matches("[data-terminal-inbox-load-more]")) {
+        loadMoreTerminalInboxEntries(user, citizen);
+        return;
+      }
+      if (button.matches("[data-terminal-select-mode]")) {
+        const current = getTerminalInboxSelectionState(citizen.id);
+        setTerminalInboxSelectionState(citizen.id, { active: !current.active, ids: [] });
+        refreshInbox();
+        return;
+      }
+      if (button.matches("[data-terminal-select-visible]")) {
+        const current = getTerminalInboxSelectionState(citizen.id);
+        const visibleIds = getTerminalInboxRenderedIds(panel);
+        const selected = new Set(current.ids);
+        const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((entryId) => selected.has(entryId));
+        if (allVisibleSelected) visibleIds.forEach((entryId) => selected.delete(entryId));
+        else visibleIds.forEach((entryId) => selected.add(entryId));
+        setTerminalInboxSelectionState(citizen.id, { active: true, ids: Array.from(selected) });
+        syncTerminalInboxSelectionUi(panel, citizen);
+        return;
+      }
+      if (button.matches("[data-terminal-select-clear]")) {
+        setTerminalInboxSelectionState(citizen.id, { active: true, ids: [] });
+        syncTerminalInboxSelectionUi(panel, citizen);
+        return;
+      }
+      if (button.matches("[data-terminal-entry-select]")) {
         event.preventDefault();
         event.stopPropagation();
         const current = getTerminalInboxSelectionState(citizen.id);
@@ -1563,12 +2149,10 @@ window.WS_APP = window.WS_APP || {};
         if (selected.has(entryId)) selected.delete(entryId);
         else selected.add(entryId);
         setTerminalInboxSelectionState(citizen.id, { active: true, ids: Array.from(selected) });
-        renderPanel("inbox");
-      });
-    });
-
-    root.querySelectorAll("[data-terminal-bulk-action]").forEach((button) => {
-      button.addEventListener("click", async () => {
+        syncTerminalInboxSelectionUi(panel, citizen);
+        return;
+      }
+      if (button.matches("[data-terminal-bulk-action]")) {
         const action = String(button.dataset.terminalBulkAction || "").trim().toUpperCase();
         const current = getTerminalInboxSelectionState(citizen.id);
         if (!action || !current.ids.length) return;
@@ -1584,96 +2168,63 @@ window.WS_APP = window.WS_APP || {};
         }
         window.WS_APP.updateTerminalEntriesBulk?.(citizen.id, current.ids, action);
         setTerminalInboxSelectionState(citizen.id, { active: true, ids: [] });
-        renderPanel("inbox");
-      });
-    });
-
-    root.querySelector("[data-terminal-mark-all-read]")?.addEventListener("click", () => {
-      window.WS_APP.markAllTerminalEntriesRead?.(citizen.id);
-      renderPanel("inbox");
-    });
-
-    root.querySelector("[data-terminal-trash-read]")?.addEventListener("click", async () => {
-      const confirmed = await window.WS_APP.confirmAction?.({
-        title: "MOVE READ ENTRIES",
-        message: "Move all read terminal entries to Trash?",
-        confirmLabel: "Move Read",
-        cancelLabel: "Cancel",
-        tone: "default"
-      });
-      if (!confirmed) return;
-      window.WS_APP.moveReadTerminalEntriesToTrash?.(citizen.id);
-      renderPanel("inbox");
-    });
-
-    root.querySelector("[data-terminal-trash-restore-all]")?.addEventListener("click", () => {
-      window.WS_APP.restoreAllTerminalEntriesFromTrash?.(citizen.id);
-      renderPanel("inbox");
-    });
-
-    root.querySelector("[data-terminal-trash-empty]")?.addEventListener("click", async () => {
-      const confirmed = await window.WS_APP.confirmAction?.({
-        title: "EMPTY TERMINAL TRASH",
-        message: "Permanently delete all terminal entries from Trash?",
-        confirmLabel: "Delete All",
-        cancelLabel: "Cancel",
-        tone: "danger"
-      });
-      if (!confirmed) return;
-      window.WS_APP.emptyTerminalTrash?.(citizen.id);
-      renderPanel("inbox");
-    });
-
-    root.querySelectorAll("[data-terminal-entry-read]").forEach((button) => {
-      button.addEventListener("click", () => {
-        window.WS_APP.markTerminalEntryRead?.(citizen.id, button.dataset.terminalEntryRead, true);
-        renderPanel("inbox");
-      });
-    });
-
-    root.querySelectorAll("[data-terminal-entry-acknowledge]").forEach((button) => {
-      button.addEventListener("click", () => {
-        window.TerminalNotifications?.acknowledge?.({
-          citizenId: citizen.id,
-          notificationId: button.dataset.terminalEntryAcknowledge
+        refreshTerminalInboxListProjection(user, citizen);
+        return;
+      }
+      if (button.matches("[data-terminal-mark-all-read]")) {
+        window.WS_APP.markAllTerminalEntriesRead?.(citizen.id);
+        refreshTerminalInboxListProjection(user, citizen);
+        return;
+      }
+      if (button.matches("[data-terminal-trash-read]")) {
+        const confirmed = await window.WS_APP.confirmAction?.({
+          title: "MOVE READ ENTRIES",
+          message: "Move all read terminal entries to Trash?",
+          confirmLabel: "Move Read",
+          cancelLabel: "Cancel",
+          tone: "default"
         });
-        renderPanel("inbox");
-      });
-    });
-
-    root.querySelectorAll("[data-terminal-entry-resolve]").forEach((button) => {
-      button.addEventListener("click", () => {
-        window.TerminalNotifications?.resolve?.({
-          citizenId: citizen.id,
-          notificationId: button.dataset.terminalEntryResolve
+        if (!confirmed) return;
+        window.WS_APP.moveReadTerminalEntriesToTrash?.(citizen.id);
+        refreshTerminalInboxListProjection(user, citizen);
+        return;
+      }
+      if (button.matches("[data-terminal-trash-restore-all]")) {
+        window.WS_APP.restoreAllTerminalEntriesFromTrash?.(citizen.id);
+        refreshTerminalInboxListProjection(user, citizen);
+        return;
+      }
+      if (button.matches("[data-terminal-trash-empty]")) {
+        const confirmed = await window.WS_APP.confirmAction?.({
+          title: "EMPTY TERMINAL TRASH",
+          message: "Permanently delete all terminal entries from Trash?",
+          confirmLabel: "Delete All",
+          cancelLabel: "Cancel",
+          tone: "danger"
         });
-        renderPanel("inbox");
-      });
-    });
+        if (!confirmed) return;
+        window.WS_APP.emptyTerminalTrash?.(citizen.id);
+        refreshTerminalInboxListProjection(user, citizen);
+        return;
+      }
 
-    root.querySelectorAll("[data-terminal-entry-important]").forEach((button) => {
-      button.addEventListener("click", () => {
-        window.WS_APP.setTerminalEntryImportant?.(citizen.id, button.dataset.terminalEntryImportant, button.dataset.important === "true");
-        renderPanel("inbox");
-      });
-    });
-
-    root.querySelectorAll("[data-terminal-entry-trash]").forEach((button) => {
-      button.addEventListener("click", () => {
-        window.WS_APP.moveTerminalEntryToTrash?.(citizen.id, button.dataset.terminalEntryTrash);
-        renderPanel("inbox");
-      });
-    });
-
-    root.querySelectorAll("[data-terminal-entry-restore]").forEach((button) => {
-      button.addEventListener("click", () => {
-        window.WS_APP.restoreTerminalEntryFromTrash?.(citizen.id, button.dataset.terminalEntryRestore);
-        renderPanel("inbox");
-      });
-    });
-
-    root.querySelectorAll("[data-terminal-entry-delete]").forEach((button) => {
-      button.addEventListener("click", async () => {
+      const entryAction = [
+        ["terminalEntryRead", (entryId) => window.WS_APP.markTerminalEntryRead?.(citizen.id, entryId, true)],
+        ["terminalEntryAcknowledge", (entryId) => window.TerminalNotifications?.acknowledge?.({ citizenId: citizen.id, notificationId: entryId })],
+        ["terminalEntryResolve", (entryId) => window.TerminalNotifications?.resolve?.({ citizenId: citizen.id, notificationId: entryId })],
+        ["terminalEntryImportant", (entryId) => window.WS_APP.setTerminalEntryImportant?.(citizen.id, entryId, button.dataset.important === "true")],
+        ["terminalEntryTrash", (entryId) => window.WS_APP.moveTerminalEntryToTrash?.(citizen.id, entryId)],
+        ["terminalEntryRestore", (entryId) => window.WS_APP.restoreTerminalEntryFromTrash?.(citizen.id, entryId)]
+      ].find(([datasetKey]) => String(button.dataset[datasetKey] || "").trim());
+      if (entryAction) {
+        const [datasetKey, mutate] = entryAction;
+        const entryId = String(button.dataset[datasetKey] || "").trim();
+        mutate(entryId);
+        refreshTerminalInboxEntryProjection(user, citizen, entryId);
+        return;
+      }
+      if (button.matches("[data-terminal-entry-delete]")) {
+        const entryId = String(button.dataset.terminalEntryDelete || "").trim();
         const confirmed = await window.WS_APP.confirmAction?.({
           title: "DELETE TERMINAL ENTRY",
           message: "Permanently delete this entry from Trash?",
@@ -1682,46 +2233,42 @@ window.WS_APP = window.WS_APP || {};
           tone: "danger"
         });
         if (!confirmed) return;
-        window.WS_APP.deleteTerminalEntry?.(citizen.id, button.dataset.terminalEntryDelete);
-        renderPanel("inbox");
-      });
+        window.WS_APP.deleteTerminalEntry?.(citizen.id, entryId);
+        refreshTerminalInboxListProjection(user, citizen);
+        return;
+      }
+      if (button.matches("[data-terminal-entry-link]")) {
+        openTerminalEntryRoute(button, user, citizen, renderPanel);
+      }
     });
+  }
 
-    root.querySelectorAll("[data-terminal-entry-link]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const moduleId = button.dataset.module || "terminal-hub";
-        const panel = button.dataset.panel || "";
-        const section = button.dataset.section || "";
-        const routeId = String(button.dataset.routeId || "").trim().toUpperCase();
-        const routeCitizenId = String(button.dataset.routeCitizenId || citizen.id || "").trim();
-        const entityType = String(button.dataset.entityType || "").trim().toUpperCase();
-        const entityId = String(button.dataset.entityId || "").trim();
-        let params = {};
-        try {
-          params = JSON.parse(decodeURIComponent(button.dataset.routeParams || "%7B%7D"));
-        } catch (error) {
-          params = {};
-        }
-        const entityRef = entityType && entityId ? { type: entityType, id: entityId } : null;
-        window.WS_APP.pushModuleView?.(() => renderTerminalHubModule(user, "inbox"));
-        if (moduleId === "terminal-hub") {
-          if (String(panel || "").trim().toLowerCase() === "billing" && section) {
-            window.WS_APP.terminalBillingSection = String(section).trim().toLowerCase();
-          }
-          renderPanel(panel || "inbox");
-        } else {
-          window.WS_APP.openModule?.(moduleId, user, {
-            skipLoader: true,
-            panel,
-            section,
-            routeId,
-            citizenId: routeCitizenId || citizen.id,
-            entityRef,
-            params
-          });
-        }
+  function bindTerminalHubActions(user, citizen, options = {}) {
+    const root = document.querySelector("[data-terminal-root]");
+    if (!root) return;
+    const activePanel = getSafeTerminalPanel(options.activePanel || window.WS_APP.terminalActivePanel || "inbox");
+    const renderPanel = (nextPanel = activePanel) => renderTerminalPanelPartial(user, nextPanel);
+    const refreshInbox = () => refreshTerminalInboxProjection(user, { preserveUiState: true });
+    const refreshRequests = () => refreshTerminalRequestsProjection(user, { preserveUiState: true });
+
+    const targetSelect = root.querySelector("[data-terminal-target-citizen]");
+    if (targetSelect && targetSelect.dataset.terminalBound !== "true") {
+      targetSelect.dataset.terminalBound = "true";
+      targetSelect.addEventListener("change", (event) => {
+        clearTerminalInboxSelection(citizen.id);
+        resetTerminalInboxPagination(citizen.id);
+        window.WS_APP.terminalTargetCitizenId = event.target.value;
+        renderTerminalHubModule(user, window.WS_APP.terminalActivePanel || "inbox");
       });
-    });
+    }
+
+    if (options.bindNavigation !== false) bindTerminalPanelNavigationActions(root, user, citizen);
+    if (options.bindCalendar !== false) bindTerminalCalendarActions(user, citizen, root.querySelector("[data-terminal-calendar-shell]"));
+    if (activePanel === "billing") window.WS_APP.bindTerminalBillingActions?.(root, user, citizen);
+
+    if (activePanel === "inbox") {
+      bindTerminalInboxDelegatedActions(root, user, citizen, renderPanel, refreshInbox);
+    }
 
     root.querySelectorAll("[data-terminal-open-module]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1741,7 +2288,7 @@ window.WS_APP = window.WS_APP || {};
       if (request) {
         window.WS_APP.appendTerminalLogLine?.(`SERVICE REQUEST CREATED / ${request.type}`, { typed: true, speed: 8 });
       }
-      renderPanel("requests");
+      refreshRequests();
     });
 
     root.querySelectorAll("[data-terminal-request-status]").forEach((button) => {
@@ -1755,7 +2302,7 @@ window.WS_APP = window.WS_APP || {};
         });
         if (!confirmed) return;
         window.WS_APP.updateServiceRequestStatus?.(citizen.id, button.dataset.terminalRequestStatus, status, { createdBy: user.login || "ADMIN" });
-        renderPanel("requests");
+        refreshRequests();
       });
     });
 
@@ -1769,62 +2316,7 @@ window.WS_APP = window.WS_APP || {};
         });
         if (!confirmed) return;
         window.WS_APP.deleteServiceRequest?.(citizen.id, button.dataset.terminalRequestDelete);
-        renderPanel("requests");
-      });
-    });
-
-    root.querySelector("[data-terminal-reminder-form]")?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const form = event.currentTarget;
-      const reminder = window.WS_APP.createTerminalCalendarReminder?.(citizen.id, {
-        title: form.elements.title?.value,
-        date: form.elements.date?.value,
-        notifyDaysBefore: form.elements.notifyDaysBefore?.value,
-        body: form.elements.body?.value,
-        colorIndex: form.elements.colorIndex?.value,
-        createdBy: user.login || user.displayName || "LOCAL USER"
-      });
-      if (reminder) {
-        window.WS_APP.appendTerminalLogLine?.(`CALENDAR REMINDER REGISTERED / ${reminder.title}`, { typed: true, speed: 8 });
-      }
-      renderPanel(window.WS_APP.terminalActivePanel || "inbox");
-    });
-
-    root.querySelectorAll("[data-terminal-reminder-close]").forEach((button) => {
-      button.addEventListener("click", () => {
-        window.WS_APP.closeTerminalCalendarReminder?.(citizen.id, button.dataset.terminalReminderClose);
-        renderPanel(window.WS_APP.terminalActivePanel || "inbox");
-      });
-    });
-
-    root.querySelectorAll("[data-terminal-calendar-date]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const iso = String(button.dataset.terminalCalendarDate || "").trim();
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
-        const selected = parseIsoDateUtc(iso);
-        if (selected) {
-          setTerminalCalendarUiState(citizen.id, {
-            selectedIso: iso,
-            monthIso: new Date(Date.UTC(selected.getUTCFullYear(), selected.getUTCMonth(), 1)).toISOString().slice(0, 10)
-          });
-        }
-        renderPanel(window.WS_APP.terminalActivePanel || "inbox");
-      });
-    });
-
-    root.querySelectorAll("[data-terminal-calendar-nav]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const campaignIso = window.WS_APP.getCampaignDateIso?.() || window.WS_APP.CAMPAIGN_DATE_ISO || "2109-02-13";
-        const delta = Number(button.dataset.terminalCalendarNav || 0);
-        if (delta === 0) {
-          setTerminalCalendarUiState(citizen.id, { monthIso: campaignIso, selectedIso: campaignIso });
-        } else {
-          const calendarState = getTerminalCalendarUiState(citizen.id);
-          const base = parseIsoDateUtc(calendarState.monthIso || campaignIso) || parseIsoDateUtc(campaignIso);
-          const next = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + delta, 1));
-          setTerminalCalendarUiState(citizen.id, { monthIso: next.toISOString().slice(0, 10) });
-        }
-        renderPanel(window.WS_APP.terminalActivePanel || "inbox");
+        refreshRequests();
       });
     });
 
@@ -1898,8 +2390,26 @@ window.WS_APP = window.WS_APP || {};
       .filter((citizen) => citizen.playerVisible === true || (window.WS_APP.getUsers?.({ includeDisabled: false }) || []).some((user) => user.citizenId === citizen.id));
   }
 
+  window.WS_APP.TERMINAL_INBOX_PAGE_SIZE = TERMINAL_INBOX_PAGE_SIZE;
+  window.WS_APP.getTerminalInboxProjectionModel = getTerminalInboxProjectionModel;
+  window.WS_APP.expandTerminalInboxPagination = expandTerminalInboxPagination;
+  window.WS_APP.resetTerminalInboxPagination = resetTerminalInboxPagination;
+  window.WS_APP.loadMoreTerminalInboxEntries = loadMoreTerminalInboxEntries;
+  window.WS_APP.refreshTerminalInboxListProjection = refreshTerminalInboxListProjection;
+  window.WS_APP.refreshTerminalInboxEntryProjection = refreshTerminalInboxEntryProjection;
   window.WS_APP.renderTerminalHubModule = renderTerminalHubModule;
   window.WS_APP.renderTerminalPanelPartial = renderTerminalPanelPartial;
+  window.WS_APP.refreshTerminalPanelNavigationProjection = refreshTerminalPanelNavigationProjection;
+  window.WS_APP.refreshTerminalPanelContentProjection = refreshTerminalPanelContentProjection;
+  window.WS_APP.refreshTerminalInboxProjection = refreshTerminalInboxProjection;
+  window.WS_APP.refreshTerminalBillingProjection = refreshTerminalBillingProjection;
+  window.WS_APP.refreshTerminalRequestsProjection = refreshTerminalRequestsProjection;
+  window.WS_APP.refreshTerminalCommandProjection = refreshTerminalCommandProjection;
+  window.WS_APP.refreshTerminalEntriesProjection = refreshTerminalEntriesProjection;
+  window.WS_APP.refreshTerminalCalendarProjection = refreshTerminalCalendarProjection;
+  window.WS_APP.initTerminalStoreReactivity = initTerminalStoreReactivity;
+  window.WS_APP.destroyTerminalStoreReactivity = destroyTerminalStoreReactivity;
   window.WS_APP.formatTerminalRowValue = window.WS_APP.formatTerminalRowValue || formatTerminalRowValue;
   window.WS_APP.getTerminalTransferCitizens = getTerminalTransferCitizens;
+  initTerminalStoreReactivity();
 })();

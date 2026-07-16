@@ -109,7 +109,7 @@ test("Furnishing workspace renders canonical storage selection, placement grid, 
   assert.doesNotMatch(runtimeSource, /localStorage|sessionStorage/);
   assert.match(housingSource, /handleHousingHouseholdPointerMove/);
   assert.match(housingSource, /handleHousingHouseholdClick/);
-  assert.match(moduleMap, /js\/housing-household-runtime\.js\?v=3/);
+  assert.match(moduleMap, /js\/housing-household-runtime\.js\?v=4/);
 });
 
 test("Furnishing fixture data provides catalog definitions, a staging storage and immediately testable ItemInstances", () => {

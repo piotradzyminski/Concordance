@@ -15,7 +15,7 @@ test("Equipment Catalog Authoring extends the existing Catalog Management lazy b
   const renderer = read("js/admin/workspaces/admin-workspace-catalog-management.js");
   const catalog = read("js/admin-catalog-management.js");
 
-  assert.match(modules, /"admin-workspace-catalog-management":\s*\{[\s\S]*admin-equipment-catalog-authoring\.js\?v=1[\s\S]*admin-catalog-management\.js\?v=2[\s\S]*admin-workspace-catalog-management\.js\?v=2/);
+  assert.match(modules, /"admin-workspace-catalog-management":\s*\{[\s\S]*admin-equipment-catalog-authoring\.js\?v=1[\s\S]*admin-catalog-management\.js\?v=3[\s\S]*admin-workspace-catalog-management\.js\?v=3/);
   assert.match(store, /getPublishedEquipmentCatalogDefinitions/);
   assert.match(authoring, /equipment_catalog_authoring_pack_1/);
   assert.match(authoring, /saveAdminEquipmentDefinitionDraft/);
@@ -36,7 +36,7 @@ test("Equipment Catalog Authoring extends the existing Catalog Management lazy b
 test("index changes are cache-only and the authoring store remains lazy", () => {
   const index = read("index.html");
   assert.match(index, /js\/equipment-catalog-store\.js\?v=15/);
-  assert.match(index, /js\/modules\.js\?v=309/);
+  assert.match(index, /js\/modules\.js\?v=318/);
 
   assert.doesNotMatch(index, /admin-equipment-catalog-authoring\.js/);
 });

@@ -6,7 +6,7 @@ window.WS_APP = window.WS_APP || {};
   const DEFAULT_STORAGE_UNIT_ID = "housing-storage-main";
   const HOUSING_DELIVERY_DEFAULT_DAYS = 1;
   const HOUSING_SHIPMENT_CLOSED_STATUSES = new Set(["DELIVERED", "FAILED", "CANCELLED", "RETURNED"]);
-  const HOUSING_STORAGE_KINDS = ["ALL", "WEAPON", "ARMOR", "MEDICAL", "TOOLS", "CONTAINER", "DOCUMENT", "CYBERWARE_PACKAGE", "MISC"];
+  const HOUSING_STORAGE_KINDS = ["ALL", "COLLECTIBLE", "IMPORTANT", "SECURE", "ARCHIVE", "WEAPON", "ARMOR", "MEDICAL", "TOOLS", "CONTAINER", "DOCUMENT", "CYBERWARE_PACKAGE", "MISC"];
   const HOUSING_STORAGE_STATUSES = ["ALL", "AVAILABLE", "STORED", "OVERFLOW"];
   const HOUSING_STORAGE_SORTS = ["CATEGORY", "NAME", "SIZE_DESC", "SIZE_ASC", "STATUS", "VALUE_DESC", "VALUE_ASC"];
   const HOUSING_STORAGE_PROFILES = [
@@ -27,6 +27,11 @@ window.WS_APP = window.WS_APP || {};
       .replace(/>/g, "&gt;")
       .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function escapeSelectorValue(value = "") {
+    const token = String(value || "");
+    return window.CSS?.escape ? window.CSS.escape(token) : token.replace(/(["\\])/g, "\\$1");
   }
 
   function clampNumber(value, min, max) {
@@ -150,16 +155,25 @@ window.WS_APP = window.WS_APP || {};
     return { shipments, active, held, delivered, overflow, nextEta };
   }
 
+  const HOUSING_PRIMARY_TABS = ["OVERVIEW", "HOUSEHOLD", "STORAGE", "DELIVERIES"];
+
+  function normalizeHousingActiveTab(tab = "OVERVIEW") {
+    const token = String(tab || "OVERVIEW").trim().toUpperCase();
+    if (["UNIT", "HISTORY"].includes(token)) return "OVERVIEW";
+    if (token === "COLLECTION") return "STORAGE";
+    return HOUSING_PRIMARY_TABS.includes(token) ? token : "OVERVIEW";
+  }
+
   function getHousingActiveTab(citizenId = "") {
     window.WS_APP.housingActiveTabByCitizen = window.WS_APP.housingActiveTabByCitizen || {};
-    const tab = String(window.WS_APP.housingActiveTabByCitizen[citizenId] || "OVERVIEW").toUpperCase();
-    return ["OVERVIEW", "UNIT", "HOUSEHOLD", "STORAGE", "COLLECTION", "DELIVERIES", "HISTORY"].includes(tab) ? tab : "OVERVIEW";
+    const tab = normalizeHousingActiveTab(window.WS_APP.housingActiveTabByCitizen[citizenId] || "OVERVIEW");
+    window.WS_APP.housingActiveTabByCitizen[citizenId] = tab;
+    return tab;
   }
 
   function setHousingActiveTab(citizenId = "", tab = "OVERVIEW") {
     window.WS_APP.housingActiveTabByCitizen = window.WS_APP.housingActiveTabByCitizen || {};
-    const normalized = String(tab || "OVERVIEW").toUpperCase();
-    window.WS_APP.housingActiveTabByCitizen[citizenId] = ["OVERVIEW", "UNIT", "HOUSEHOLD", "STORAGE", "COLLECTION", "DELIVERIES", "HISTORY"].includes(normalized) ? normalized : "OVERVIEW";
+    window.WS_APP.housingActiveTabByCitizen[citizenId] = normalizeHousingActiveTab(tab);
   }
 
   function getHousingActiveRecordId(citizenId = "", records = []) {
@@ -237,6 +251,8 @@ window.WS_APP = window.WS_APP || {};
     getHousingStorageFilters,
     setHousingStorageFilters,
     resetHousingStorageFilters,
+    getHousingItemIndexOpen,
+    setHousingItemIndexOpen,
     getHousingSelectedStorageItemId,
     setHousingSelectedStorageItemId,
     getHousingSelectedStorageUnitId,
@@ -291,6 +307,8 @@ window.WS_APP = window.WS_APP || {};
     renderHousingStorageRowAction,
     renderHousingStorageRow,
     renderHousingStorageInspector,
+    renderHousingItemIndexDrawer,
+    locateHousingItemIndexEntry,
     renderHousingFeedback,
     renderHousingStorageTab,
     getHousingGridCellCoordinates,
@@ -315,6 +333,7 @@ window.WS_APP = window.WS_APP || {};
   if (!housingHouseholdRuntime) throw new Error("HOUSING_HOUSEHOLD_RUNTIME_UNAVAILABLE");
 
   const {
+    setWorkspaceState,
     renderHousingHouseholdTab,
     handleHousingHouseholdPointerMove,
     handleHousingHouseholdPointerLeave,
@@ -538,15 +557,15 @@ window.WS_APP = window.WS_APP || {};
             <small>${escapeHtml(`${transferCount} ITEM${transferCount === 1 ? "" : "S"} REQUIRE TRANSFER`)}</small>
             ${String(transition.type || "").toUpperCase() === "RELOCATION_REQUIRED" && String(transition.status || "PREPARED").toUpperCase() === "PREPARED" ? `
               <div class="housing-record-transition-actions">
-                <button class="housing-inline-action is-primary" type="button" data-housing-approve-relocation="${escapeHtml(record.linkedSubscriptionId || "")}">APPROVE MOVE</button>
-                <button class="housing-inline-action" type="button" data-housing-cancel-relocation="${escapeHtml(record.linkedSubscriptionId || "")}">CANCEL MOVE</button>
+                <button class="housing-inline-action is-primary" type="button" data-housing-approve-relocation="${escapeHtml(record.linkedSubscriptionId || "")}">APPROVE</button>
+                <button class="housing-inline-action" type="button" data-housing-cancel-relocation="${escapeHtml(record.linkedSubscriptionId || "")}">CANCEL</button>
               </div>
             ` : ""}
           </div>
         ` : ""}
         <div class="housing-record-actions">
           <button class="housing-inline-action" type="button" data-housing-select-unit="${escapeHtml(record.id)}">${isActive ? "ACTIVE UNIT" : "SET ACTIVE"}</button>
-          <button class="housing-inline-action" type="button" data-housing-record-id="${escapeHtml(record.id)}">OPEN STORAGE</button>
+          <button class="housing-inline-action" type="button" data-housing-open-storage-record="${escapeHtml(record.id)}">STORAGE</button>
         </div>
       </article>
     `;
@@ -563,13 +582,10 @@ window.WS_APP = window.WS_APP || {};
       </button>`;
     return `
       <div class="housing-module-tabs system-segment-tabs housing-module-tabs--hub" role="tablist" aria-label="Housing Sections">
-        ${tab("OVERVIEW", "OVERVIEW", "HUB / WEATHER / WORLD FEED")}
-        ${tab("UNIT", "UNIT", `HABITAT / ${escapeHtml(records.length)} RECORD${records.length === 1 ? "" : "S"}`)}
-        ${tab("HOUSEHOLD", "HOUSEHOLD", "ROOMS / FURNISHING / SAFE SPACE")}
-        ${tab("STORAGE", "STORAGE", `STORAGE / ${escapeHtml(storageSlots)} SLOTS`)}
-        ${tab("COLLECTION", "COLLECTION", `MEMENTOS / ${escapeHtml(collection.length)} ITEMS`)}
+        ${tab("OVERVIEW", "OVERVIEW", `UNIT / FEED / ${escapeHtml(records.length)} RECORD${records.length === 1 ? "" : "S"}`)}
+        ${tab("HOUSEHOLD", "HOUSEHOLD", `FURNISHING / DISPLAY / ${escapeHtml(collection.length)} ITEMS`)}
+        ${tab("STORAGE", "STORAGE", `GRID / ITEM INDEX / ${escapeHtml(storageSlots)} CELLS`)}
         ${tab("DELIVERIES", "DELIVERIES", `INBOUND / ${escapeHtml(activeShipments.length)} ACTIVE`)}
-        ${tab("HISTORY", "HISTORY", "HOUSEHOLD ACTIVITY")}
       </div>
     `;
   }
@@ -626,8 +642,8 @@ window.WS_APP = window.WS_APP || {};
           ${isHeld ? `<small class="housing-shipment-hold">HELD: ${escapeHtml(shipment.holdReason || order.holdReason || "UNKNOWN")}</small>` : ""}
         </div>
         <div class="housing-shipment-actions">
-          ${canOpenStorage ? `<button class="housing-inline-action" type="button" data-housing-record-id="${escapeHtml(context.record.id)}">OPEN STORAGE</button>` : ""}
-          ${marketOrderId ? `<button class="housing-inline-action" type="button" data-housing-open-market-order="${escapeHtml(marketOrderId)}">OPEN MARKET ORDER</button>` : ""}
+          ${canOpenStorage ? `<button class="housing-inline-action" type="button" data-housing-open-storage-record="${escapeHtml(context.record.id)}">STORAGE</button>` : ""}
+          ${marketOrderId ? `<button class="housing-inline-action" type="button" data-housing-open-market-order="${escapeHtml(marketOrderId)}">ORDER</button>` : ""}
           <span class="module-status-badge">${escapeHtml(formatCredits(order.price || 0))}</span>
         </div>
       </article>
@@ -675,7 +691,7 @@ window.WS_APP = window.WS_APP || {};
               <h5>${escapeHtml(activeRecord?.title || "No Active Unit")}</h5>
               <small>Read-only logistics projection. Shopping, checkout and order recovery remain in the global Market module.</small>
             </div>
-            <button class="housing-inline-action" type="button" data-housing-open-market>OPEN MARKET</button>
+            <button class="housing-inline-action" type="button" data-housing-open-market>MARKET</button>
           </header>
           <div class="housing-summary-unit housing-shipment-summary">
             ${renderHousingMetric("ACTIVE", active.length)}
@@ -735,10 +751,10 @@ window.WS_APP = window.WS_APP || {};
             ${renderHousingMetric("DISPLAY", `${overview.displayUsed}/${overview.displayCapacity}`)}
             ${renderHousingMetric("UNREAD", overview.unreadTerminalCount)}
           </div>
-          <div class="housing-hub-quick-actions">
-            <button class="housing-inline-action is-primary" type="button" data-housing-open-collection>OPEN COLLECTION</button>
-            <button class="housing-inline-action" type="button" data-housing-open-terminal>OPEN TERMINAL</button>
-            <button class="housing-inline-action" type="button" data-housing-open-market>OPEN MARKET</button>
+          <div class="housing-hub-quick-actions housing-action-rail">
+            <button class="housing-inline-action is-primary" type="button" data-housing-open-collection>COLLECTION</button>
+            <button class="housing-inline-action" type="button" data-housing-open-terminal>TERMINAL</button>
+            <button class="housing-inline-action" type="button" data-housing-open-market>MARKET</button>
           </div>
         </section>
         <section class="housing-module-panel housing-hub-weather">
@@ -758,27 +774,41 @@ window.WS_APP = window.WS_APP || {};
     `;
   }
 
-  function renderHousingCollectionTab(citizen = {}) {
+  function getHousingCollectionRenderContext(citizen = {}) {
     const record = getHousingActiveRecord(citizen);
-    if (!record) return '<section class="housing-module-panel"><p class="file-empty">Collection requires an active Housing Unit.</p></section>';
+    if (!record) return { record: null, collection: [], hosts: [], candidates: [], candidateOptions: "" };
     const collection = window.WS_APP.getHousingCollectionItems?.(citizen.id, record.id) || [];
     const hosts = window.WS_APP.getHousingDisplayHosts?.(citizen.id, record.id) || [];
     const candidates = window.WS_APP.getHousingDisplayCandidates?.(citizen.id) || [];
     const candidateOptions = candidates.map((item) => `<option value="${escapeHtml(item.instanceId)}">${escapeHtml(item.playerLabel || item.instanceData?.name || item.definitionId)}</option>`).join("");
+    return { record, collection, hosts, candidates, candidateOptions };
+  }
+
+  function renderHousingCollectionStoragePanel(citizen = {}) {
+    const { record, collection } = getHousingCollectionRenderContext(citizen);
+    if (!record) return '<section class="housing-module-panel"><p class="file-empty">Collection requires an active Housing Unit.</p></section>';
     return `
-      <div class="housing-hub-collection">
-        ${renderHousingFeedback(citizen.id)}
-        <section class="housing-module-panel">
-          <header class="housing-module-panel-head"><div><p class="kicker">COLLECTION</p><h5>Collectibles, mementos and important items</h5></div><span class="module-status-badge">${escapeHtml(collection.length)} ITEMS</span></header>
-          <p class="housing-hub-note">Collection metadata and display placement remain attached to the canonical ItemInstance. Decorative items provide identity and history, not numeric bonuses.</p>
-          <div class="housing-hub-collection-list">${collection.map((entry) => `<article class="housing-hub-collection-item ${entry.important ? "is-important" : ""}"><div><span>${escapeHtml(entry.category)}</span><b>${escapeHtml(entry.label)}</b><small>${escapeHtml(entry.displayed ? "DISPLAYED" : entry.storageProtection)}</small></div><p>${escapeHtml(entry.note || entry.provenance || "No collection note.")}</p><div class="housing-hub-item-actions"><button class="housing-inline-action ${entry.important ? "is-primary" : ""}" type="button" data-housing-toggle-important="${escapeHtml(entry.instance.instanceId)}" data-housing-important-next="${entry.important ? "false" : "true"}">${entry.important ? "IMPORTANT" : "MARK IMPORTANT"}</button>${entry.displayed ? `<button class="housing-inline-action" type="button" data-housing-remove-display="${escapeHtml(entry.instance.instanceId)}">RETURN TO STORAGE</button>` : ""}</div></article>`).join("") || '<p class="file-empty">No collectibles or important items are registered.</p>'}</div>
-        </section>
-        <section class="housing-module-panel">
-          <header class="housing-module-panel-head"><div><p class="kicker">DISPLAY SURFACES</p><h5>Household exhibition slots</h5></div><span class="module-status-badge">${escapeHtml(hosts.length)} HOSTS</span></header>
-          <div class="housing-hub-display-hosts">${hosts.map((host) => `<article class="housing-hub-display-host"><header><b>${escapeHtml(host.label)}</b><small>${escapeHtml(host.slots.filter((slot) => slot.item).length)}/${escapeHtml(host.slots.length)} OCCUPIED</small></header><div>${host.slots.map((slot) => slot.item ? `<span class="housing-hub-display-slot is-filled"><small>${escapeHtml(slot.slotId)}</small><b>${escapeHtml(slot.item.playerLabel || slot.item.instanceData?.name || slot.item.definitionId)}</b><button class="housing-inline-action" type="button" data-housing-remove-display="${escapeHtml(slot.item.instanceId)}">REMOVE</button></span>` : `<span class="housing-hub-display-slot"><small>${escapeHtml(slot.slotId)}</small>${candidateOptions ? `<select data-housing-display-candidate><option value="">SELECT ITEM</option>${candidateOptions}</select><button class="housing-inline-action" type="button" data-housing-display-item data-host-instance-id="${escapeHtml(host.instance.instanceId)}" data-display-slot-id="${escapeHtml(slot.slotId)}">DISPLAY</button>` : '<em>NO DISPLAYABLE ITEM IN STORAGE</em>'}</span>`).join("")}</div></article>`).join("") || '<p class="file-empty">Place display furniture or install a Display Rail module to expose display slots.</p>'}</div>
-        </section>
-      </div>
+      <section class="housing-module-panel housing-hub-collection-storage">
+        <header class="housing-module-panel-head"><div><p class="kicker">STORAGE / COLLECTION</p><h5>Collectibles and important items</h5></div><span class="module-status-badge">${escapeHtml(collection.length)} ITEMS</span></header>
+        <p class="housing-hub-note">Collection remains a projection of canonical ItemInstances. Use Item Index filters to locate collectible, important, secure and archival records.</p>
+        <div class="housing-hub-collection-list system-scroll-surface" data-system-scroll>${collection.map((entry) => `<article class="housing-hub-collection-item ${entry.important ? "is-important" : ""}"><div><span>${escapeHtml(entry.category)}</span><b>${escapeHtml(entry.label)}</b><small>${escapeHtml(entry.displayed ? "DISPLAYED" : entry.storageProtection)}</small></div><p>${escapeHtml(entry.note || entry.provenance || "No collection note.")}</p><div class="housing-hub-item-actions housing-action-rail"><button class="housing-inline-action ${entry.important ? "is-primary" : ""}" type="button" data-housing-toggle-important="${escapeHtml(entry.instance.instanceId)}" data-housing-important-next="${entry.important ? "false" : "true"}">${entry.important ? "UNMARK" : "IMPORTANT"}</button>${entry.displayed ? `<button class="housing-inline-action" type="button" data-housing-remove-display="${escapeHtml(entry.instance.instanceId)}">RETURN</button>` : ""}</div></article>`).join("") || '<p class="file-empty">No collectibles or important items are registered.</p>'}</div>
+      </section>
     `;
+  }
+
+  function renderHousingDisplaySurfacesPanel(citizen = {}) {
+    const { record, hosts, candidateOptions } = getHousingCollectionRenderContext(citizen);
+    if (!record) return "";
+    return `
+      <section class="housing-module-panel housing-hub-display-panel">
+        <header class="housing-module-panel-head"><div><p class="kicker">HOUSEHOLD / DISPLAY</p><h5>Exhibition slots</h5></div><span class="module-status-badge">${escapeHtml(hosts.length)} HOSTS</span></header>
+        <div class="housing-hub-display-hosts system-scroll-surface" data-system-scroll>${hosts.map((host) => `<article class="housing-hub-display-host"><header><b>${escapeHtml(host.label)}</b><small>${escapeHtml(host.slots.filter((slot) => slot.item).length)}/${escapeHtml(host.slots.length)} OCCUPIED</small></header><div>${host.slots.map((slot) => slot.item ? `<span class="housing-hub-display-slot is-filled"><small>${escapeHtml(slot.slotId)}</small><b>${escapeHtml(slot.item.playerLabel || slot.item.instanceData?.name || slot.item.definitionId)}</b><button class="housing-inline-action" type="button" data-housing-remove-display="${escapeHtml(slot.item.instanceId)}">REMOVE</button></span>` : `<span class="housing-hub-display-slot"><small>${escapeHtml(slot.slotId)}</small>${candidateOptions ? `<select data-housing-display-candidate><option value="">SELECT ITEM</option>${candidateOptions}</select><button class="housing-inline-action" type="button" data-housing-display-item data-host-instance-id="${escapeHtml(host.instance.instanceId)}" data-display-slot-id="${escapeHtml(slot.slotId)}">DISPLAY</button>` : '<em>NO DISPLAYABLE ITEM IN STORAGE</em>'}</span>`).join("")}</div></article>`).join("") || '<p class="file-empty">Place display furniture or install a Display Rail module to expose display slots.</p>'}</div>
+      </section>
+    `;
+  }
+
+  function renderHousingCollectionTab(citizen = {}) {
+    return `<div class="housing-hub-collection">${renderHousingCollectionStoragePanel(citizen)}${renderHousingDisplaySurfacesPanel(citizen)}</div>`;
   }
 
   function renderHousingHistoryTab(citizen = {}) {
@@ -830,18 +860,12 @@ window.WS_APP = window.WS_APP || {};
         ${renderHousingTabs(citizen, records)}
         <div class="housing-module-unit">
           ${activeTab === "OVERVIEW"
-            ? renderHousingOverviewTab(citizen)
+            ? `<div class="housing-overview-consolidated">${renderHousingOverviewTab(citizen)}${renderHousingUnitTab(citizen)}${renderHousingHistoryTab(citizen)}</div>`
             : activeTab === "HOUSEHOLD"
-              ? renderHousingHouseholdTab(citizen)
+              ? `<div class="housing-household-consolidated">${renderHousingHouseholdTab(citizen)}${renderHousingDisplaySurfacesPanel(citizen)}</div>`
               : activeTab === "STORAGE"
-                ? renderHousingStorageTab(citizen)
-                : activeTab === "COLLECTION"
-                  ? renderHousingCollectionTab(citizen)
-                  : activeTab === "DELIVERIES"
-                    ? renderHousingDeliveriesTab(citizen)
-                    : activeTab === "HISTORY"
-                      ? renderHousingHistoryTab(citizen)
-                      : renderHousingUnitTab(citizen)}
+                ? `<div class="housing-storage-consolidated">${renderHousingStorageTab(citizen)}${renderHousingCollectionStoragePanel(citizen)}</div>`
+                : renderHousingDeliveriesTab(citizen)}
         </div>
       </section>
     `;
@@ -930,7 +954,9 @@ window.WS_APP = window.WS_APP || {};
 
       const openCollectionButton = event.target.closest?.("[data-housing-open-collection]");
       if (openCollectionButton) {
-        setHousingActiveTab(citizenId, "COLLECTION");
+        setHousingStorageFilters(citizenId, { kind: "COLLECTIBLE" });
+        setHousingItemIndexOpen(citizenId, true);
+        setHousingActiveTab(citizenId, "STORAGE");
         renderHousingModule(user);
         return;
       }
@@ -1021,6 +1047,40 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
 
+      const itemIndexToggle = event.target.closest?.("[data-housing-item-index-toggle]");
+      if (itemIndexToggle) {
+        setHousingItemIndexOpen(citizenId, true);
+        setHousingActiveTab(citizenId, "STORAGE");
+        renderHousingModule(user);
+        return;
+      }
+
+      const itemIndexClose = event.target.closest?.("[data-housing-item-index-close]");
+      if (itemIndexClose) {
+        setHousingItemIndexOpen(citizenId, false);
+        renderHousingModule(user);
+        return;
+      }
+
+      const itemIndexLocate = event.target.closest?.("[data-housing-item-index-locate]");
+      if (itemIndexLocate) {
+        const result = locateHousingItemIndexEntry(citizenId, String(itemIndexLocate.getAttribute("data-housing-item-index-locate") || ""), {
+          setHousingActiveRecordId,
+          setHousingActiveTab,
+          setWorkspaceState
+        });
+        setHousingFeedback(citizenId, result.ok ? "Item located." : `Locate failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "SUCCESS" : "ERROR");
+        setHousingItemIndexOpen(citizenId, false);
+        renderHousingModule(user);
+        window.requestAnimationFrame?.(() => {
+          const target = document.querySelector(`[data-housing-storage-select-item="${escapeSelectorValue(result.itemId || "")}"], [data-household-select-item="${escapeSelectorValue(result.itemId || "")}"], [data-housing-open-container-select-item="${escapeSelectorValue(result.itemId || "")}"]`);
+          target?.scrollIntoView?.({ block: "center", inline: "center", behavior: "smooth" });
+          target?.classList?.add("is-located");
+          window.setTimeout?.(() => target?.classList?.remove("is-located"), 1200);
+        });
+        return;
+      }
+
       const unitSelectButton = event.target.closest?.("[data-housing-select-unit]");
       if (unitSelectButton) {
         setHousingActiveRecordId(citizenId, String(unitSelectButton.getAttribute("data-housing-select-unit") || ""));
@@ -1030,9 +1090,9 @@ window.WS_APP = window.WS_APP || {};
         return;
       }
 
-      const recordButton = event.target.closest?.("[data-housing-record-id]");
+      const recordButton = event.target.closest?.("[data-housing-open-storage-record]");
       if (recordButton) {
-        setHousingActiveRecordId(citizenId, String(recordButton.getAttribute("data-housing-record-id") || ""));
+        setHousingActiveRecordId(citizenId, String(recordButton.getAttribute("data-housing-open-storage-record") || ""));
         setHousingSelectedStorageUnitId(citizenId, "");
         setHousingActiveTab(citizenId, "STORAGE");
         setHousingFeedback(citizenId, "");

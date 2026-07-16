@@ -22,7 +22,7 @@
 }
 
 .cyberware-anatomy-sidebar { display: grid; align-content: start; min-height: 0; }
-.cyberware-anatomy-region-list { display: grid; gap: 1px; max-height: 560px; overflow: auto; scrollbar-width: thin; scrollbar-color: rgba(143, 189, 180, .42) rgba(3, 5, 6, .8); }
+.cyberware-anatomy-region-list { display: grid; gap: 1px; max-height: 560px; overflow: auto; }
 .cyberware-anatomy-region-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; padding: 9px 10px; border: 0; border-left: 2px solid transparent; border-bottom: 1px solid rgba(143, 189, 180, .1); background: rgba(3, 5, 6, .66); color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .cyberware-anatomy-region-row:hover,
 .cyberware-anatomy-region-row:focus-visible { background: rgba(143, 189, 180, .08); outline: none; }

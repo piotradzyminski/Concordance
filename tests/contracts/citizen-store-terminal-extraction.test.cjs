@@ -23,7 +23,7 @@ function scriptPosition(source, name) {
 test("Terminal stores load before Citizen Store and Citizen Store delegates ownership", () => {
   const entryPosition = scriptPosition(INDEX, "js/terminal-entry-store.js?v=2");
   const reminderPosition = scriptPosition(INDEX, "js/terminal-reminder-store.js?v=1");
-  const citizenStorePosition = scriptPosition(INDEX, "js/store.js?v=144");
+  const citizenStorePosition = scriptPosition(INDEX, "js/store.js?v=147");
   assert.ok(entryPosition < citizenStorePosition);
   assert.ok(reminderPosition < citizenStorePosition);
   assert.match(STORE, /createTerminalEntryStore\(\{/);

@@ -11,13 +11,13 @@ js/cyberware-module.js
 js/cyberware-workspace.js
   player-facing workspace composition, navigation state and Instance Inspector
 
-js/equipment-cyberware-link.js
-  Equipment-to-Cyberware navigation bridge only
+css/cyberware.css
+  standalone Cyberware presentation and reused neutral shell/index primitives
 ```
 
 Domain resolvers remain in Runtime, Core Stack, Authorization, Planner, Diagnostics, Maintenance and World Bridge modules. Equipment owns only Cybergrid and physical equipment placement; it does not own a Cyberware workspace tab.
 
-Cyberware internal navigation remains contained inside the standalone module.
+Cyberware internal navigation remains contained inside the standalone module. Equipment owns no Cyberware bridge file, workspace alias or Cyberware stylesheet selectors.
 
 ## Internal section hierarchy
 

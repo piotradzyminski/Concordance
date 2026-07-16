@@ -779,6 +779,13 @@ function recordBillingSubscriptionPayment(citizenId, result = {}, previousLedger
 }
 
 function refreshTerminalBillingPanel(user) {
+  if (typeof window.WS_APP?.refreshTerminalBillingProjection === "function") {
+    const refreshed = window.WS_APP.refreshTerminalBillingProjection(user, {
+      includeNavigation: true,
+      preserveUiState: true
+    });
+    if (refreshed !== false) return;
+  }
   if (typeof window.WS_APP?.renderTerminalPanelPartial === "function") {
     window.WS_APP.renderTerminalPanelPartial(user, "billing");
     return;

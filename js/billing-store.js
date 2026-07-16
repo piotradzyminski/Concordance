@@ -5,8 +5,11 @@ window.WS_APP = window.WS_APP || {};
   const TRANSACTIONS_STORAGE_KEY = "ws_app_billing_transactions_v2";
   const TRANSFER_ACCOUNTS_STORAGE_KEY = "ws_app_billing_transfer_accounts_v1";
   const TRANSFERS_STORAGE_KEY = "ws_app_billing_transfers_v1";
+  const MARKETPLACE_SETTLEMENTS_STORAGE_KEY = "ws_app_billing_marketplace_settlements_v1";
   const SCHEMA_STORAGE_KEY = "ws_app_billing_bridge_schema";
-  const SCHEMA_VERSION = "billing_bridge_schema_2_1x";
+  const SCHEMA_VERSION = "billing_bridge_schema_2_2x";
+  const DEFAULT_MARKETPLACE_FEE_RATE = 0.05;
+  const DEFAULT_MARKETPLACE_PLATFORM_ORGANIZATION_ID = "habitat-market";
   const DEFAULT_CURRENCY = "CREDIT";
   const DEFAULT_DEBT_LIMIT = 20000;
 
@@ -22,10 +25,13 @@ window.WS_APP = window.WS_APP || {};
   const transferAccountById = new Map();
   const transferById = new Map();
   const transferByIdempotencyKey = new Map();
+  const marketplaceSettlementById = new Map();
+  const marketplaceSettlementByIdempotencyKey = new Map();
   let intents = [];
   let transactions = [];
   let transferAccounts = [];
   let transfers = [];
+  let marketplaceSettlements = [];
   let initialized = false;
   let legacyBackfillActive = false;
 
@@ -46,6 +52,22 @@ window.WS_APP = window.WS_APP || {};
     "REFUNDED",
     "FAILED",
     "PAYMENT_RECOVERY_REQUIRED"
+  ]);
+
+  const MARKETPLACE_SETTLEMENT_STATUSES = new Set([
+    "PENDING",
+    "CAPTURED",
+    "PARTIALLY_REFUNDED",
+    "REFUNDED",
+    "FAILED",
+    "RECOVERY_REQUIRED"
+  ]);
+
+  const MARKETPLACE_REFUND_STATUSES = new Set([
+    "PENDING",
+    "CAPTURED",
+    "FAILED",
+    "RECOVERY_REQUIRED"
   ]);
 
   const PAYMENT_SOURCES = new Set([
@@ -295,6 +317,97 @@ window.WS_APP = window.WS_APP || {};
     };
   }
 
+  function normalizeMarketplaceFeeRate(value, fallback = DEFAULT_MARKETPLACE_FEE_RATE) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    const normalized = parsed > 1 ? parsed / 100 : parsed;
+    return Math.max(0, Math.min(1, Math.round(normalized * 1000000) / 1000000));
+  }
+
+  function normalizeMarketplaceRefund(record = {}) {
+    const source = record && typeof record === "object" && !Array.isArray(record) ? record : {};
+    const status = normalizeToken(source.status, "PENDING");
+    return {
+      refundId: String(source.refundId || source.id || makeId("marketplace_refund")).trim(),
+      amount: normalizeAmount(source.amount),
+      sellerDebitAmount: normalizeAmount(source.sellerDebitAmount),
+      platformDebitAmount: normalizeAmount(source.platformDebitAmount),
+      buyerCreditTransactionId: String(source.buyerCreditTransactionId || "").trim(),
+      sellerDebitTransactionId: String(source.sellerDebitTransactionId || "").trim(),
+      platformDebitTransactionId: String(source.platformDebitTransactionId || "").trim(),
+      accountSnapshots: source.accountSnapshots && typeof source.accountSnapshots === "object" && !Array.isArray(source.accountSnapshots) ? {
+        buyer: normalizeAccountSnapshot(source.accountSnapshots.buyer || {}),
+        seller: normalizeAccountSnapshot(source.accountSnapshots.seller || {}),
+        platform: normalizeAccountSnapshot(source.accountSnapshots.platform || {})
+      } : null,
+      status: MARKETPLACE_REFUND_STATUSES.has(status) ? status : "PENDING",
+      idempotencyKey: String(source.idempotencyKey || "").trim(),
+      reason: String(source.reason || "").trim(),
+      createdAt: String(source.createdAt || nowIso()).trim(),
+      updatedAt: String(source.updatedAt || source.createdAt || nowIso()).trim(),
+      capturedAt: String(source.capturedAt || "").trim(),
+      failedAt: String(source.failedAt || "").trim(),
+      failureCode: normalizeToken(source.failureCode, ""),
+      metadata: source.metadata && typeof source.metadata === "object" && !Array.isArray(source.metadata) ? clone(source.metadata) : {}
+    };
+  }
+
+  function normalizeMarketplaceSettlement(record = {}) {
+    const source = record && typeof record === "object" && !Array.isArray(record) ? record : {};
+    const buyerRef = normalizePartyRef(source.buyerRef || { partyType: "CITIZEN", partyId: source.buyerId });
+    const sellerRef = normalizePartyRef(source.sellerRef || { partyType: source.sellerPartyType || "CITIZEN", partyId: source.sellerId });
+    const platformRef = normalizePartyRef(source.platformRef || { partyType: "ORGANIZATION", partyId: source.platformOrganizationId || DEFAULT_MARKETPLACE_PLATFORM_ORGANIZATION_ID });
+    const grossAmount = normalizeAmount(source.grossAmount || source.amount);
+    const platformFeeRate = normalizeMarketplaceFeeRate(source.platformFeeRate, DEFAULT_MARKETPLACE_FEE_RATE);
+    const platformFeeAmount = Math.min(grossAmount, normalizeAmount(source.platformFeeAmount ?? (grossAmount * platformFeeRate)));
+    const sellerNetAmount = normalizeAmount(source.sellerNetAmount ?? (grossAmount - platformFeeAmount));
+    const refundedAmount = Math.min(grossAmount, normalizeAmount(source.refundedAmount));
+    const sellerRefundedAmount = Math.min(sellerNetAmount, normalizeAmount(source.sellerRefundedAmount));
+    const platformFeeRefundedAmount = Math.min(platformFeeAmount, normalizeAmount(source.platformFeeRefundedAmount));
+    const status = normalizeToken(source.status, "PENDING");
+    return {
+      schemaVersion: 1,
+      settlementId: String(source.settlementId || source.id || makeId("marketplace_settlement")).trim(),
+      settlementType: normalizeToken(source.settlementType, "MARKETPLACE_SALE"),
+      listingId: String(source.listingId || "").trim(),
+      marketOrderId: String(source.marketOrderId || "").trim(),
+      buyerRef,
+      sellerRef,
+      platformRef,
+      grossAmount,
+      platformFeeRate,
+      platformFeeAmount,
+      sellerNetAmount,
+      refundedAmount,
+      sellerRefundedAmount,
+      platformFeeRefundedAmount,
+      currency: normalizeToken(source.currency, DEFAULT_CURRENCY),
+      buyerDebitTransactionId: String(source.buyerDebitTransactionId || "").trim(),
+      sellerCreditTransactionId: String(source.sellerCreditTransactionId || "").trim(),
+      platformFeeTransactionId: String(source.platformFeeTransactionId || "").trim(),
+      accountSnapshots: source.accountSnapshots && typeof source.accountSnapshots === "object" && !Array.isArray(source.accountSnapshots) ? {
+        buyer: normalizeAccountSnapshot(source.accountSnapshots.buyer || {}),
+        seller: normalizeAccountSnapshot(source.accountSnapshots.seller || {}),
+        platform: normalizeAccountSnapshot(source.accountSnapshots.platform || {})
+      } : null,
+      refunds: (Array.isArray(source.refunds) ? source.refunds : []).map(normalizeMarketplaceRefund),
+      status: MARKETPLACE_SETTLEMENT_STATUSES.has(status) ? status : "PENDING",
+      idempotencyKey: String(source.idempotencyKey || "").trim(),
+      correlationId: String(source.correlationId || "").trim(),
+      createdAt: String(source.createdAt || nowIso()).trim(),
+      updatedAt: String(source.updatedAt || source.createdAt || nowIso()).trim(),
+      capturedAt: String(source.capturedAt || "").trim(),
+      refundedAt: String(source.refundedAt || "").trim(),
+      failedAt: String(source.failedAt || "").trim(),
+      failureCode: normalizeToken(source.failureCode, ""),
+      failureMessage: String(source.failureMessage || "").trim(),
+      compensationState: normalizeToken(source.compensationState, "NONE"),
+      retryCount: Math.max(0, Number(source.retryCount || 0) || 0),
+      revision: Math.max(1, Number(source.revision || 1) || 1),
+      metadata: source.metadata && typeof source.metadata === "object" && !Array.isArray(source.metadata) ? clone(source.metadata) : {}
+    };
+  }
+
   function rebuildIndexes() {
     intentById.clear();
     intentByIdempotencyKey.clear();
@@ -303,6 +416,8 @@ window.WS_APP = window.WS_APP || {};
     transferAccountById.clear();
     transferById.clear();
     transferByIdempotencyKey.clear();
+    marketplaceSettlementById.clear();
+    marketplaceSettlementByIdempotencyKey.clear();
 
     intents.forEach((record) => {
       intentById.set(record.billingIntentId, record);
@@ -321,6 +436,11 @@ window.WS_APP = window.WS_APP || {};
     transfers.forEach((record) => {
       transferById.set(record.transferId, record);
       if (record.idempotencyKey) transferByIdempotencyKey.set(record.idempotencyKey, record);
+    });
+
+    marketplaceSettlements.forEach((record) => {
+      marketplaceSettlementById.set(record.settlementId, record);
+      if (record.idempotencyKey) marketplaceSettlementByIdempotencyKey.set(record.idempotencyKey, record);
     });
   }
 
@@ -344,6 +464,12 @@ window.WS_APP = window.WS_APP || {};
 
   function persistTransfers() {
     const persisted = writeStoredArray(TRANSFERS_STORAGE_KEY, transfers);
+    if (persisted) rebuildIndexes();
+    return persisted;
+  }
+
+  function persistMarketplaceSettlements() {
+    const persisted = writeStoredArray(MARKETPLACE_SETTLEMENTS_STORAGE_KEY, marketplaceSettlements);
     if (persisted) rebuildIndexes();
     return persisted;
   }
@@ -1189,6 +1315,637 @@ window.WS_APP = window.WS_APP || {};
     return { ...result, resultCode: "ADMIN_TRANSFER_REVERSED", reversedTransfer: getAdminBillingTransfer(existing.transferId) };
   }
 
+  function getMarketplaceAccountState(party = {}) {
+    const ref = normalizePartyRef(party);
+    const current = getTransferAccountState(ref, { create: false });
+    if (current) return current;
+    if (ref.partyType === "ORGANIZATION") {
+      const organization = window.WS_APP.getOrganizationById?.(ref.partyId);
+      if (!organization || organization.archived === true) return null;
+      return {
+        ...ref,
+        label: getTransferPartyLabel(ref),
+        credits: 0,
+        debt: 0,
+        debtLimit: null,
+        creditOverdraftAllowed: true,
+        revision: 1
+      };
+    }
+    return null;
+  }
+
+  function buildCreditSnapshot(account, delta) {
+    const creditsBefore = normalizeSignedAmount(account.credits);
+    const creditsAfter = normalizeSignedAmount(creditsBefore + normalizeSignedAmount(delta));
+    return {
+      creditsBefore,
+      creditsAfter,
+      debtBefore: normalizeSignedAmount(account.debt),
+      debtAfter: normalizeSignedAmount(account.debt)
+    };
+  }
+
+  function accountMatchesSnapshot(account, snapshot, side = "before") {
+    if (!account || !snapshot) return false;
+    const suffix = side === "after" ? "After" : "Before";
+    return normalizeSignedAmount(account.credits) === normalizeSignedAmount(snapshot[`credits${suffix}`])
+      && normalizeSignedAmount(account.debt) === normalizeSignedAmount(snapshot[`debt${suffix}`]);
+  }
+
+  function classifyMarketplaceAccountSnapshots(parties = {}, snapshots = null) {
+    if (!snapshots) return "UNKNOWN";
+    const entries = [
+      [parties.buyerRef, snapshots.buyer],
+      [parties.sellerRef, snapshots.seller],
+      [parties.platformRef, snapshots.platform]
+    ];
+    const states = entries.map(([party, snapshot]) => {
+      const account = getMarketplaceAccountState(party);
+      if (!account || !snapshot) return "UNKNOWN";
+      if (accountMatchesSnapshot(account, snapshot, "before")) return "BEFORE";
+      if (accountMatchesSnapshot(account, snapshot, "after")) return "AFTER";
+      return "MIXED";
+    });
+    if (states.every((state) => state === "BEFORE")) return "BEFORE";
+    if (states.every((state) => state === "AFTER")) return "AFTER";
+    if (states.includes("UNKNOWN")) return "UNKNOWN";
+    return "MIXED";
+  }
+
+  function quoteMarketplaceSettlement(input = {}) {
+    const listingId = String(input.listingId || "").trim();
+    const marketOrderId = String(input.marketOrderId || "").trim();
+    const idempotencyKey = String(input.idempotencyKey || "").trim();
+    const buyerRef = normalizePartyRef(input.buyerRef || { partyType: "CITIZEN", partyId: input.buyerId });
+    const sellerRef = normalizePartyRef(input.sellerRef || { partyType: input.sellerPartyType || "CITIZEN", partyId: input.sellerId });
+    const platformRef = normalizePartyRef(input.platformRef || { partyType: "ORGANIZATION", partyId: input.platformOrganizationId || DEFAULT_MARKETPLACE_PLATFORM_ORGANIZATION_ID });
+    const grossAmount = normalizeAmount(input.grossAmount || input.amount);
+    const platformFeeRate = normalizeMarketplaceFeeRate(input.platformFeeRate, DEFAULT_MARKETPLACE_FEE_RATE);
+    const platformFeeAmount = Math.min(grossAmount, normalizeAmount(input.platformFeeAmount ?? (grossAmount * platformFeeRate)));
+    const sellerNetAmount = normalizeAmount(grossAmount - platformFeeAmount);
+
+    if (!listingId) return { ok: false, error: { code: "MARKETPLACE_LISTING_ID_REQUIRED" } };
+    if (!marketOrderId) return { ok: false, error: { code: "MARKETPLACE_ORDER_ID_REQUIRED" } };
+    if (!idempotencyKey) return { ok: false, error: { code: "IDEMPOTENCY_KEY_REQUIRED" } };
+    if (buyerRef.partyType !== "CITIZEN" || !buyerRef.partyId) return { ok: false, error: { code: "MARKETPLACE_BUYER_INVALID" } };
+    if (!sellerRef.partyId || !["CITIZEN", "ORGANIZATION"].includes(sellerRef.partyType)) return { ok: false, error: { code: "MARKETPLACE_SELLER_INVALID" } };
+    if (platformRef.partyType !== "ORGANIZATION" || !platformRef.partyId) return { ok: false, error: { code: "MARKETPLACE_PLATFORM_INVALID" } };
+    if (buyerRef.accountId === sellerRef.accountId || buyerRef.accountId === platformRef.accountId || sellerRef.accountId === platformRef.accountId) {
+      return { ok: false, error: { code: "MARKETPLACE_PARTIES_MUST_BE_DISTINCT" } };
+    }
+    if (!(grossAmount > 0)) return { ok: false, error: { code: "MARKETPLACE_GROSS_AMOUNT_INVALID" } };
+    if (platformFeeAmount > grossAmount || normalizeAmount(sellerNetAmount + platformFeeAmount) !== grossAmount) {
+      return { ok: false, error: { code: "MARKETPLACE_FEE_SPLIT_INVALID" } };
+    }
+
+    const buyerAccount = getMarketplaceAccountState(buyerRef);
+    const sellerAccount = getMarketplaceAccountState(sellerRef);
+    const platformAccount = getMarketplaceAccountState(platformRef);
+    if (!buyerAccount) return { ok: false, error: { code: "MARKETPLACE_BUYER_NOT_FOUND" } };
+    if (!sellerAccount) return { ok: false, error: { code: "MARKETPLACE_SELLER_NOT_FOUND" } };
+    if (!platformAccount) return { ok: false, error: { code: "MARKETPLACE_PLATFORM_NOT_FOUND" } };
+    if (!buyerAccount.creditOverdraftAllowed && buyerAccount.credits < grossAmount) {
+      return { ok: false, error: { code: "INSUFFICIENT_CREDITS" }, available: buyerAccount.credits, missing: normalizeAmount(grossAmount - buyerAccount.credits) };
+    }
+
+    return {
+      ok: true,
+      listingId,
+      marketOrderId,
+      idempotencyKey,
+      correlationId: String(input.correlationId || marketOrderId || listingId).trim(),
+      buyerRef,
+      sellerRef,
+      platformRef,
+      grossAmount,
+      platformFeeRate,
+      platformFeeAmount,
+      sellerNetAmount,
+      buyerSnapshot: buildCreditSnapshot(buyerAccount, -grossAmount),
+      sellerSnapshot: buildCreditSnapshot(sellerAccount, sellerNetAmount),
+      platformSnapshot: buildCreditSnapshot(platformAccount, platformFeeAmount),
+      buyerRevision: buyerAccount.revision,
+      sellerRevision: sellerAccount.revision,
+      platformRevision: platformAccount.revision,
+      currency: normalizeToken(input.currency, DEFAULT_CURRENCY),
+      metadata: input.metadata && typeof input.metadata === "object" && !Array.isArray(input.metadata) ? clone(input.metadata) : {}
+    };
+  }
+
+  function replaceMarketplaceSettlement(nextSettlement) {
+    const normalized = normalizeMarketplaceSettlement(nextSettlement);
+    const index = marketplaceSettlements.findIndex((record) => record.settlementId === normalized.settlementId);
+    if (index < 0) marketplaceSettlements.push(normalized);
+    else marketplaceSettlements.splice(index, 1, normalized);
+    persistMarketplaceSettlements();
+    return clone(normalized);
+  }
+
+  function getMarketplaceSettlement(idOrKey = "") {
+    const key = String(idOrKey || "").trim();
+    if (!key) return null;
+    const record = marketplaceSettlementById.get(key) || marketplaceSettlementByIdempotencyKey.get(key) || null;
+    return record ? clone(record) : null;
+  }
+
+  function getMarketplaceSettlements(filters = {}) {
+    const listingId = String(filters.listingId || "").trim();
+    const marketOrderId = String(filters.marketOrderId || "").trim();
+    const partyId = String(filters.partyId || "").trim();
+    const status = normalizeToken(filters.status, "");
+    return marketplaceSettlements
+      .filter((record) => !listingId || record.listingId === listingId)
+      .filter((record) => !marketOrderId || record.marketOrderId === marketOrderId)
+      .filter((record) => !status || record.status === status)
+      .filter((record) => !partyId || [record.buyerRef, record.sellerRef, record.platformRef].some((party) => party.partyId === partyId))
+      .map(clone)
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }
+
+  function dispatchMarketplaceSettlementEvent(settlement, previousStatus = "") {
+    window.dispatchEvent?.(new CustomEvent("ws:billing-marketplace-settlement-updated", {
+      detail: {
+        settlementId: settlement.settlementId,
+        listingId: settlement.listingId,
+        marketOrderId: settlement.marketOrderId,
+        status: settlement.status,
+        previousStatus,
+        grossAmount: settlement.grossAmount,
+        refundedAmount: settlement.refundedAmount,
+        buyerRef: clone(settlement.buyerRef),
+        sellerRef: clone(settlement.sellerRef),
+        platformRef: clone(settlement.platformRef),
+        correlationId: settlement.correlationId,
+        revision: settlement.revision
+      }
+    }));
+  }
+
+  function writeMarketplaceHistory(settlement, transactionsToWrite = [], options = {}) {
+    if (options.recordHistory === false || typeof window.WS_APP.addBillingHistoryEntry !== "function") return [];
+    const entries = [];
+    transactionsToWrite.forEach((transaction) => {
+      if (transaction.partyType !== "CITIZEN" || !transaction.partyId) return;
+      const amount = transaction.accountEffect?.creditsDelta || 0;
+      const entry = window.WS_APP.addBillingHistoryEntry(transaction.partyId, {
+        id: `billing-history-${transaction.billingTransactionId}`,
+        type: transaction.transactionType,
+        title: transaction.transactionType,
+        amount,
+        creditsAfter: transaction.accountSnapshot?.creditsAfter,
+        debtAfter: transaction.accountSnapshot?.debtAfter,
+        note: String(options.reason || transaction.metadata?.reason || "Marketplace settlement.").trim(),
+        billingTransactionId: transaction.billingTransactionId,
+        marketplaceSettlementId: settlement.settlementId,
+        sourceDomain: "MARKETPLACE",
+        sourceRefId: settlement.marketOrderId,
+        correlationId: settlement.correlationId,
+        idempotencyKey: transaction.idempotencyKey,
+        revision: transaction.revision,
+        createdBy: options.createdBy || "MARKETPLACE_SETTLEMENT",
+        __skipBillingBridge: true
+      });
+      if (entry) entries.push(entry);
+    });
+    return entries.map(clone);
+  }
+
+  function commitMarketplaceSettlement(input = {}) {
+    const idempotencyKey = String(input.idempotencyKey || "").trim();
+    const existing = idempotencyKey ? marketplaceSettlementByIdempotencyKey.get(idempotencyKey) : null;
+    if (existing && ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(existing.status)) {
+      return {
+        ok: true,
+        operation: "IDEMPOTENT_REPLAY",
+        resultCode: "IDEMPOTENT_REPLAY",
+        settlement: clone(existing),
+        buyerTransaction: getBillingTransaction(existing.buyerDebitTransactionId),
+        sellerTransaction: getBillingTransaction(existing.sellerCreditTransactionId),
+        platformTransaction: getBillingTransaction(existing.platformFeeTransactionId)
+      };
+    }
+
+    if (existing && ["PENDING", "RECOVERY_REQUIRED"].includes(existing.status)) {
+      const accountState = classifyMarketplaceAccountSnapshots(existing, existing.accountSnapshots);
+      const confirmed = input.confirmAccountStateRestored === true;
+      if (accountState !== "BEFORE" || (existing.status === "RECOVERY_REQUIRED" && !confirmed)) {
+        const recovery = normalizeMarketplaceSettlement({
+          ...existing,
+          status: "RECOVERY_REQUIRED",
+          compensationState: accountState === "AFTER" ? "ACCOUNT_EFFECTS_PRESENT" : accountState === "MIXED" ? "PARTIAL_ACCOUNT_EFFECTS" : "ACCOUNT_STATE_UNVERIFIED",
+          failureCode: "MARKETPLACE_MANUAL_RECONCILIATION_REQUIRED",
+          updatedAt: nowIso(),
+          revision: existing.revision + (existing.status === "RECOVERY_REQUIRED" ? 0 : 1)
+        });
+        replaceMarketplaceSettlement(recovery);
+        return { ok: false, error: { code: "MARKETPLACE_MANUAL_RECONCILIATION_REQUIRED" }, recoveryRequired: true, accountState, settlement: clone(recovery) };
+      }
+    }
+
+    const quote = quoteMarketplaceSettlement(existing ? {
+      ...existing,
+      ...input,
+      buyerRef: existing.buyerRef,
+      sellerRef: existing.sellerRef,
+      platformRef: existing.platformRef,
+      grossAmount: existing.grossAmount,
+      platformFeeRate: existing.platformFeeRate,
+      platformFeeAmount: existing.platformFeeAmount,
+      listingId: existing.listingId,
+      marketOrderId: existing.marketOrderId,
+      idempotencyKey: existing.idempotencyKey
+    } : input);
+    if (!quote.ok) return quote;
+
+    const settlementId = String(existing?.settlementId || input.settlementId || makeId("marketplace_settlement")).trim();
+    const createdAt = existing?.createdAt || nowIso();
+    const pending = normalizeMarketplaceSettlement({
+      ...(existing || {}),
+      settlementId,
+      listingId: quote.listingId,
+      marketOrderId: quote.marketOrderId,
+      buyerRef: quote.buyerRef,
+      sellerRef: quote.sellerRef,
+      platformRef: quote.platformRef,
+      grossAmount: quote.grossAmount,
+      platformFeeRate: quote.platformFeeRate,
+      platformFeeAmount: quote.platformFeeAmount,
+      sellerNetAmount: quote.sellerNetAmount,
+      accountSnapshots: { buyer: quote.buyerSnapshot, seller: quote.sellerSnapshot, platform: quote.platformSnapshot },
+      currency: quote.currency,
+      status: "PENDING",
+      idempotencyKey: quote.idempotencyKey,
+      correlationId: quote.correlationId,
+      retryCount: Number(existing?.retryCount || 0) + (existing ? 1 : 0),
+      createdAt,
+      updatedAt: nowIso(),
+      revision: Number(existing?.revision || 0) + 1,
+      metadata: { ...(existing?.metadata || {}), ...quote.metadata }
+    });
+    const oldTransactions = transactions.map(clone);
+    const oldTransferAccounts = transferAccounts.map(clone);
+    const oldSettlements = marketplaceSettlements.map(clone);
+    const oldStatus = existing?.status || "";
+    const pendingIndex = marketplaceSettlements.findIndex((record) => record.settlementId === pending.settlementId);
+    if (pendingIndex < 0) marketplaceSettlements.push(pending);
+    else marketplaceSettlements.splice(pendingIndex, 1, pending);
+    if (!persistMarketplaceSettlements()) {
+      marketplaceSettlements = oldSettlements;
+      rebuildIndexes();
+      return { ok: false, error: { code: "MARKETPLACE_SETTLEMENT_PERSISTENCE_FAILED" }, recoveryRequired: false };
+    }
+
+    const committed = [];
+    const commit = (party, snapshot, expectedRevision) => {
+      const result = commitTransferPartySnapshot(party, snapshot, expectedRevision);
+      if (result.ok) committed.push({ party, snapshot });
+      return result;
+    };
+    const buyerCommit = commit(quote.buyerRef, quote.buyerSnapshot, input.buyerExpectedRevision ?? quote.buyerRevision);
+    if (!buyerCommit.ok) {
+      const failed = normalizeMarketplaceSettlement({ ...pending, status: "FAILED", failureCode: buyerCommit.code || "MARKETPLACE_BUYER_COMMIT_FAILED", failedAt: nowIso(), updatedAt: nowIso(), revision: pending.revision + 1 });
+      replaceMarketplaceSettlement(failed);
+      return { ok: false, error: { code: failed.failureCode }, settlement: clone(failed) };
+    }
+    const sellerCommit = commit(quote.sellerRef, quote.sellerSnapshot, input.sellerExpectedRevision ?? quote.sellerRevision);
+    const platformCommit = sellerCommit.ok ? commit(quote.platformRef, quote.platformSnapshot, input.platformExpectedRevision ?? quote.platformRevision) : sellerCommit;
+    if (!sellerCommit.ok || !platformCommit.ok) {
+      const rollbackOk = committed.reverse().every(({ party, snapshot }) => restoreTransferPartySnapshot(party, snapshot));
+      const failureCode = sellerCommit.ok ? (platformCommit.code || "MARKETPLACE_PLATFORM_COMMIT_FAILED") : (sellerCommit.code || "MARKETPLACE_SELLER_COMMIT_FAILED");
+      const failed = normalizeMarketplaceSettlement({
+        ...pending,
+        status: rollbackOk ? "FAILED" : "RECOVERY_REQUIRED",
+        compensationState: rollbackOk ? "ROLLED_BACK" : "ROLLBACK_FAILED",
+        failureCode,
+        failedAt: nowIso(),
+        updatedAt: nowIso(),
+        revision: pending.revision + 1
+      });
+      replaceMarketplaceSettlement(failed);
+      return { ok: false, error: { code: failed.status === "RECOVERY_REQUIRED" ? "MARKETPLACE_SETTLEMENT_RECOVERY_REQUIRED" : failureCode }, recoveryRequired: failed.status === "RECOVERY_REQUIRED", settlement: clone(failed) };
+    }
+
+    const common = {
+      billingIntentId: "",
+      status: "CAPTURED",
+      currency: quote.currency,
+      paymentSource: "CREDITS",
+      sourceDomain: "MARKETPLACE",
+      sourceRefId: quote.marketOrderId,
+      correlationId: quote.correlationId,
+      externalCommit: false,
+      createdAt: nowIso(),
+      capturedAt: nowIso(),
+      revision: 1
+    };
+    const buyerTransaction = normalizeTransaction({
+      ...common,
+      billingTransactionId: input.buyerDebitTransactionId || makeId("billing_tx"),
+      partyType: quote.buyerRef.partyType,
+      partyId: quote.buyerRef.partyId,
+      citizenId: quote.buyerRef.partyId,
+      transactionType: "MARKETPLACE_BUYER_DEBIT",
+      amount: quote.grossAmount,
+      idempotencyKey: `${quote.idempotencyKey}:buyer-debit`,
+      accountEffect: { creditsDelta: -quote.grossAmount, debtDelta: 0 },
+      accountSnapshot: quote.buyerSnapshot,
+      metadata: { settlementId, listingId: quote.listingId, marketOrderId: quote.marketOrderId, direction: "OUT", counterparty: clone(quote.sellerRef) }
+    });
+    const sellerTransaction = normalizeTransaction({
+      ...common,
+      billingTransactionId: input.sellerCreditTransactionId || makeId("billing_tx"),
+      partyType: quote.sellerRef.partyType,
+      partyId: quote.sellerRef.partyId,
+      citizenId: quote.sellerRef.partyType === "CITIZEN" ? quote.sellerRef.partyId : "",
+      organizationId: quote.sellerRef.partyType === "ORGANIZATION" ? quote.sellerRef.partyId : "",
+      transactionType: "MARKETPLACE_SELLER_CREDIT",
+      amount: quote.sellerNetAmount,
+      idempotencyKey: `${quote.idempotencyKey}:seller-credit`,
+      accountEffect: { creditsDelta: quote.sellerNetAmount, debtDelta: 0 },
+      accountSnapshot: quote.sellerSnapshot,
+      metadata: { settlementId, listingId: quote.listingId, marketOrderId: quote.marketOrderId, direction: "IN", grossAmount: quote.grossAmount, platformFeeAmount: quote.platformFeeAmount, counterparty: clone(quote.buyerRef) }
+    });
+    const platformTransaction = normalizeTransaction({
+      ...common,
+      billingTransactionId: input.platformFeeTransactionId || makeId("billing_tx"),
+      partyType: quote.platformRef.partyType,
+      partyId: quote.platformRef.partyId,
+      organizationId: quote.platformRef.partyId,
+      transactionType: "MARKETPLACE_PLATFORM_FEE",
+      amount: quote.platformFeeAmount,
+      idempotencyKey: `${quote.idempotencyKey}:platform-fee`,
+      accountEffect: { creditsDelta: quote.platformFeeAmount, debtDelta: 0 },
+      accountSnapshot: quote.platformSnapshot,
+      metadata: { settlementId, listingId: quote.listingId, marketOrderId: quote.marketOrderId, platformFeeRate: quote.platformFeeRate, sellerRef: clone(quote.sellerRef) }
+    });
+    const captured = normalizeMarketplaceSettlement({
+      ...pending,
+      buyerDebitTransactionId: buyerTransaction.billingTransactionId,
+      sellerCreditTransactionId: sellerTransaction.billingTransactionId,
+      platformFeeTransactionId: platformTransaction.billingTransactionId,
+      status: "CAPTURED",
+      capturedAt: nowIso(),
+      updatedAt: nowIso(),
+      failureCode: "",
+      failureMessage: "",
+      compensationState: "NONE",
+      revision: pending.revision + 1
+    });
+    transactions.push(buyerTransaction, sellerTransaction, platformTransaction);
+    const currentIndex = marketplaceSettlements.findIndex((record) => record.settlementId === captured.settlementId);
+    marketplaceSettlements.splice(currentIndex, 1, captured);
+    const persisted = persistTransferAccounts() && persistTransactions() && persistMarketplaceSettlements();
+    if (!persisted) {
+      transactions = oldTransactions;
+      transferAccounts = oldTransferAccounts;
+      marketplaceSettlements = oldSettlements;
+      rebuildIndexes();
+      const rollbackOk = [
+        restoreTransferPartySnapshot(quote.platformRef, quote.platformSnapshot),
+        restoreTransferPartySnapshot(quote.sellerRef, quote.sellerSnapshot),
+        restoreTransferPartySnapshot(quote.buyerRef, quote.buyerSnapshot)
+      ].every(Boolean);
+      persistTransferAccounts();
+      persistTransactions();
+      const recovery = normalizeMarketplaceSettlement({
+        ...pending,
+        status: rollbackOk ? "FAILED" : "RECOVERY_REQUIRED",
+        compensationState: rollbackOk ? "ROLLED_BACK" : "ROLLBACK_FAILED",
+        failureCode: "MARKETPLACE_SETTLEMENT_PERSISTENCE_FAILED",
+        failedAt: nowIso(),
+        updatedAt: nowIso(),
+        revision: pending.revision + 1
+      });
+      const recoveryIndex = marketplaceSettlements.findIndex((record) => record.settlementId === recovery.settlementId);
+      if (recoveryIndex < 0) marketplaceSettlements.push(recovery); else marketplaceSettlements.splice(recoveryIndex, 1, recovery);
+      persistMarketplaceSettlements();
+      return { ok: false, error: { code: rollbackOk ? "MARKETPLACE_SETTLEMENT_PERSISTENCE_FAILED" : "MARKETPLACE_SETTLEMENT_RECOVERY_REQUIRED" }, recoveryRequired: !rollbackOk, settlement: clone(recovery) };
+    }
+
+    dispatchTransactionEvent(buyerTransaction, "");
+    dispatchTransactionEvent(sellerTransaction, "");
+    dispatchTransactionEvent(platformTransaction, "");
+    dispatchMarketplaceSettlementEvent(captured, oldStatus);
+    const historyEntries = writeMarketplaceHistory(captured, [buyerTransaction, sellerTransaction, platformTransaction], input);
+    return {
+      ok: true,
+      operation: "SETTLED",
+      resultCode: "MARKETPLACE_SETTLEMENT_COMPLETED",
+      settlement: clone(captured),
+      buyerTransaction: clone(buyerTransaction),
+      sellerTransaction: clone(sellerTransaction),
+      platformTransaction: clone(platformTransaction),
+      buyerAccount: getBillingTransferAccount(quote.buyerRef),
+      sellerAccount: getBillingTransferAccount(quote.sellerRef),
+      platformAccount: getBillingTransferAccount(quote.platformRef),
+      historyEntries
+    };
+  }
+
+  function quoteMarketplaceRefund(settlementOrId, amount = null, options = {}) {
+    const settlement = typeof settlementOrId === "object" ? normalizeMarketplaceSettlement(settlementOrId) : getMarketplaceSettlement(settlementOrId);
+    if (!settlement) return { ok: false, error: { code: "MARKETPLACE_SETTLEMENT_NOT_FOUND" } };
+    if (!["CAPTURED", "PARTIALLY_REFUNDED", "RECOVERY_REQUIRED"].includes(settlement.status)) return { ok: false, error: { code: "MARKETPLACE_SETTLEMENT_NOT_REFUNDABLE" } };
+    const remainingGross = normalizeAmount(settlement.grossAmount - settlement.refundedAmount);
+    const requested = amount == null ? remainingGross : normalizeAmount(amount);
+    if (!(requested > 0) || requested > remainingGross) return { ok: false, error: { code: "MARKETPLACE_REFUND_AMOUNT_INVALID" }, remainingAmount: remainingGross };
+    const finalRefund = requested === remainingGross;
+    const remainingSeller = normalizeAmount(settlement.sellerNetAmount - settlement.sellerRefundedAmount);
+    const remainingPlatform = normalizeAmount(settlement.platformFeeAmount - settlement.platformFeeRefundedAmount);
+    let sellerDebitAmount = finalRefund ? remainingSeller : normalizeAmount(requested * (settlement.sellerNetAmount / settlement.grossAmount));
+    sellerDebitAmount = Math.min(remainingSeller, sellerDebitAmount);
+    let platformDebitAmount = normalizeAmount(requested - sellerDebitAmount);
+    if (platformDebitAmount > remainingPlatform) {
+      platformDebitAmount = remainingPlatform;
+      sellerDebitAmount = normalizeAmount(requested - platformDebitAmount);
+    }
+    const buyerAccount = getMarketplaceAccountState(settlement.buyerRef);
+    const sellerAccount = getMarketplaceAccountState(settlement.sellerRef);
+    const platformAccount = getMarketplaceAccountState(settlement.platformRef);
+    if (!buyerAccount || !sellerAccount || !platformAccount) return { ok: false, error: { code: "MARKETPLACE_REFUND_ACCOUNT_NOT_FOUND" } };
+    if (!sellerAccount.creditOverdraftAllowed && sellerAccount.credits < sellerDebitAmount) return { ok: false, error: { code: "MARKETPLACE_SELLER_REFUND_FUNDS_INSUFFICIENT" }, available: sellerAccount.credits, required: sellerDebitAmount };
+    if (!platformAccount.creditOverdraftAllowed && platformAccount.credits < platformDebitAmount) return { ok: false, error: { code: "MARKETPLACE_PLATFORM_REFUND_FUNDS_INSUFFICIENT" }, available: platformAccount.credits, required: platformDebitAmount };
+    return {
+      ok: true,
+      settlement,
+      amount: requested,
+      sellerDebitAmount,
+      platformDebitAmount,
+      buyerSnapshot: buildCreditSnapshot(buyerAccount, requested),
+      sellerSnapshot: buildCreditSnapshot(sellerAccount, -sellerDebitAmount),
+      platformSnapshot: buildCreditSnapshot(platformAccount, -platformDebitAmount),
+      buyerRevision: buyerAccount.revision,
+      sellerRevision: sellerAccount.revision,
+      platformRevision: platformAccount.revision,
+      idempotencyKey: String(options.idempotencyKey || "").trim(),
+      reason: String(options.reason || "Marketplace refund.").trim()
+    };
+  }
+
+  function refundMarketplaceSettlement(settlementId, amount = null, options = {}) {
+    const settlement = getMarketplaceSettlement(settlementId);
+    if (!settlement) return { ok: false, error: { code: "MARKETPLACE_SETTLEMENT_NOT_FOUND" } };
+    const idempotencyKey = String(options.idempotencyKey || "").trim();
+    if (!idempotencyKey) return { ok: false, error: { code: "IDEMPOTENCY_KEY_REQUIRED" } };
+    const replay = settlement.refunds.find((refund) => refund.idempotencyKey === idempotencyKey);
+    if (replay && replay.status === "CAPTURED") return { ok: true, operation: "IDEMPOTENT_REPLAY", settlement, refund: clone(replay) };
+    if (replay && ["PENDING", "RECOVERY_REQUIRED"].includes(replay.status)) {
+      const accountState = classifyMarketplaceAccountSnapshots(settlement, replay.accountSnapshots);
+      const confirmed = options.confirmAccountStateRestored === true;
+      if (accountState !== "BEFORE" || (replay.status === "RECOVERY_REQUIRED" && !confirmed)) {
+        const recoveryRefund = normalizeMarketplaceRefund({
+          ...replay,
+          status: "RECOVERY_REQUIRED",
+          failureCode: "MARKETPLACE_REFUND_MANUAL_RECONCILIATION_REQUIRED",
+          updatedAt: nowIso()
+        });
+        const recoverySettlement = normalizeMarketplaceSettlement({
+          ...settlement,
+          status: "RECOVERY_REQUIRED",
+          compensationState: accountState === "AFTER" ? "REFUND_ACCOUNT_EFFECTS_PRESENT" : accountState === "MIXED" ? "REFUND_PARTIAL_ACCOUNT_EFFECTS" : "REFUND_ACCOUNT_STATE_UNVERIFIED",
+          failureCode: "MARKETPLACE_REFUND_MANUAL_RECONCILIATION_REQUIRED",
+          refunds: [...settlement.refunds.filter((entry) => entry.idempotencyKey !== idempotencyKey), recoveryRefund],
+          updatedAt: nowIso(),
+          revision: settlement.revision + 1
+        });
+        replaceMarketplaceSettlement(recoverySettlement);
+        return { ok: false, error: { code: "MARKETPLACE_REFUND_MANUAL_RECONCILIATION_REQUIRED" }, recoveryRequired: true, accountState, settlement: recoverySettlement, refund: recoveryRefund };
+      }
+    }
+    const quote = quoteMarketplaceRefund(settlement, amount, { ...options, idempotencyKey });
+    if (!quote.ok) return quote;
+
+    const refundId = String(replay?.refundId || options.refundId || makeId("marketplace_refund")).trim();
+    const pendingRefund = normalizeMarketplaceRefund({
+      ...(replay || {}),
+      refundId,
+      amount: quote.amount,
+      sellerDebitAmount: quote.sellerDebitAmount,
+      platformDebitAmount: quote.platformDebitAmount,
+      accountSnapshots: { buyer: quote.buyerSnapshot, seller: quote.sellerSnapshot, platform: quote.platformSnapshot },
+      status: "PENDING",
+      idempotencyKey,
+      reason: quote.reason,
+      createdAt: replay?.createdAt || nowIso(),
+      updatedAt: nowIso(),
+      metadata: options.metadata
+    });
+    const pendingSettlement = normalizeMarketplaceSettlement({
+      ...settlement,
+      refunds: [...settlement.refunds.filter((entry) => entry.idempotencyKey !== idempotencyKey), pendingRefund],
+      updatedAt: nowIso(),
+      revision: settlement.revision + 1
+    });
+    replaceMarketplaceSettlement(pendingSettlement);
+
+    const oldTransactions = transactions.map(clone);
+    const oldTransferAccounts = transferAccounts.map(clone);
+    const oldSettlements = marketplaceSettlements.map(clone);
+    const committed = [];
+    const commit = (party, snapshot, expectedRevision) => {
+      const result = commitTransferPartySnapshot(party, snapshot, expectedRevision);
+      if (result.ok) committed.push({ party, snapshot });
+      return result;
+    };
+    const sellerCommit = commit(settlement.sellerRef, quote.sellerSnapshot, options.sellerExpectedRevision ?? quote.sellerRevision);
+    const platformCommit = sellerCommit.ok ? commit(settlement.platformRef, quote.platformSnapshot, options.platformExpectedRevision ?? quote.platformRevision) : sellerCommit;
+    const buyerCommit = sellerCommit.ok && platformCommit.ok ? commit(settlement.buyerRef, quote.buyerSnapshot, options.buyerExpectedRevision ?? quote.buyerRevision) : platformCommit;
+    if (!sellerCommit.ok || !platformCommit.ok || !buyerCommit.ok) {
+      const rollbackOk = committed.reverse().every(({ party, snapshot }) => restoreTransferPartySnapshot(party, snapshot));
+      const code = !sellerCommit.ok ? sellerCommit.code : !platformCommit.ok ? platformCommit.code : buyerCommit.code;
+      const failedRefund = normalizeMarketplaceRefund({ ...pendingRefund, status: rollbackOk ? "FAILED" : "RECOVERY_REQUIRED", failureCode: code || "MARKETPLACE_REFUND_COMMIT_FAILED", failedAt: nowIso(), updatedAt: nowIso() });
+      const failedSettlement = normalizeMarketplaceSettlement({
+        ...pendingSettlement,
+        status: rollbackOk ? settlement.status : "RECOVERY_REQUIRED",
+        compensationState: rollbackOk ? settlement.compensationState : "REFUND_ROLLBACK_FAILED",
+        failureCode: rollbackOk ? settlement.failureCode : "MARKETPLACE_REFUND_RECOVERY_REQUIRED",
+        refunds: [...pendingSettlement.refunds.filter((entry) => entry.idempotencyKey !== idempotencyKey), failedRefund],
+        updatedAt: nowIso(),
+        revision: pendingSettlement.revision + 1
+      });
+      replaceMarketplaceSettlement(failedSettlement);
+      return { ok: false, error: { code: rollbackOk ? (code || "MARKETPLACE_REFUND_COMMIT_FAILED") : "MARKETPLACE_REFUND_RECOVERY_REQUIRED" }, recoveryRequired: !rollbackOk, settlement: failedSettlement, refund: failedRefund };
+    }
+
+    const common = {
+      billingIntentId: "",
+      status: "CAPTURED",
+      currency: settlement.currency,
+      paymentSource: "CREDITS",
+      sourceDomain: "MARKETPLACE",
+      sourceRefId: settlement.marketOrderId,
+      correlationId: settlement.correlationId,
+      externalCommit: false,
+      createdAt: nowIso(),
+      capturedAt: nowIso(),
+      revision: 1
+    };
+    const sellerTransaction = normalizeTransaction({ ...common, billingTransactionId: makeId("billing_tx"), partyType: settlement.sellerRef.partyType, partyId: settlement.sellerRef.partyId, citizenId: settlement.sellerRef.partyType === "CITIZEN" ? settlement.sellerRef.partyId : "", organizationId: settlement.sellerRef.partyType === "ORGANIZATION" ? settlement.sellerRef.partyId : "", transactionType: "MARKETPLACE_SELLER_REFUND_DEBIT", amount: quote.sellerDebitAmount, idempotencyKey: `${idempotencyKey}:seller-debit`, accountEffect: { creditsDelta: -quote.sellerDebitAmount, debtDelta: 0 }, accountSnapshot: quote.sellerSnapshot, metadata: { settlementId: settlement.settlementId, refundId, reason: quote.reason } });
+    const platformTransaction = normalizeTransaction({ ...common, billingTransactionId: makeId("billing_tx"), partyType: settlement.platformRef.partyType, partyId: settlement.platformRef.partyId, organizationId: settlement.platformRef.partyId, transactionType: "MARKETPLACE_PLATFORM_FEE_REFUND_DEBIT", amount: quote.platformDebitAmount, idempotencyKey: `${idempotencyKey}:platform-debit`, accountEffect: { creditsDelta: -quote.platformDebitAmount, debtDelta: 0 }, accountSnapshot: quote.platformSnapshot, metadata: { settlementId: settlement.settlementId, refundId, reason: quote.reason } });
+    const buyerTransaction = normalizeTransaction({ ...common, billingTransactionId: makeId("billing_tx"), partyType: settlement.buyerRef.partyType, partyId: settlement.buyerRef.partyId, citizenId: settlement.buyerRef.partyId, transactionType: "MARKETPLACE_BUYER_REFUND_CREDIT", amount: quote.amount, idempotencyKey: `${idempotencyKey}:buyer-credit`, accountEffect: { creditsDelta: quote.amount, debtDelta: 0 }, accountSnapshot: quote.buyerSnapshot, metadata: { settlementId: settlement.settlementId, refundId, reason: quote.reason } });
+    const capturedRefund = normalizeMarketplaceRefund({ ...pendingRefund, status: "CAPTURED", buyerCreditTransactionId: buyerTransaction.billingTransactionId, sellerDebitTransactionId: sellerTransaction.billingTransactionId, platformDebitTransactionId: platformTransaction.billingTransactionId, capturedAt: nowIso(), updatedAt: nowIso() });
+    const refundedAmount = normalizeAmount(settlement.refundedAmount + quote.amount);
+    const nextStatus = refundedAmount >= settlement.grossAmount ? "REFUNDED" : "PARTIALLY_REFUNDED";
+    const updatedSettlement = normalizeMarketplaceSettlement({
+      ...pendingSettlement,
+      status: nextStatus,
+      refundedAmount,
+      sellerRefundedAmount: normalizeAmount(settlement.sellerRefundedAmount + quote.sellerDebitAmount),
+      platformFeeRefundedAmount: normalizeAmount(settlement.platformFeeRefundedAmount + quote.platformDebitAmount),
+      refunds: [...pendingSettlement.refunds.filter((entry) => entry.idempotencyKey !== idempotencyKey), capturedRefund],
+      refundedAt: nowIso(),
+      updatedAt: nowIso(),
+      failureCode: "",
+      compensationState: "NONE",
+      revision: pendingSettlement.revision + 1
+    });
+    transactions.push(sellerTransaction, platformTransaction, buyerTransaction);
+    const settlementIndex = marketplaceSettlements.findIndex((record) => record.settlementId === updatedSettlement.settlementId);
+    marketplaceSettlements.splice(settlementIndex, 1, updatedSettlement);
+    const persisted = persistTransferAccounts() && persistTransactions() && persistMarketplaceSettlements();
+    if (!persisted) {
+      transactions = oldTransactions;
+      transferAccounts = oldTransferAccounts;
+      marketplaceSettlements = oldSettlements;
+      rebuildIndexes();
+      const rollbackOk = [restoreTransferPartySnapshot(settlement.buyerRef, quote.buyerSnapshot), restoreTransferPartySnapshot(settlement.platformRef, quote.platformSnapshot), restoreTransferPartySnapshot(settlement.sellerRef, quote.sellerSnapshot)].every(Boolean);
+      persistTransferAccounts();
+      persistTransactions();
+      const failedRefund = normalizeMarketplaceRefund({ ...pendingRefund, status: rollbackOk ? "FAILED" : "RECOVERY_REQUIRED", failureCode: "MARKETPLACE_REFUND_PERSISTENCE_FAILED", failedAt: nowIso(), updatedAt: nowIso() });
+      const recoverySettlement = normalizeMarketplaceSettlement({ ...settlement, status: rollbackOk ? settlement.status : "RECOVERY_REQUIRED", compensationState: rollbackOk ? settlement.compensationState : "REFUND_ROLLBACK_FAILED", refunds: [...settlement.refunds, failedRefund], updatedAt: nowIso(), revision: settlement.revision + 1 });
+      const recoveryIndex = marketplaceSettlements.findIndex((record) => record.settlementId === recoverySettlement.settlementId);
+      if (recoveryIndex < 0) marketplaceSettlements.push(recoverySettlement);
+      else marketplaceSettlements.splice(recoveryIndex, 1, recoverySettlement);
+      persistMarketplaceSettlements();
+      return { ok: false, error: { code: rollbackOk ? "MARKETPLACE_REFUND_PERSISTENCE_FAILED" : "MARKETPLACE_REFUND_RECOVERY_REQUIRED" }, recoveryRequired: !rollbackOk, settlement: recoverySettlement, refund: failedRefund };
+    }
+
+    dispatchTransactionEvent(sellerTransaction, "");
+    dispatchTransactionEvent(platformTransaction, "");
+    dispatchTransactionEvent(buyerTransaction, "");
+    dispatchMarketplaceSettlementEvent(updatedSettlement, settlement.status);
+    const historyEntries = writeMarketplaceHistory(updatedSettlement, [sellerTransaction, platformTransaction, buyerTransaction], { ...options, reason: quote.reason });
+    return { ok: true, operation: nextStatus, resultCode: "MARKETPLACE_REFUND_COMPLETED", settlement: updatedSettlement, refund: capturedRefund, buyerTransaction, sellerTransaction, platformTransaction, historyEntries };
+  }
+
+  function retryMarketplaceSettlement(settlementId, options = {}) {
+    const settlement = getMarketplaceSettlement(settlementId);
+    if (!settlement) return { ok: false, error: { code: "MARKETPLACE_SETTLEMENT_NOT_FOUND" } };
+    if (["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(settlement.status)) return { ok: true, operation: "IDEMPOTENT_REPLAY", settlement };
+    if (settlement.status === "RECOVERY_REQUIRED" && options.confirmAccountStateRestored !== true) {
+      return { ok: false, error: { code: "MARKETPLACE_MANUAL_RECONCILIATION_REQUIRED" }, recoveryRequired: true, settlement };
+    }
+    return commitMarketplaceSettlement({ ...settlement, ...options, idempotencyKey: settlement.idempotencyKey });
+  }
+
+  function reconcileMarketplaceSettlements(options = {}) {
+    const candidates = marketplaceSettlements.filter((record) => record.status === "PENDING");
+    const unresolved = marketplaceSettlements.filter((record) => record.status === "RECOVERY_REQUIRED").map((record) => record.settlementId);
+    const results = candidates.map((record) => ({ settlementId: record.settlementId, result: retryMarketplaceSettlement(record.settlementId, options) }));
+    return { ok: results.every((entry) => entry.result?.ok) && unresolved.length === 0, processed: results.length, unresolvedRecoveryRequired: unresolved, results };
+  }
+
   function replaceIntent(nextIntent, previousStatus = "") {
     const index = intents.findIndex((record) => record.billingIntentId === nextIntent.billingIntentId);
     if (index < 0) intents.push(nextIntent);
@@ -1901,6 +2658,24 @@ window.WS_APP = window.WS_APP || {};
     return getAdminBillingTransfers();
   }
 
+  function importMarketplaceSettlements(records) {
+    if (!Array.isArray(records)) return null;
+    const next = [];
+    const seenIds = new Set();
+    const seenKeys = new Set();
+    records.forEach((record) => {
+      const normalized = normalizeMarketplaceSettlement(record);
+      if (!normalized.settlementId || !normalized.idempotencyKey || !normalized.listingId || !normalized.marketOrderId) return;
+      if (seenIds.has(normalized.settlementId) || seenKeys.has(normalized.idempotencyKey)) return;
+      seenIds.add(normalized.settlementId);
+      seenKeys.add(normalized.idempotencyKey);
+      next.push(normalized);
+    });
+    marketplaceSettlements = next;
+    persistMarketplaceSettlements();
+    return getMarketplaceSettlements();
+  }
+
   function exportBillingRuntimeData() {
     return {
       schemaVersion: 2,
@@ -1908,7 +2683,8 @@ window.WS_APP = window.WS_APP || {};
       billingIntents: getBillingIntents(),
       billingTransactions: getBillingTransactions(),
       billingTransferAccounts: transferAccounts.map(clone),
-      billingTransfers: getAdminBillingTransfers()
+      billingTransfers: getAdminBillingTransfers(),
+      marketplaceSettlements: getMarketplaceSettlements()
     };
   }
 
@@ -1948,9 +2724,21 @@ window.WS_APP = window.WS_APP || {};
       if (!record.sourceTransactionId || !record.targetTransactionId) errors.push({ code: "BILLING_TRANSFER_TRANSACTIONS_REQUIRED", id: record.transferId });
     });
 
+    const seenSettlementIds = new Set();
+    const seenSettlementKeys = new Set();
+    marketplaceSettlements.forEach((record) => {
+      if (seenSettlementIds.has(record.settlementId)) errors.push({ code: "DUPLICATE_MARKETPLACE_SETTLEMENT_ID", id: record.settlementId });
+      if (seenSettlementKeys.has(record.idempotencyKey)) errors.push({ code: "DUPLICATE_MARKETPLACE_SETTLEMENT_IDEMPOTENCY", idempotencyKey: record.idempotencyKey });
+      seenSettlementIds.add(record.settlementId);
+      seenSettlementKeys.add(record.idempotencyKey);
+      if (!record.listingId || !record.marketOrderId) errors.push({ code: "MARKETPLACE_SETTLEMENT_SOURCE_REQUIRED", id: record.settlementId });
+      if (!record.buyerRef?.accountId || !record.sellerRef?.accountId || !record.platformRef?.accountId) errors.push({ code: "MARKETPLACE_SETTLEMENT_PARTIES_REQUIRED", id: record.settlementId });
+      if (normalizeAmount(record.sellerNetAmount + record.platformFeeAmount) !== record.grossAmount) errors.push({ code: "MARKETPLACE_SETTLEMENT_SPLIT_INVALID", id: record.settlementId });
+    });
+
     return {
       ok: errors.length === 0,
-      counts: { intents: intents.length, transactions: transactions.length, transferAccounts: transferAccounts.length, transfers: transfers.length, errors: errors.length },
+      counts: { intents: intents.length, transactions: transactions.length, transferAccounts: transferAccounts.length, transfers: transfers.length, marketplaceSettlements: marketplaceSettlements.length, errors: errors.length },
       errors
     };
   }
@@ -1962,6 +2750,7 @@ window.WS_APP = window.WS_APP || {};
     transactions = readStoredArray(TRANSACTIONS_STORAGE_KEY).map(normalizeTransaction);
     transferAccounts = readStoredArray(TRANSFER_ACCOUNTS_STORAGE_KEY).map(normalizeTransferAccount).filter((record) => record.accountId && record.partyType === "ORGANIZATION");
     transfers = readStoredArray(TRANSFERS_STORAGE_KEY).map(normalizeTransfer);
+    marketplaceSettlements = readStoredArray(MARKETPLACE_SETTLEMENTS_STORAGE_KEY).map(normalizeMarketplaceSettlement);
     rebuildIndexes();
     try {
       window.localStorage?.setItem(SCHEMA_STORAGE_KEY, SCHEMA_VERSION);
@@ -1998,6 +2787,13 @@ window.WS_APP = window.WS_APP || {};
     executeAdminBillingTransfer,
     retryAdminBillingTransfer,
     reverseAdminBillingTransfer,
+    quoteMarketplaceSettlement,
+    commitMarketplaceSettlement,
+    refundMarketplaceSettlement,
+    retryMarketplaceSettlement,
+    reconcileMarketplaceSettlements,
+    getMarketplaceSettlement,
+    getMarketplaceSettlements,
     getAdminBillingTransfer,
     getAdminBillingTransfers,
     getBillingTransferAccount,
@@ -2006,6 +2802,7 @@ window.WS_APP = window.WS_APP || {};
     importBillingTransactions,
     importBillingTransferAccounts,
     importAdminBillingTransfers,
+    importMarketplaceSettlements,
     exportBillingRuntimeData,
     validateBillingStore
   };

@@ -1053,29 +1053,6 @@ body.is-admin-control-center {
 }
 
 
-.admin-data-table,
-.admin-record-list {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(143, 189, 180, 0.42) rgba(0, 0, 0, 0.28);
-}
-
-.admin-data-table::-webkit-scrollbar,
-.admin-record-list::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.admin-data-table::-webkit-scrollbar-track,
-.admin-record-list::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(143, 189, 180, 0.08);
-}
-
-.admin-data-table::-webkit-scrollbar-thumb,
-.admin-record-list::-webkit-scrollbar-thumb {
-  background: rgba(143, 189, 180, 0.36);
-  border: 1px solid rgba(143, 189, 180, 0.16);
-}
 
 .admin-tag-matrix-panel {
   display: grid;
@@ -1352,7 +1329,7 @@ body.is-admin-control-center {
   text-transform: uppercase;
 }
 
-.admin-economy-form input,
+.admin-economy-form input:not(.ui-select-control),
 .admin-economy-form select,
 .admin-economy-form textarea {
   width: 100%;
@@ -1366,7 +1343,7 @@ body.is-admin-control-center {
   padding: 8px 9px;
 }
 
-.admin-economy-form input:disabled {
+.admin-economy-form input:not(.ui-select-control):disabled {
   color: var(--dim);
   opacity: 0.55;
 }
@@ -1635,7 +1612,7 @@ body.is-admin-control-center {
   text-transform: uppercase;
 }
 
-.admin-form-grid input,
+.admin-form-grid input:not(.ui-select-control),
 .admin-form-grid select,
 .admin-form-grid textarea {
   width: 100%;
@@ -1649,7 +1626,7 @@ body.is-admin-control-center {
   padding: 8px 9px;
 }
 
-.admin-form-grid input[readonly] {
+.admin-form-grid input:not(.ui-select-control)[readonly] {
   color: var(--muted);
   opacity: 0.78;
 }
@@ -1717,29 +1694,6 @@ body.is-admin-control-center {
 }
 
 
-.admin-data-table,
-.admin-record-list {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(143, 189, 180, 0.42) rgba(0, 0, 0, 0.28);
-}
-
-.admin-data-table::-webkit-scrollbar,
-.admin-record-list::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.admin-data-table::-webkit-scrollbar-track,
-.admin-record-list::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(143, 189, 180, 0.08);
-}
-
-.admin-data-table::-webkit-scrollbar-thumb,
-.admin-record-list::-webkit-scrollbar-thumb {
-  background: rgba(143, 189, 180, 0.36);
-  border: 1px solid rgba(143, 189, 180, 0.16);
-}
 
 .admin-tag-matrix-panel {
   display: grid;

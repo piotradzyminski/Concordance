@@ -6841,7 +6841,7 @@ window.APP_DATA.itemInstances = [
     },
     "authorizationRefs": {
       "licenseId": "license-citizen-b-industrial",
-      "subscriptionId": "sub-citizen-b-mass-compression-capacity-corporate",
+      "subscriptionId": null,
       "firmwareReleaseId": "firmware-stable-2-0-0"
     },
     "flags": {
@@ -7219,7 +7219,7 @@ window.APP_DATA.itemInstances = [
     },
     "authorizationRefs": {
       "licenseId": "license-citizen-b-industrial",
-      "subscriptionId": "sub-citizen-b-mass-compression-capacity-corporate",
+      "subscriptionId": null,
       "firmwareReleaseId": "firmware-stable-3-0-0"
     },
     "flags": {
@@ -7350,7 +7350,7 @@ window.APP_DATA.itemInstances = [
     },
     "authorizationRefs": {
       "licenseId": "license-citizen-b-industrial",
-      "subscriptionId": "sub-citizen-b-mass-compression-capacity-corporate",
+      "subscriptionId": null,
       "firmwareReleaseId": "firmware-stable-3-0-0"
     },
     "flags": {

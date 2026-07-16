@@ -271,22 +271,7 @@ window.APP_DATA.organizations = [
     sourceStatus: "CANONICAL_NO_LOCATION",
     notes: "SomnaCore product line exists. Physical HQ/location is not defined."
   },
-  {
-    id: "learnmin-access",
-    name: "LearnMin Access",
-    shortName: "LearnMin",
-    type: "MINISTRY_SERVICE",
-    status: "SYSTEM_AUTHORITY",
-    accessTag: "PUBLIC",
-    providerIds: ["provider-learnmin-access", "learnmin-access"],
-    tags: ["SYSTEM", "MINISTRY", "EDUCATION"],
-    domains: ["education access", "training", "authorized learning"],
-    primaryLocationId: "",
-    knownHeadquartersLocationId: "",
-    sourceStatus: "CATALOG_ONLY_NO_LOCATION",
-    notes: "Subscription provider exists in catalog. Physical location is not defined."
-  },
-  {
+    {
     id: "cortex-ladder",
     name: "Cortex Ladder",
     shortName: "Cortex Ladder",

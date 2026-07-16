@@ -4,7 +4,7 @@
 
 ```text
 phase: pre-alpha
-runtime baseline: Parallel Scope Merge 15.19x
+runtime baseline: Parallel Scope Merge 15.23x
 documentation baseline: Canonical Documentation 4.0x
 target: desktop browser
 persistence: client-side campaign data
@@ -66,6 +66,7 @@ Panel MG jest osobnym workspace operatorskim. Używa stałego Command Band, Navi
 - Market workspace jest wydzielony do `js/market-workspace-runtime.js`; bundle Housing nigdy go nie ładuje, a moduł Market ładuje go wyłącznie na wejściu do Market. Delivery utrzymuje ItemInstance w custody vendora do ETA, rezerwuje docelowe Housing przy realizacji i zachowuje te same `instanceId`.
 - Item Grid Presentation 1.0.1x jest finalnym właścicielem czytelnych pustych komórek, footprintów i etykiet gridu w Equipment oraz Housing Storage.
 - Terminal Entry Store i Terminal Reminder Store są jedynymi właścicielami trwałych wpisów Inbox oraz przypomnień; `js/store.js` pozostaje adapterem integracyjnym i zachowuje publiczne API.
+- Zamontowany Terminal reaguje na `ws:terminal-entries-updated` i `ws:calendar-reminders-updated` przez odseparowane projekcje Inbox/cards oraz Calendar. Reaktywność nie tworzy drugiego store’a ani nie interpretuje payloadu zdarzenia jako źródła prawdy.
 - Cyberware Index jest read-only katalogiem definicji, oddzielonym od fizycznych ItemInstance i operacji instalacyjnych.
 - Household Furnishing Workspace używa `Household Store`, kanonicznych lokacji `HOUSING_ROOM` i walidacji footprintu bez drugiej listy mebli.
 - Market Cart rozróżnia liczbę linii od liczby sztuk, utrzymuje lokalną hierarchię Back/Escape oraz modalny focus trap bez przebudowy Housing shell.
@@ -273,3 +274,40 @@ Projekt nie zawiera danych wymagających prywatnego repozytorium. Kod, dokumenta
 - Housing Household Hub 5.0x projects one Household overview over canonical Housing, Terminal and ItemInstance state. Global weather is deterministic from Campaign Time; collection metadata stays on the physical ItemInstance; display placement uses `INSTALLED_IN_ITEM`; protection derives from real secure/archive containers; history remains read-only.
 - Cyberware Upgrade System 16.1x models typed hardware slots, firmware, calibration and permanent modifications without a second cyberware store. Physical hardware modules remain separate ItemInstances installed in the host through `INSTALLED_IN_ITEM`; player operations execute through Service and Cyberware World Bridge.
 - Knowledge Relation Article Index Tabs 1.6x is a presentation-only clipping correction for the existing desktop article tabs. Knowledge records, stable relation IDs, registries and the SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX split are unchanged.
+
+
+## Runtime 15.20x — merged extensions
+
+- Citizen Card Projection Boundary 1.0x replaces the full Cyberware UI dependency in Citizen Card, Citizen Cards, Citizen Files and Citizen Database bundles with three read-only Equipment, Subscriptions and Cyberware projection adapters. The adapters read canonical eager state and expose only `window.WS_APP.citizenCardProjection`; they do not own commands, persistence, planner state, diagnostics or maintenance.
+- Registry UI Dependency Foundation 1.0x introduces eager `js/registry-ui.js` as the owner of shared registry confirmation, form controls, list parsing and query normalization. System, System Index, Encyclopedia, Citizen Records and Subscriptions use the explicit `WS_APP.registryUI` API instead of relying on globals created by unrelated lazy bundles.
+- Terminal Store Reactivity 1.0x makes the mounted Terminal observe canonical Entry and Reminder store events through microtask-coalesced, panel-specific refresh boundaries. Inbox/card updates and Calendar updates preserve local UI state, focus and scroll without creating another store.
+- Subscriptions Catalog Cleanup 4.7x removes LearnMin, Skill Channel and three technical seed contracts from normal campaign data. The 26 remaining products are explicitly `CANONICAL` or `PROVISIONAL`; catalog persistence advances to v5 and discards the retired v4 overlay. Declarative bridge fixtures remain diagnostics only.
+
+
+## Runtime 15.21x — merged extensions
+
+- Terminal Render Scope 2.0x establishes explicit navigation, active-content, Inbox, Billing, Requests, Command and Calendar projections. Store-driven refreshes remain microtask-coalesced and preserve panel-local state; `renderTerminalPanelPartial()` is now a compatibility router rather than a full Terminal owner.
+- Registry Controls CSS Extraction 1.0x retires `css/encyclopedia.css` and moves shared registry controls to eager `css/registry-controls.css`. Knowledge-specific article/relation layout remains in `css/knowledge-sections.css`.
+- Citizen Card Renderer Split 2.0x separates shared card renderers, card shell/controller and the GM-only Citizen Cards registry. Player Citizen Card, Citizen Files and Citizen Database do not load the GM registry renderer.
+- Equipment Contract Cleanup 6.0x reduces Equipment to the canonical CyberGrid screen and retires the obsolete Equipment-to-Cyberware navigation bridge. Equipment/Cyberware Stylesheet Boundary 6.1x makes both lazy modules CSS-independent: Equipment loads only `css/equipment.css`, Cyberware loads only `css/cyberware.css` plus Anatomy Bodymap CSS.
+- Subscriptions Catalog Authoring 4.8x extends Admin Catalog Management with draft/edit/publish/archive/restore authoring for canonical Subscription definitions. It reuses the Subscription Catalog Store and does not create contracts or Billing records during preview.
+- Admin Cyberware Runtime 1.0x adds one lazy Admin workspace with PLAYER WORLD and ADMIN DIRECT execution modes over existing Cyberware World Bridge, Planner and Maintenance APIs. It never writes raw BODY state or `citizen.cyberwareList`.
+- Knowledge Relation Index Layout 2.0 is presentation-only. Desktop relations use an explicit two-column grid and deterministic overflow viewport; Knowledge records, stable IDs, registry separation and the SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX model remain unchanged.
+- Market Orders Catalog Structure 7.1x merges Ordered and Delivered under one ORDERS workspace and groups Catalog presentation into Household, Cyberware and General without rewriting definitions. Market Secondary Fulfillment 7.1x reserves one concrete used ItemInstance, moves the same instance through delivery custody and reopens the listing on eligible return. Market Store remains the sole owner of carts, orders, shipments and returns.
+
+
+## Runtime 15.22x — merged extensions
+
+- Housing Household UI Consolidation 5.1x reduces the Citizen-facing Housing shell to `OVERVIEW`, `HOUSEHOLD`, `STORAGE` and `DELIVERIES`. Unit and History are composed into Overview; collection metadata remains on ItemInstance while display placement remains in Household. Storage owns one transient Item Index drawer that locates canonical physical items without creating another inventory or persistence store.
+- UI Controls Single Owner 1.0x introduces eager `css/ui-controls.css` as the sole visual owner of application scrollbars and native checkboxes. Module CSS retains overflow, wrapper layout and button-based selection only. Every native checkbox uses `ui-select-control`; radio appearance remains outside this scope.
+- The Housing consolidation consumes the global control contract rather than preserving its source patch's temporary scrollbar theme in `css/modules.css`. Market remains a separate module and no retired `housing-market-runtime.js` dependency is restored.
+
+
+## Runtime 15.23x — merged extensions
+
+- Terminal Inbox Canonical Model 3.0x upgrades every normalized Inbox record to schema v4 with canonical `domain`, `category`, `eventCode`, lifecycle timestamps and `actions[]`. Legacy `type`, `subtype` and `links` remain migration inputs only. Terminal Inbox Scalability 4.0x adds a deterministic 50-entry render window, incremental `LOAD MORE` paging and delegated card actions without creating another Inbox store.
+- Cyberware Taxonomy Foundation 16.2x and Migration 16.3x establish `data/cyberware-taxonomy.js` as the canonical vocabulary for body regions, mechanical body slots, grouped paired slots, implant families/subtypes, capabilities and module slots. Existing ItemInstance BODY locations migrate idempotently through aliases; eyes remain separate, Jaw is supported, Temple is retired, and paired Ears/Lungs/Kidneys use grouped left/right presentation without collapsing mechanical occupancy.
+- Equipment CSS Consolidation 6.2 removes residual workspace and Cyberware branches from `css/equipment.css`. Equipment owns only CyberGrid presentation; Cyberware remains visually independent in its own stylesheets.
+- Citizen Card Interaction Fast Path 2.1x updates Full/Compact mode and Equipment summary selection by replacing only the mounted card section. Presentation changes preserve section state, focus and scroll and do not rerender the full module shell or mutate domain state.
+- Billing Marketplace Settlement 1.0x adds Billing-owned, idempotent fixed-price marketplace settlement with buyer debit, seller credit, platform fee, proportional refunds, recovery state and Campaign Data I/O. Market continues to own listings, orders, custody and fulfillment.
+- Citizen Store Subscription Adapter 1.2x extracts low-level Subscription contract commands from the monolithic Citizen Store into `js/citizen-subscription-adapter.js`. Citizen Store remains the sole owner of `citizen.subscriptions` persistence, while `SubscriptionAPI` remains the only public command surface.

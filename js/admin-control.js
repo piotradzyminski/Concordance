@@ -577,7 +577,7 @@ window.WS_APP = window.WS_APP || {};
               </div>
               ${["none", "include", "exclusive"].map((value) => `
                 <label class="admin-relation-choice ${current === value ? "is-selected" : ""}">
-                  <input class="ui-select-control" type="radio" name="${escapeHtml(name)}" value="${escapeHtml(value)}" ${current === value ? "checked" : ""} ${disabled} />
+                  <input type="radio" name="${escapeHtml(name)}" value="${escapeHtml(value)}" ${current === value ? "checked" : ""} ${disabled} />
                   <span>${escapeHtml(value)}</span>
                 </label>
               `).join("")}
@@ -1950,13 +1950,13 @@ window.WS_APP = window.WS_APP || {};
             <legend>Target</legend>
             <div class="admin-economy-tile-grid">
               <label class="admin-economy-tile">
-                  <input class="ui-select-control" type="radio" name="target" value="credits" checked />
+                  <input type="radio" name="target" value="credits" checked />
                 <span>Credits</span>
                 <strong>${escapeHtml(adminFormatCredits(credits))}</strong>
                 <small>Current balance</small>
               </label>
               <label class="admin-economy-tile">
-                  <input class="ui-select-control" type="radio" name="target" value="debt" />
+                  <input type="radio" name="target" value="debt" />
                 <span>Debt</span>
                 <strong>${escapeHtml(adminFormatCredits(debt))}</strong>
                 <small>Current debt</small>
@@ -1967,12 +1967,12 @@ window.WS_APP = window.WS_APP || {};
             <legend>Mode</legend>
             <div class="admin-economy-mode-grid">
               <label class="admin-economy-mode-tile">
-                  <input class="ui-select-control" type="radio" name="mode" value="SET" checked />
+                  <input type="radio" name="mode" value="SET" checked />
                 <span>SET</span>
                 <small>Set final value</small>
               </label>
               <label class="admin-economy-mode-tile">
-                  <input class="ui-select-control" type="radio" name="mode" value="CHANGE" />
+                  <input type="radio" name="mode" value="CHANGE" />
                 <span>CHANGE</span>
                 <small>Use + or - delta</small>
               </label>
@@ -2216,6 +2216,9 @@ window.WS_APP = window.WS_APP || {};
     }
     if (workspace.id === "catalog-management" && window.WS_APP.AdminCatalogManagementControl?.renderInspector) {
       return window.WS_APP.AdminCatalogManagementControl.renderInspector({ workspace, user });
+    }
+    if (workspace.id === "cyberware-runtime" && window.WS_APP.AdminCyberwareRuntimeControl?.renderInspector) {
+      return window.WS_APP.AdminCyberwareRuntimeControl.renderInspector({ workspace, user });
     }
 
     const selectedGroup = getAdminSelectedCitizenGroupForWorkspace(workspace.id, user);
@@ -2484,6 +2487,9 @@ window.WS_APP = window.WS_APP || {};
     }
     if (window.WS_APP.adminActiveWorkspace === "catalog-management") {
       window.WS_APP.AdminCatalogManagementControl?.bind?.(container, user);
+    }
+    if (window.WS_APP.adminActiveWorkspace === "cyberware-runtime") {
+      window.WS_APP.AdminCyberwareRuntimeControl?.bind?.(container, user);
     }
 
     container.querySelectorAll("[data-admin-workspace-target], [data-admin-open-workspace]").forEach((button) => {
@@ -5158,6 +5164,7 @@ window.WS_APP = window.WS_APP || {};
       dashboard: ["Dashboard is an admin overview, not a player module grid.", "Priority Queue summarizes current operator-facing counts."],
       operations: ["Operations is a projection of the canonical World Bridge Operation Store.", "Retry, reconcile and resource claims always call public World Bridge APIs and require an operator note."],
       "catalog-management": ["Catalog Management separates reusable definitions from campaign-owned runtime instances.", "Equipment authoring publishes through the canonical Equipment Catalog Store and exports data packs without creating ItemInstances."],
+      "cyberware-runtime": ["Cyberware Runtime is a read projection over canonical ItemInstance BODY records.", "PLAYER WORLD uses Service/Billing/World Bridge; ADMIN DIRECT bypasses orchestration but never body-slot, compatibility or return-location invariants."],
       citizens: ["Citizen Management is citizen-scoped: the selector determines the inspected citizen.", "Equipment Editor writes physical records to the canonical global ItemInstance store.", "Detailed identity edits still route to existing Citizen Cards / Database modules."],
       "tags-access": ["Access/Clearance tags and Content/Record tags are separate families.", "Admin Tag Manager manages tag records; Access Matrix edits hierarchy and relation logic."],
       subscriptions: ["Subscription Admin is citizen-scoped: the citizen selector determines visible subscription records.", "Tier/payment edits still route to the existing Subscriptions module."],

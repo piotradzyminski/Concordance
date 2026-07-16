@@ -219,7 +219,7 @@ window.WS_APP = window.WS_APP || {};
             <input type="search" name="adminOperationsQuery" value="${escapeHtml(state.query)}" placeholder="operation, citizen, reference, error" data-admin-operations-query>
           </label>
           <label class="admin-form-field"><span>Recovery only</span>
-            <input type="checkbox" name="adminOperationsRecoveryOnly" ${state.recoveryOnly ? "checked" : ""} data-admin-operations-recovery-only>
+            <input class="ui-select-control" type="checkbox" name="adminOperationsRecoveryOnly" ${state.recoveryOnly ? "checked" : ""} data-admin-operations-recovery-only>
           </label>
         </div>
         <p class="admin-panel-note">The list is a projection of the canonical World Bridge Operation Store. Admin actions call public domain APIs and never edit operation records directly.</p>

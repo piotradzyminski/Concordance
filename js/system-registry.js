@@ -270,13 +270,13 @@ function bindSystemRegistry(user, registry) {
   });
 
   function applyFilters() {
-    const query = normalizeRegistryQuery(input?.value || "");
+    const query = window.WS_APP.registryUI.normalizeQuery(input?.value || "");
     const sortMode = sort?.value || "title";
     let records = getSystemArticles(registry, user).filter((record) => {
       const categoryMatch = activeCategory === "ALL" || String(record.category || "").toUpperCase() === activeCategory;
       if (!categoryMatch) return false;
       if (!query) return true;
-      return normalizeRegistryQuery(systemSearchBlob(record)).includes(query);
+      return window.WS_APP.registryUI.normalizeQuery(systemSearchBlob(record)).includes(query);
     });
 
     records = sortSystemRecords(records, sortMode);
@@ -515,7 +515,7 @@ function bindSystemArticleControls(user, article, registry) {
     window.alert?.(window.WS_APP.summarizeAdminRecordLifecyclePreview?.(preview) || preview?.message || "Preview unavailable.");
   });
   document.querySelector("#system-archive-button")?.addEventListener("click", async () => {
-    const confirmed = await confirmRegistryAction("ARCHIVE SYSTEM RECORD", "Archive this system record?", "Archive");
+    const confirmed = await window.WS_APP.registryUI.confirmAction("ARCHIVE SYSTEM RECORD", "Archive this system record?", "Archive");
     if (!confirmed) return;
     const result = window.WS_APP.requestAdminRecordLifecycleAction?.({ recordType: "SYSTEM_RECORD", recordId: article.id, action: "ARCHIVE", actor: user, expectedRevision: window.WS_APP.getAdminRecordLifecycleRevision?.(article) || 0, label: article.title || article.id });
     if (!result?.ok) return window.alert?.(`Archive failed: ${result?.resultCode || "UNKNOWN"}`);
@@ -527,7 +527,7 @@ function bindSystemArticleControls(user, article, registry) {
     renderSystemArticle(user, article.id);
   });
   document.querySelector("#system-delete-button")?.addEventListener("click", async () => {
-    const confirmed = await confirmRegistryAction("HARD DELETE SYSTEM RECORD", "Hard delete this archived system record? This cannot be undone.", "Hard Delete");
+    const confirmed = await window.WS_APP.registryUI.confirmAction("HARD DELETE SYSTEM RECORD", "Hard delete this archived system record? This cannot be undone.", "Hard Delete");
     if (!confirmed) return;
     const result = window.WS_APP.requestAdminRecordLifecycleAction?.({ recordType: "SYSTEM_RECORD", recordId: article.id, action: "HARD_DELETE", actor: user, expectedRevision: window.WS_APP.getAdminRecordLifecycleRevision?.(article) || 0, label: article.title || article.id });
     if (!result?.ok) return window.alert?.(`Hard delete failed: ${result?.resultCode || "UNKNOWN"}`);
@@ -684,18 +684,18 @@ function renderSystemForm(user, registry = "system", articleId = null) {
       <form class="entry-form" id="system-form" autocomplete="off" ${isSkillsAbilitiesRecord(draft) ? 'data-definition-editor="skills-abilities"' : isSubscriptionCatalogRecord(draft) ? 'data-definition-editor="subscription-catalog"' : ""}>
         <div class="entry-form-message" id="system-form-message"></div>
         <div class="entry-form-grid">
-          ${renderEntryInput("title", "Title", draft.title || "")}
-          ${renderEntryInput("localTitle", "Local title / PL", draft.localTitle || "")}
+          ${window.WS_APP.registryUI.renderInput("title", "Title", draft.title || "")}
+          ${window.WS_APP.registryUI.renderInput("localTitle", "Local title / PL", draft.localTitle || "")}
           ${renderSystemRecordTypeField(draft, normalizedRegistry)}
-          ${renderEntryInput("category", "Category", draft.category || "UNCATEGORIZED")}
-          ${window.WS_APP.renderContentTagSelect?.("tags", draft.tags || [], { label: "Content tags", extraClass: "is-wide" }) || renderEntryInput("tags", "Content tags", (draft.tags || []).join(", "), "is-wide")}
+          ${window.WS_APP.registryUI.renderInput("category", "Category", draft.category || "UNCATEGORIZED")}
+          ${window.WS_APP.renderContentTagSelect?.("tags", draft.tags || [], { label: "Content tags", extraClass: "is-wide" }) || window.WS_APP.registryUI.renderInput("tags", "Content tags", (draft.tags || []).join(", "), "is-wide")}
           ${window.WS_APP.renderAccessTagSelect?.("accessTags", draft.accessTags || [draft.tag || "PUBLIC"], { label: "Required access tags", extraClass: "is-wide" }) || ""}
-          ${renderEntryInput("summary", "Summary", draft.summary || "", "is-wide")}
-          ${normalizedRegistry === "system-index" ? renderEntryInput("officialSummary", "Official summary", draft.officialSummary || draft.summary || "", "is-wide") : ""}
-          ${normalizedRegistry === "system-index" ? renderEntryTextarea("slogans", "Slogans, comma separated", (draft.slogans || []).join(", "), "is-wide", 3) : ""}
-          ${renderEntryTextarea("sections", "Sections. Format: title line, then body. Separate sections with --- on its own line.", sectionsToText(draft.sections || []), "is-wide", 12)}
-          ${normalizedRegistry !== "system-index" ? renderEntryTextarea("relatedTerms", "Related Encyclopedia terms, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedTerms || draft.related || [], "encyclopedia") || draft.relatedTerms || draft.related || []).join(", "), "is-wide", 3) : ""}
-          ${normalizedRegistry === "system-index" ? renderEntryTextarea("relatedEntries", "Related System Index entries, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedEntries || [], "system-index") || draft.relatedEntries || []).join(", "), "is-wide", 3) : renderEntryTextarea("relatedRules", "Related System rules, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedRules || [], "system") || draft.relatedRules || []).join(", "), "is-wide", 3)}
+          ${window.WS_APP.registryUI.renderInput("summary", "Summary", draft.summary || "", "is-wide")}
+          ${normalizedRegistry === "system-index" ? window.WS_APP.registryUI.renderInput("officialSummary", "Official summary", draft.officialSummary || draft.summary || "", "is-wide") : ""}
+          ${normalizedRegistry === "system-index" ? window.WS_APP.registryUI.renderTextarea("slogans", "Slogans, comma separated", (draft.slogans || []).join(", "), "is-wide", 3) : ""}
+          ${window.WS_APP.registryUI.renderTextarea("sections", "Sections. Format: title line, then body. Separate sections with --- on its own line.", sectionsToText(draft.sections || []), "is-wide", 12)}
+          ${normalizedRegistry !== "system-index" ? window.WS_APP.registryUI.renderTextarea("relatedTerms", "Related Encyclopedia terms, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedTerms || draft.related || [], "encyclopedia") || draft.relatedTerms || draft.related || []).join(", "), "is-wide", 3) : ""}
+          ${normalizedRegistry === "system-index" ? window.WS_APP.registryUI.renderTextarea("relatedEntries", "Related System Index entries, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedEntries || [], "system-index") || draft.relatedEntries || []).join(", "), "is-wide", 3) : window.WS_APP.registryUI.renderTextarea("relatedRules", "Related System rules, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(draft.relatedRules || [], "system") || draft.relatedRules || []).join(", "), "is-wide", 3)}
         </div>
         ${typeof window.WS_APP.renderSystemDefinitionEditor === "function" ? window.WS_APP.renderSystemDefinitionEditor(draft) : ""}
         <footer class="entry-form-actions">
@@ -772,11 +772,11 @@ function collectSystemForm(form, registry) {
     type: String(data.get("type") || (registry === "system-index" ? "INDEX_ENTRY" : "RULE")).trim().toUpperCase(),
     category: String(data.get("category") || "UNCATEGORIZED").trim().toUpperCase(),
     tag: accessTags[0] || "PUBLIC",
-    tags: window.WS_APP.collectContentTagValues?.(form, "tags") || parseRegistryList(data.get("tags")),
+    tags: window.WS_APP.collectContentTagValues?.(form, "tags") || window.WS_APP.registryUI.parseList(data.get("tags")),
     accessTags,
     summary: String(data.get("summary") || "").trim(),
     officialSummary: String(data.get("officialSummary") || "").trim(),
-    slogans: parseRegistryList(data.get("slogans")),
+    slogans: window.WS_APP.registryUI.parseList(data.get("slogans")),
     sections: parseSystemSections(data.get("sections")),
     relatedTerms: registry === "system-index"
       ? []

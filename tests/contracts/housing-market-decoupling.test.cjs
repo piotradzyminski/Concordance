@@ -29,7 +29,8 @@ test("Market and Housing are separately registered modules", () => {
 
 test("Housing exposes Deliveries but owns no storefront or Market order actions", () => {
   const housing = read("js/housing.js");
-  assert.match(housing, /\["OVERVIEW", "UNIT", "HOUSEHOLD", "STORAGE", "COLLECTION", "DELIVERIES", "HISTORY"\]\.includes/);
+  assert.match(housing, /HOUSING_PRIMARY_TABS = \["OVERVIEW", "HOUSEHOLD", "STORAGE", "DELIVERIES"\]/);
+  assert.match(housing, /normalizeHousingActiveTab/);
   assert.match(housing, /function renderHousingDeliveriesTab\(/);
   assert.match(housing, /Read-only logistics projection/);
   assert.match(housing, /openModule\?\.\("market"/);
@@ -54,8 +55,8 @@ test("Housing bundle excludes Market runtime while Market bundle loads it", () =
   const modules = read("js/modules.js");
   const market = extractBlock(modules, "  market: {", "  housing: {");
   const housing = extractBlock(modules, "  housing: {", "  database: {");
-  assert.match(market, /js\/market-workspace-runtime\.js\?v=3/);
-  assert.match(market, /js\/market\.js\?v=4/);
+  assert.match(market, /js\/market-workspace-runtime\.js\?v=6/);
+  assert.match(market, /js\/market\.js\?v=5/);
   assert.match(market, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
   assert.doesNotMatch(housing, /market-workspace-runtime\.js/);
   assert.doesNotMatch(housing, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);

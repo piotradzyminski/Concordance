@@ -28,25 +28,29 @@ test("Global Market renders a six-product paginated storefront", () => {
   assert.match(source, /pagination\.totalItems = visibleItems\.length/);
 });
 
-test("Global Market navigation separates catalog, secondary listings, active orders and delivered history", () => {
+test("Global Market navigation keeps delivery history inside the Orders workspace", () => {
   const source = marketSource();
   const tabs = getFunctionBlock(source, "renderMarketWorkspaceModeTabs", "renderMarketWorkspaceDepartmentNavigation");
-  assert.match(source, /const MARKET_MODES = \["CATALOG", "SECONDARY", "ORDERS", "DELIVERED"\]/);
+  assert.match(source, /const MARKET_MODES = \["CATALOG", "SECONDARY", "ORDERS"\]/);
   assert.match(tabs, /id: "CATALOG"/);
   assert.match(tabs, /id: "SECONDARY"/);
   assert.match(tabs, /id: "ORDERS"/);
-  assert.match(tabs, /id: "DELIVERED"/);
-  assert.match(source, /activeMode === "DELIVERED" \? "HISTORY" : "ACTIVE"/);
+  assert.doesNotMatch(tabs, /id: "DELIVERED"/);
+  assert.match(source, /data-housing-market-order-view="ORDERED"/);
+  assert.match(source, /data-housing-market-order-view="DELIVERED"/);
 });
 
-test("Global Market departments support equipment, cyberware, medical, food and household products", () => {
+test("Global Market catalog projects products into household, cyberware and general sections", () => {
   const source = marketSource();
   const classifier = getFunctionBlock(source, "getMarketWorkspaceDepartment", "getMarketWorkspaceSubcategory");
-  assert.match(source, /const MARKET_DEPARTMENTS = \["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"\]/);
+  const domain = getFunctionBlock(source, "getMarketWorkspaceCatalogDomain", "getMarketWorkspaceDepartment");
+  assert.match(source, /const MARKET_DEPARTMENTS = \["ALL", "HOUSEHOLD", "CYBERWARE", "GENERAL"\]/);
   assert.match(classifier, /return "CYBERWARE"/);
-  assert.match(classifier, /return "MEDICAL"/);
-  assert.match(classifier, /return "FOOD"/);
   assert.match(classifier, /return "HOUSEHOLD"/);
+  assert.match(classifier, /return "GENERAL"/);
+  assert.match(domain, /"FURNITURE"/);
+  assert.match(domain, /"MEDICAL"/);
+  assert.match(domain, /"FOOD"/);
   assert.match(source, /subcategoriesByDepartment/);
   assert.match(source, /data-housing-market-department=/);
   assert.match(source, /data-housing-market-category=/);
@@ -74,12 +78,13 @@ test("Storefront layout is a department rail plus a two-column product grid", ()
   assert.match(css, /\.housing-market-product-buy-row/);
 });
 
-test("Order actions stay synchronized with the primary Orders and Delivered sections", () => {
+test("Order actions stay synchronized with the internal Ordered and Delivered views", () => {
   const source = marketSource();
   assert.match(source, /function syncMarketWorkspaceModeToOrder/);
-  assert.match(source, /view === "ACTIVE" \? "ORDERS" : "DELIVERED"/);
-  assert.match(source, /currentMode === "DELIVERED" \? "DELIVERED" : "ORDERS"/);
-  assert.doesNotMatch(source, /data-housing-market-order-view/);
+  assert.match(source, /setMarketWorkspaceMode\(citizenId, "ORDERS"\)/);
+  assert.match(source, /isCanonicalMarketWorkspaceOrderDelivered/);
+  assert.match(source, /data-housing-market-order-view/);
+  assert.match(source, /stored === "DELIVERED"/);
 });
 
 test("The All department cannot retain a hidden legacy subcategory filter", () => {

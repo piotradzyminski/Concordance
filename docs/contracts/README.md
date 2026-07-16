@@ -52,3 +52,17 @@ cyberware/cyberware_upgrade_system_contract.md
 ```
 
 The Knowledge 1.6x masking fix remains governed by `knowledge/knowledge_relations_contract.md`.
+
+
+## Active additions in 15.23x
+
+```text
+core/billing_marketplace_settlement_contract.md
+cyberware/cyberware_taxonomy_contract.md
+cyberware/cyberware_taxonomy_migration_contract.md
+equipment/equipment_css_consolidation_contract.md
+citizen/citizen_card_interaction_fast_path_contract.md
+subscriptions/citizen_subscription_adapter_contract.md
+```
+
+Terminal Inbox canonical identity and scalability refine the existing Terminal Inbox datetime and Terminal Notifications contracts; they do not introduce another Inbox store.

@@ -104,6 +104,13 @@
     { key: "LOCOMOTION", label: "Locomotion", slotKeys: ["legsSet", "leftLegCore", "leftThigh", "leftLowerLeg", "leftFootCore", "rightLegCore", "rightThigh", "rightLowerLeg", "rightFootCore"] }
   ];
 
+  const taxonomyMigration = window.WS_APP?.cyberwareTaxonomyMigration;
+  if (taxonomyMigration) {
+    CYBERWARE_SLOT_DEFINITIONS.splice(0, CYBERWARE_SLOT_DEFINITIONS.length, ...taxonomyMigration.slotDefinitions);
+    CYBERWARE_SLOT_GROUP_DEFINITIONS.splice(0, CYBERWARE_SLOT_GROUP_DEFINITIONS.length, ...taxonomyMigration.slotGroups);
+    CYBERWARE_SLOT_PURPOSE_DEFINITIONS.splice(0, CYBERWARE_SLOT_PURPOSE_DEFINITIONS.length, ...taxonomyMigration.purposes);
+  }
+
   const CYBERWARE_SLOT_BY_KEY = new Map(CYBERWARE_SLOT_DEFINITIONS.map((slot) => [slot.key, slot]));
   const CYBERWARE_SLOT_CHILDREN_BY_KEY = new Map(CYBERWARE_SLOT_DEFINITIONS.map((slot) => [slot.key, Array.isArray(slot.children) ? [...slot.children] : []]));
   const CYBERWARE_SLOT_PARENT_BY_KEY = new Map();
@@ -236,71 +243,71 @@
   });
 
   Object.entries({
-    ocular: "leftEye",
-    optic: "leftEye",
-    optics: "leftEye",
-    eye: "leftEye",
-    eyes: "ocularSet",
-    sight: "leftEye",
-    vision: "leftEye",
-    wzrok: "leftEye",
-    oko: "leftEye",
-    oczy: "leftEye",
-    audio: "leftEar",
-    auditory: "leftEar",
-    ear: "leftEar",
-    ears: "audioSet",
-    hearing: "leftEar",
-    ucho: "leftEar",
-    uszy: "leftEar",
-    leftarm: "leftArmCore",
-    rightarm: "rightArmCore",
-    arm: "leftArmCore",
-    arms: "armsSet",
-    limb: "leftArmCore",
-    prosthetic: "leftArmCore",
-    leftapplegacy: "leftArmCore",
-    rightapplegacy: "rightArmCore",
-    lefthand: "leftHandCore",
-    righthand: "rightHandCore",
-    hand: "leftHandCore",
-    hands: "leftHandCore",
-    palm: "leftPalm",
-    finger: "leftIndexFinger",
-    fingers: "leftIndexFinger",
-    dlon: "leftHandCore",
-    dloni: "leftHandCore",
-    palec: "leftIndexFinger",
-    palce: "leftIndexFinger",
-    leftleg: "leftLegCore",
-    rightleg: "rightLegCore",
-    leg: "leftLegCore",
-    legs: "legsSet",
-    knee: "leftLowerLeg",
-    foot: "leftFootCore",
-    feet: "leftFootCore",
-    stopa: "leftFootCore",
-    noga: "leftLegCore",
-    spine: "spineCore",
-    spinal: "spineCore",
-    backbone: "spineCore",
-    shoulder: "leftShoulder",
-    bark: "leftShoulder",
-    forearm: "leftForearm",
-    wrist: "leftForearm",
-    przedramie: "leftForearm",
-    przedramię: "leftForearm",
-    nadgarstek: "leftForearm",
-    srodrecze: "leftPalm",
-    śródręcze: "leftPalm",
-    metacarpus: "leftPalm",
+    ocular: "LEFT_EYE",
+    optic: "LEFT_EYE",
+    optics: "LEFT_EYE",
+    eye: "LEFT_EYE",
+    eyes: "OCULAR_SET",
+    sight: "LEFT_EYE",
+    vision: "LEFT_EYE",
+    wzrok: "LEFT_EYE",
+    oko: "LEFT_EYE",
+    oczy: "LEFT_EYE",
+    audio: "LEFT_EAR",
+    auditory: "LEFT_EAR",
+    ear: "LEFT_EAR",
+    ears: "EARS",
+    hearing: "LEFT_EAR",
+    ucho: "LEFT_EAR",
+    uszy: "LEFT_EAR",
+    leftarm: "LEFT_ARM_SET",
+    rightarm: "RIGHT_ARM_SET",
+    arm: "LEFT_ARM_SET",
+    arms: "ARMS_SET",
+    limb: "LEFT_ARM_SET",
+    prosthetic: "LEFT_ARM_SET",
+    leftapplegacy: "LEFT_ARM_SET",
+    rightapplegacy: "RIGHT_ARM_SET",
+    lefthand: "LEFT_HAND_SET",
+    righthand: "RIGHT_HAND_SET",
+    hand: "LEFT_HAND_SET",
+    hands: "LEFT_HAND_SET",
+    palm: "LEFT_PALM",
+    finger: "LEFT_INDEX",
+    fingers: "LEFT_INDEX",
+    dlon: "LEFT_HAND_SET",
+    dloni: "LEFT_HAND_SET",
+    palec: "LEFT_INDEX",
+    palce: "LEFT_INDEX",
+    leftleg: "LEFT_LEG_SET",
+    rightleg: "RIGHT_LEG_SET",
+    leg: "LEFT_LEG_SET",
+    legs: "LEGS_SET",
+    knee: "LEFT_SHIN",
+    foot: "LEFT_FOOT",
+    feet: "LEFT_FOOT",
+    stopa: "LEFT_FOOT",
+    noga: "LEFT_LEG_SET",
+    spine: "SPINE",
+    spinal: "SPINE",
+    backbone: "SPINE",
+    shoulder: "LEFT_SHOULDER",
+    bark: "LEFT_SHOULDER",
+    forearm: "LEFT_FOREARM",
+    wrist: "LEFT_FOREARM",
+    przedramie: "LEFT_FOREARM",
+    przedramię: "LEFT_FOREARM",
+    nadgarstek: "LEFT_FOREARM",
+    srodrecze: "LEFT_PALM",
+    śródręcze: "LEFT_PALM",
+    metacarpus: "LEFT_PALM",
     thigh: "leftThigh",
     udo: "leftThigh",
-    lowerleg: "leftLowerLeg",
-    calf: "leftLowerLeg",
-    shin: "leftLowerLeg",
-    lydka: "leftLowerLeg",
-    łydka: "leftLowerLeg"
+    lowerleg: "LEFT_SHIN",
+    calf: "LEFT_SHIN",
+    shin: "LEFT_SHIN",
+    lydka: "LEFT_SHIN",
+    łydka: "LEFT_SHIN"
   }).forEach(([alias, canonical]) => {
     const key = normalizeToken(alias);
     if (key && canonical) SLOT_ALIASES.set(key, canonical);
@@ -461,8 +468,8 @@
     if (/neurochip|neuro chip|neural core|procesor/.test(text)) return "NEUROCHIP";
     if (/service port|service jack|diagnostic port|maintenance port|data port|port serwis|port rdzeni/.test(text)) return "SERVICE_PORT";
     if (/interface|backplane|body bus|motherboard/.test(text)) return "INTERFACE_BACKPLANE";
-    if (slots.includes("neckService")) return "SERVICE_PORT";
-    if (slots.includes("interface")) return "INTERFACE_BACKPLANE";
+    if (slots.includes("NECK_SERVICE_PORT")) return "SERVICE_PORT";
+    if (slots.includes("OCCIPITAL_INTERFACE")) return "INTERFACE_BACKPLANE";
     return "";
   }
 

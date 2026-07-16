@@ -30,33 +30,31 @@ test("Cyberware is registered as a standalone player module", () => {
   assert.match(cyberwareBundle, /js\/cyberware-index\.js\?v=2/);
   assert.match(cyberwareBundle, /data\/cyberware-bodymap-layouts\.js\?v=1/);
   assert.match(cyberwareBundle, /js\/cyberware-anatomy-bodymap\.js\?v=1/);
-  assert.match(cyberwareBundle, /css\/cyberware-anatomy-bodymap\.css\?v=1/);
+  assert.match(cyberwareBundle, /css\/cyberware-anatomy-bodymap\.css\?v=2/);
   assert.match(cyberwareBundle, /js\/cyberware-planner\.js\?v=8/);
-  assert.match(cyberwareBundle, /js\/cyberware-workspace\.js\?v=3/);
+  assert.match(cyberwareBundle, /js\/cyberware-workspace\.js\?v=4/);
   assert.match(cyberwareBundle, /js\/cyberware-module\.js\?v=3/);
   assert.match(modules, /moduleId === "cyberware"/);
   assert.match(modules, /renderCyberwareModule/);
 });
 
-test("Equipment is Cybergrid-only and loads only the Cyberware navigation bridge", () => {
+test("Equipment is Cybergrid-only and has no Cyberware bridge runtime", () => {
   const modules = read("js/modules.js");
   const equipmentBundle = extractBlock(modules, "  equipment: {", "  cyberware: {");
   const equipment = read("js/equipment.js");
   const actions = read("js/equipment-actions.js");
   const store = read("js/equipment-store.js");
-  const bridge = read("js/equipment-cyberware-link.js");
 
   assert.doesNotMatch(equipmentBundle, /CYBERWARE_UI_RUNTIME_SCRIPTS/);
   assert.doesNotMatch(equipmentBundle, /js\/cyberware-index\.js/);
   assert.doesNotMatch(equipmentBundle, /js\/cyberware-planner\.js/);
   assert.doesNotMatch(equipmentBundle, /js\/cyberware-workspace\.js/);
-  assert.match(equipmentBundle, /js\/equipment-cyberware-link\.js\?v=20/);
-  assert.match(equipment, /WORKSPACE_VIEWS = \["CYBERGRID"\]/);
-  assert.doesNotMatch(equipment, /renderCyberwareScreen/);
-  assert.match(store, /return "CYBERGRID"/);
-  assert.doesNotMatch(actions, /data-cyberware-ui-view|data-cyberware-maintenance-action|data-cyberware-index-toggle/);
-  assert.match(bridge, /openModule\("cyberware"/);
-  assert.match(bridge, /openCyberwareFromEquipment/);
+  assert.doesNotMatch(equipmentBundle, /equipment-cyberware-link/);
+  assert.equal(fs.existsSync(path.join(PROJECT_ROOT, "js/equipment-cyberware-link.js")), false);
+  assert.match(equipment, /data-equipment-screen="CYBERGRID"/);
+  assert.doesNotMatch(equipment, /renderCyberwareScreen|renderEquipmentWorkspaceTabs|activeWorkspaceView/);
+  assert.doesNotMatch(store, /equipmentWorkspaceViewByCitizen|getEquipmentWorkspaceView|setEquipmentWorkspaceView/);
+  assert.doesNotMatch(actions, /data-cyberware-ui-view|data-cyberware-maintenance-action|data-cyberware-index-toggle|data-equipment-cyberware-link/);
 });
 
 test("Cyberware owns its shell, workspace state and delegated UI actions", () => {
@@ -81,8 +79,7 @@ test("Cyberware owns its shell, workspace state and delegated UI actions", () =>
 test("Module extraction does not create a second physical or Cyberware state store", () => {
   const module = read("js/cyberware-module.js");
   const workspace = read("js/cyberware-workspace.js");
-  const bridge = read("js/equipment-cyberware-link.js");
-  const combined = `${module}\n${workspace}\n${bridge}`;
+  const combined = `${module}\n${workspace}`;
 
   assert.doesNotMatch(combined, /citizen\.cyberwareList\s*=/);
   assert.doesNotMatch(combined, /itemInstances\s*=\s*\[/);

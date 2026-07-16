@@ -38,11 +38,17 @@ test("empty region slots render one centered ghost label without a duplicate cor
   assert.doesNotMatch(html, /<small>PORT<\/small>/);
 });
 
-test("Equipment is a Cybergrid-only workspace without embedded module tabs", () => {
+test("Equipment is a single Cybergrid screen without workspace compatibility state", () => {
   const source = read("js/equipment.js");
+  const store = read("js/equipment-store.js");
+  const actions = read("js/equipment-actions.js");
 
-  assert.match(source, /WORKSPACE_VIEWS = \["CYBERGRID"\]/);
-  assert.match(source, /function renderEquipmentWorkspaceTabs\(\) \{\s*return "";/);
+  assert.match(source, /data-equipment-screen="CYBERGRID"/);
+  assert.doesNotMatch(source, /WORKSPACE_VIEWS|normalizeWorkspaceView|getActiveWorkspaceView/);
+  assert.doesNotMatch(source, /renderEquipmentWorkspaceTabs|syncEquipmentWorkspaceTabs|renderEquipmentScreenPlaceholder|setEquipmentScreenVisibility/);
+  assert.doesNotMatch(source, /activeWorkspaceView/);
+  assert.doesNotMatch(store, /equipmentWorkspaceViewByCitizen|getEquipmentWorkspaceView|setEquipmentWorkspaceView|activeWorkspaceView/);
+  assert.doesNotMatch(actions, /data-equipment-workspace-view|setEquipmentWorkspaceView/);
   assert.doesNotMatch(source, /system-segment-tile system-segment-tile--card equipment-workspace-tab/);
   assert.doesNotMatch(source, /role="tab" aria-selected=/);
 });

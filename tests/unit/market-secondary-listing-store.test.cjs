@@ -12,6 +12,8 @@ async function flushMicrotasks() {
 
 function createHarness() {
   const state = { currentTimeIso: "2109-02-13T12:00:00.000Z" };
+  const items = new Map();
+  const transactions = new Map();
   const offers = Array.from({ length: 16 }, (_, index) => ({
     marketOfferId: `offer-${index + 1}`,
     offerType: "PHYSICAL_ITEM",
@@ -31,13 +33,27 @@ function createHarness() {
     getCampaignTimeIso: () => state.currentTimeIso,
     searchMarketOffers: () => structuredClone(offers),
     getMarketOffer: (id) => structuredClone(offers.find((offer) => offer.marketOfferId === id) || null),
-    getMarketOfferByCatalogItemId: (id) => structuredClone(offers.find((offer) => offer.catalogItemId === id) || null)
+    getMarketOfferByCatalogItemId: (id) => structuredClone(offers.find((offer) => offer.catalogItemId === id) || null),
+    getEquipmentCatalogItem: (id) => structuredClone(offers.find((offer) => offer.catalogItemId === id)?.catalogItem || null),
+    getItemInstanceById: (id) => structuredClone(items.get(id) || null),
+    commitItemInstanceTransaction(input) {
+      const replay = transactions.get(input.idempotencyKey);
+      if (replay) return { ok: true, operation: "IDEMPOTENT_REPLAY", transaction: structuredClone(replay) };
+      for (const operation of input.operations || []) {
+        if (operation.type === "CREATE") items.set(operation.instanceId, structuredClone(operation.instance));
+        else if (operation.type === "REMOVE") items.delete(operation.instanceId);
+      }
+      const transaction = { transactionId: `secondary-listing-tx-${transactions.size + 1}`, idempotencyKey: input.idempotencyKey, status: "COMMITTED" };
+      transactions.set(input.idempotencyKey, transaction);
+      return { ok: true, transaction: structuredClone(transaction), committed: true };
+    },
+    compensateItemInstanceTransaction: () => ({ ok: true, compensated: true })
   };
   const runtime = createBrowserRuntime({ wsApp, nowIso: state.currentTimeIso });
   runtime.load("js/world-time-scheduled-events.js");
   runtime.load("js/market-time-scheduler.js");
   runtime.load("js/market-secondary-listing-store.js");
-  return { runtime, state };
+  return { runtime, state, items };
 }
 
 test("secondary listing foundation generates persistent system listings with exact scheduled lifecycle", async () => {
@@ -57,7 +73,12 @@ test("secondary listing foundation generates persistent system listings with exa
     assert.ok(listing.listedPrice > 0);
     assert.ok(listing.expectedUsedValue > 0);
     assert.ok(listing.nextDemandCheckAt);
-    assert.equal(listing.sourceInstanceId, null);
+    assert.ok(listing.sourceInstanceId);
+    const instance = runtime.window.WS_APP.getItemInstanceById(listing.sourceInstanceId);
+    assert.ok(instance);
+    assert.equal(instance.location.type, "VENDOR");
+    assert.equal(instance.ownerId, "");
+    assert.equal(instance.durability.current, listing.conditionSnapshot);
   });
 
   const events = api.getWorldTimeScheduledEvents({ handlerId: "market-time-scheduler" });
@@ -68,7 +89,7 @@ test("secondary listing foundation generates persistent system listings with exa
 
   assert.equal(api.flushMarketSecondaryListingPersistence(), true);
   const stored = JSON.parse(runtime.window.localStorage.getItem("ws_market_secondary_listings_v1"));
-  assert.equal(stored.schemaVersion, "market_secondary_listing_foundation_7_0x");
+  assert.equal(stored.schemaVersion, "market_secondary_fulfillment_7_1x");
   assert.equal(stored.listings.length, 12);
 });
 

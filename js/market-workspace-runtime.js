@@ -123,40 +123,55 @@ window.WS_APP = window.WS_APP || {};
   function normalizeMarketWorkspaceMode(mode = "CATALOG") {
       const normalized = String(mode || "CATALOG").trim().toUpperCase();
       if (["ITEMS", "CYBERWARE", "CATALOG"].includes(normalized)) return "CATALOG";
+      if (normalized === "DELIVERED") return "ORDERS";
       return MARKET_MODES.includes(normalized) ? normalized : "CATALOG";
     }
 
   function getMarketWorkspaceMode(citizenId = "") {
       window.WS_APP.marketModeByCitizen = window.WS_APP.marketModeByCitizen || {};
-      return normalizeMarketWorkspaceMode(window.WS_APP.marketModeByCitizen[citizenId] || "CATALOG");
+      const stored = String(window.WS_APP.marketModeByCitizen[citizenId] || "CATALOG").trim().toUpperCase();
+      if (stored === "DELIVERED") {
+        setMarketWorkspaceOrderView(citizenId, "DELIVERED");
+        window.WS_APP.marketModeByCitizen[citizenId] = "ORDERS";
+        return "ORDERS";
+      }
+      const normalized = normalizeMarketWorkspaceMode(stored);
+      window.WS_APP.marketModeByCitizen[citizenId] = normalized;
+      return normalized;
     }
 
   function setMarketWorkspaceMode(citizenId = "", mode = "CATALOG") {
       window.WS_APP.marketModeByCitizen = window.WS_APP.marketModeByCitizen || {};
-      window.WS_APP.marketModeByCitizen[citizenId] = normalizeMarketWorkspaceMode(mode);
+      const requested = String(mode || "CATALOG").trim().toUpperCase();
+      if (requested === "DELIVERED") setMarketWorkspaceOrderView(citizenId, "DELIVERED");
+      window.WS_APP.marketModeByCitizen[citizenId] = normalizeMarketWorkspaceMode(requested);
     }
 
-  function normalizeMarketWorkspaceOrderView(view = "ACTIVE") {
-      const normalized = String(view || "ACTIVE").trim().toUpperCase();
-      return MARKET_ORDER_VIEWS.includes(normalized) ? normalized : "ACTIVE";
+  function normalizeMarketWorkspaceOrderView(view = "ORDERED") {
+      const normalized = String(view || "ORDERED").trim().toUpperCase();
+      if (normalized === "ACTIVE") return "ORDERED";
+      if (normalized === "HISTORY") return "DELIVERED";
+      return MARKET_ORDER_VIEWS.includes(normalized) ? normalized : "ORDERED";
     }
 
   function getMarketWorkspaceOrderView(citizenId = "") {
       window.WS_APP.marketOrderViewByCitizen = window.WS_APP.marketOrderViewByCitizen || {};
-      return normalizeMarketWorkspaceOrderView(window.WS_APP.marketOrderViewByCitizen[citizenId] || "ACTIVE");
+      const normalized = normalizeMarketWorkspaceOrderView(window.WS_APP.marketOrderViewByCitizen[citizenId] || "ORDERED");
+      window.WS_APP.marketOrderViewByCitizen[citizenId] = normalized;
+      return normalized;
     }
 
-  function setMarketWorkspaceOrderView(citizenId = "", view = "ACTIVE") {
+  function setMarketWorkspaceOrderView(citizenId = "", view = "ORDERED") {
       window.WS_APP.marketOrderViewByCitizen = window.WS_APP.marketOrderViewByCitizen || {};
       window.WS_APP.marketOrderViewByCitizen[citizenId] = normalizeMarketWorkspaceOrderView(view);
     }
 
-  function syncMarketWorkspaceModeToOrder(citizenId = "", order = null, fallbackView = "ACTIVE") {
+  function syncMarketWorkspaceModeToOrder(citizenId = "", order = null, fallbackView = "ORDERED") {
       const view = order
-        ? (isCanonicalMarketWorkspaceOrderActive(order) ? "ACTIVE" : "HISTORY")
+        ? (isCanonicalMarketWorkspaceOrderDelivered(order) ? "DELIVERED" : "ORDERED")
         : normalizeMarketWorkspaceOrderView(fallbackView);
       setMarketWorkspaceOrderView(citizenId, view);
-      setMarketWorkspaceMode(citizenId, view === "ACTIVE" ? "ORDERS" : "DELIVERED");
+      setMarketWorkspaceMode(citizenId, "ORDERS");
     }
 
   function getMarketSelectedOrderId(citizenId = "") {
@@ -211,6 +226,7 @@ window.WS_APP = window.WS_APP || {};
         page: clampNumber(source.page ?? defaults.page, 1, 9999)
       };
   
+      if (["EQUIPMENT", "MEDICAL", "FOOD"].includes(normalized.type)) normalized.type = "GENERAL";
       if (!MARKET_DEPARTMENTS.includes(normalized.type)) normalized.type = "ALL";
       if (normalized.type === "ALL") normalized.category = "ALL";
       if (!MARKET_STATUSES.includes(normalized.status)) normalized.status = "ALL";
@@ -343,49 +359,61 @@ window.WS_APP = window.WS_APP || {};
       return values.some((value) => tokens.has(value));
     }
 
-  function getMarketWorkspaceDepartment(item = {}) {
+  function getMarketWorkspaceCatalogDomain(item = {}) {
       const explicit = String(item.marketDepartment || item.department || "").trim().toUpperCase();
-      if (MARKET_DEPARTMENTS.includes(explicit) && explicit !== "ALL") return explicit;
+      if (["EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"].includes(explicit)) return explicit;
       if (isMarketWorkspaceCyberwareItem(item)) return "CYBERWARE";
-  
+
       const tokens = getMarketWorkspaceItemTokens(item);
+      if (hasMarketWorkspaceItemToken(tokens, ["HOUSEHOLD", "HYGIENE", "CLEANING", "DOMESTIC", "HABITAT_SUPPLY", "HOME_GOODS", "FURNITURE", "FIXTURE", "HOUSEHOLD_PLACEABLE", "FURNISHING_UPGRADE", "DECORATION", "STORAGE_FURNITURE"])) return "HOUSEHOLD";
       if (hasMarketWorkspaceItemToken(tokens, ["MEDICAL", "MEDICINE", "PHARMA", "PHARMACEUTICAL", "DRUG", "STIMULANT", "SUPPRESSANT", "TRAUMA_CARE", "FIRST_AID"])) return "MEDICAL";
       if (hasMarketWorkspaceItemToken(tokens, ["FOOD", "MEAL", "RATIONS", "RATION", "DRINK", "BEVERAGE", "NUTRITION", "EDIBLE"])) return "FOOD";
-      if (hasMarketWorkspaceItemToken(tokens, ["HOUSEHOLD", "HYGIENE", "CLEANING", "DOMESTIC", "HABITAT_SUPPLY", "HOME_GOODS"])) return "HOUSEHOLD";
       return "EQUIPMENT";
+    }
+
+  function getMarketWorkspaceDepartment(item = {}) {
+      const domain = getMarketWorkspaceCatalogDomain(item);
+      if (domain === "CYBERWARE") return "CYBERWARE";
+      if (domain === "HOUSEHOLD") return "HOUSEHOLD";
+      return "GENERAL";
     }
 
   function getMarketWorkspaceSubcategory(item = {}) {
       const explicit = String(item.marketSubcategory || item.storeCategory || "").trim().toUpperCase();
-      if (explicit) return explicit;
       const department = getMarketWorkspaceDepartment(item);
+      const domain = getMarketWorkspaceCatalogDomain(item);
       const tokens = getMarketWorkspaceItemTokens(item);
       const subtype = String(item.subtype || item.itemType || "").trim().toUpperCase();
       const category = String(item.category || "").trim().toUpperCase();
-  
+
       if (department === "CYBERWARE") return getMarketWorkspaceCyberwareKind(item);
-      if (department === "MEDICAL") {
+      if (department === "HOUSEHOLD") {
+        if (tokens.has("FURNISHING_UPGRADE")) return "FURNISHING_MODULES";
+        if (tokens.has("FIXTURE")) return "FIXTURES";
+        if (hasMarketWorkspaceItemToken(tokens, ["STORAGE_FURNITURE", "STORAGE"])) return "STORAGE";
+        if (hasMarketWorkspaceItemToken(tokens, ["DECORATION", "DECOR", "DISPLAY", "COLLECTIBLE"])) return "DECORATIONS";
+        if (tokens.has("FURNITURE") || tokens.has("HOUSEHOLD_PLACEABLE")) return "FURNITURE";
+        if (tokens.has("HYGIENE")) return "HYGIENE";
+        if (tokens.has("CLEANING")) return "CLEANING";
+        if (hasMarketWorkspaceItemToken(tokens, ["UTILITY", "HABITAT_SUPPLY"])) return "UTILITY_SUPPLIES";
+        return explicit || subtype || "HOUSEHOLD_GOODS";
+      }
+      if (domain === "MEDICAL") {
         if (hasMarketWorkspaceItemToken(tokens, ["STIMULANT"])) return "STIMULANTS";
         if (hasMarketWorkspaceItemToken(tokens, ["SUPPRESSANT"])) return "SUPPRESSANTS";
         if (hasMarketWorkspaceItemToken(tokens, ["TRAUMA_CARE", "FIRST_AID"])) return "TRAUMA_CARE";
         if (subtype.includes("KIT") || tokens.has("MEDICAL_KIT")) return "MEDICAL_KITS";
         if (hasMarketWorkspaceItemToken(tokens, ["MEDICINE", "PHARMA", "PHARMACEUTICAL", "DRUG"])) return "MEDICINE";
-        return subtype || "MEDICAL_SUPPLIES";
+        return explicit || subtype || "MEDICAL_SUPPLIES";
       }
-      if (department === "FOOD") {
+      if (domain === "FOOD") {
         if (hasMarketWorkspaceItemToken(tokens, ["DRINK", "BEVERAGE"])) return "DRINKS";
         if (hasMarketWorkspaceItemToken(tokens, ["RATION", "RATIONS"])) return "RATIONS";
         if (hasMarketWorkspaceItemToken(tokens, ["MEAL"])) return "MEALS";
         if (hasMarketWorkspaceItemToken(tokens, ["NUTRITION", "SUPPLEMENT"])) return "SUPPLEMENTS";
-        return subtype || "FOOD";
+        return explicit || subtype || "FOOD";
       }
-      if (department === "HOUSEHOLD") {
-        if (tokens.has("HYGIENE")) return "HYGIENE";
-        if (tokens.has("CLEANING")) return "CLEANING";
-        if (hasMarketWorkspaceItemToken(tokens, ["UTILITY", "HABITAT_SUPPLY"])) return "UTILITY_SUPPLIES";
-        return subtype || "HOUSEHOLD_GOODS";
-      }
-      return category || subtype || "MISC";
+      return explicit || category || subtype || "MISC";
     }
 
   function getMarketWorkspaceItemType(item = {}) {
@@ -788,6 +816,35 @@ window.WS_APP = window.WS_APP || {};
       return result;
     }
 
+  function addMarketWorkspaceSecondaryListingToCart(citizen = {}, listingId = "", unit = null) {
+      const listing = window.WS_APP.getMarketSecondaryListing?.(String(listingId || "").trim()) || null;
+      if (!listing) return { ok: false, reason: "MARKET_SECONDARY_LISTING_NOT_FOUND" };
+      const projection = window.WS_APP.projectMarketSecondaryListing?.(listing) || listing;
+      if (projection.playerPurchaseAvailable !== true) return { ok: false, reason: projection.purchaseBlocker || `MARKET_SECONDARY_LISTING_${String(listing.status || "UNAVAILABLE").toUpperCase()}` };
+      if (!unit?.id) return { ok: false, reason: "HOUSING_DESTINATION_REQUIRED" };
+      const existing = getMarketWorkspaceDraftCart(citizen.id);
+      if ((existing?.lines || []).some((line) => String(line.fulfillmentMode || "DELIVER_TO_HOUSING").toUpperCase() !== "DELIVER_TO_HOUSING")) {
+        return { ok: false, reason: "MIXED_FULFILLMENT_CART_NOT_SUPPORTED" };
+      }
+      const cart = existing || window.WS_APP.createMarketCart?.(citizen.id)?.cart || null;
+      if (!cart) return { ok: false, reason: "MARKET_CART_CREATE_FAILED" };
+      const result = window.WS_APP.updateMarketCart?.(cart.cartId, {
+        addLine: {
+          marketOfferId: listing.marketOfferId,
+          offerSource: "SECONDARY",
+          listingId: listing.listingId,
+          listingRevision: listing.revision,
+          sourceInstanceId: listing.sourceInstanceId,
+          sourceMarketOfferId: listing.sourceMarketOfferId,
+          quantity: 1,
+          fulfillmentMode: "DELIVER_TO_HOUSING",
+          destinationRef: { housingStorageId: unit.id }
+        }
+      }) || { ok: false, reason: "MARKET_CART_API_UNAVAILABLE" };
+      if (result.ok) setMarketWorkspaceCartOpen(citizen.id, true);
+      return result;
+    }
+
   function addMarketWorkspaceOfferForPickupToCart(citizen = {}, marketOfferId = "", quantity = 1) {
       const offerId = String(marketOfferId || "").trim();
       if (!offerId) return { ok: false, reason: "MARKET_OFFER_ID_REQUIRED" };
@@ -875,11 +932,10 @@ window.WS_APP = window.WS_APP || {};
       const modes = [
         { id: "CATALOG", label: "CATALOG", meta: `${stats.total || 0} PRODUCTS` },
         { id: "SECONDARY", label: "SECONDARY", meta: `${stats.secondaryActive || 0} ACTIVE` },
-        { id: "ORDERS", label: "ORDERS", meta: `${stats.activeOrders || 0} ACTIVE` },
-        { id: "DELIVERED", label: "DELIVERED", meta: `${stats.deliveredOrders || 0} CLOSED` }
+        { id: "ORDERS", label: "ORDERS", meta: `${stats.orderedOrders || 0} ORDERED / ${stats.deliveredOrders || 0} DELIVERED` }
       ];
       return `
-        <div class="housing-market-subtabs housing-market-section-tabs system-segment-tabs" role="tablist" aria-label="Housing Market Sections">
+        <div class="housing-market-subtabs housing-market-section-tabs system-segment-tabs" role="tablist" aria-label="Market sections">
           ${modes.map((mode) => `
             <button class="housing-market-subtab housing-market-section-tab system-segment-tile system-segment-tile--card ${mode.id === activeMode ? "is-active" : ""}" type="button" role="tab" aria-selected="${mode.id === activeMode ? "true" : "false"}" data-housing-market-mode="${escapeHtml(mode.id)}">
               <span class="system-segment-tile__body">
@@ -926,7 +982,7 @@ window.WS_APP = window.WS_APP || {};
           <div class="housing-market-product-buy-row">
             <div class="housing-market-product-price"><small>LISTED PRICE</small><b>${escapeHtml(formatCredits(listedPrice))}</b><span>EXPECTED USED ${escapeHtml(formatCredits(listing.expectedUsedValue || 0))}</span></div>
             <div class="housing-market-product-actions" aria-label="Secondary listing actions">
-              <button class="housing-inline-action housing-market-action-primary" type="button" disabled title="Secondary fulfillment is introduced in patch 7.1x">PURCHASE LOCKED</button>
+              <button class="housing-inline-action housing-market-action-primary" type="button" data-housing-market-add-secondary-listing="${escapeHtml(listing.listingId)}" ${listing.playerPurchaseAvailable ? "" : "disabled"} title="${escapeHtml(listing.playerPurchaseAvailable ? "Add this concrete used ItemInstance to the delivery cart" : String(listing.purchaseBlocker || "SECONDARY LISTING UNAVAILABLE").replace(/_/g, " "))}">${listing.playerPurchaseAvailable ? "ADD USED ITEM" : "UNAVAILABLE"}</button>
             </div>
           </div>
         </article>
@@ -940,7 +996,7 @@ window.WS_APP = window.WS_APP || {};
             <div><p class="kicker">SECONDARY EXCHANGE</p><h5>Used Listings</h5></div>
             <div><span class="module-status-badge">${escapeHtml(listings.length)} ACTIVE</span><small>CAMPAIGN TIME SCHEDULED</small></div>
           </header>
-          <p class="housing-storage-note">System-generated listings use exact Campaign Time for demand checks, automatic price reviews and expiry. Player purchase remains disabled until the canonical secondary fulfillment patch.</p>
+          <p class="housing-storage-note">Each active listing represents one concrete used ItemInstance. Purchase reserves that exact instance and routes it through the canonical Market delivery flow.</p>
           <div class="housing-market-card-grid">
             ${listings.length
               ? listings.map((listing) => renderMarketSecondaryListingCard(listing)).join("")
@@ -1014,6 +1070,7 @@ window.WS_APP = window.WS_APP || {};
 
   function getMarketWorkspaceProductFacts(item = {}) {
       const department = getMarketWorkspaceDepartment(item);
+      const catalogDomain = getMarketWorkspaceCatalogDomain(item);
       const kind = getMarketWorkspaceItemKind(item);
       const tier = getMarketWorkspaceItemTier(item);
       const profile = item.consumableProfile && typeof item.consumableProfile === "object" ? item.consumableProfile : {};
@@ -1027,11 +1084,11 @@ window.WS_APP = window.WS_APP || {};
       if (department === "CYBERWARE") {
         add("Class", tier ? `${formatMarketWorkspaceStoreLabel(kind)} / T${tier}` : formatMarketWorkspaceStoreLabel(kind));
         add("Format", item.scale || item.grade || item.footprint || "STANDARD");
-      } else if (department === "MEDICAL") {
+      } else if (catalogDomain === "MEDICAL") {
         add("Dose", profile.dose || item.dose || item.dosage || item.doseLabel);
         add("Package", packageQuantity ? `${packageQuantity} UNIT${Number(packageQuantity) === 1 ? "" : "S"}` : profile.packageLabel || item.packageLabel || formatMarketWorkspaceStoreLabel(kind));
         add("Duration", profile.duration || item.duration || item.effectDuration);
-      } else if (department === "FOOD") {
+      } else if (catalogDomain === "FOOD") {
         add("Package", packageQuantity ? `${packageQuantity} UNIT${Number(packageQuantity) === 1 ? "" : "S"}` : (profile.mealUnits || item.mealUnits) ? `${profile.mealUnits || item.mealUnits} MEALS` : formatMarketWorkspaceStoreLabel(kind));
         add("Class", profile.rationClass || item.rationClass || profile.quality || item.quality || item.grade || profile.shelfLife || item.shelfLife);
       } else if (department === "HOUSEHOLD") {
@@ -1561,6 +1618,8 @@ window.WS_APP = window.WS_APP || {};
         && context.cart.lines.every((line) => String(line.fulfillmentMode || "DELIVER_TO_HOUSING").toUpperCase() === "PURCHASE_WITH_SERVICE");
       const pickupCart = Boolean(context.cart?.lines?.length)
         && context.cart.lines.every((line) => String(line.fulfillmentMode || "DELIVER_TO_HOUSING").toUpperCase() === "PICKUP");
+      const secondaryCart = Boolean(context.cart?.lines?.length)
+        && context.cart.lines.every((line) => String(line.offerSource || "CATALOG").toUpperCase() === "SECONDARY");
       const pickupOffer = pickupCart ? window.WS_APP.getMarketOffer?.(context.cart.lines[0]?.marketOfferId) || null : null;
       const quotedByLineId = new Map((context.quote?.lines || []).map((line) => [line.cartLineId, line]));
       return `
@@ -1605,7 +1664,7 @@ window.WS_APP = window.WS_APP || {};
                     <div class="housing-market-cart-quantity">
                       <button type="button" data-housing-market-cart-quantity="${escapeHtml(line.cartLineId)}" data-quantity="${escapeHtml(Math.max(0, Number(line.quantity || 1) - 1))}" aria-label="Decrease quantity">−</button>
                       <b>${escapeHtml(line.quantity || 1)}</b>
-                      <button type="button" data-housing-market-cart-quantity="${escapeHtml(line.cartLineId)}" data-quantity="${escapeHtml(Math.min(99, Number(line.quantity || 1) + 1))}" aria-label="Increase quantity">+</button>
+                      <button type="button" data-housing-market-cart-quantity="${escapeHtml(line.cartLineId)}" data-quantity="${escapeHtml(Math.min(99, Number(line.quantity || 1) + 1))}" aria-label="Increase quantity" ${String(line.offerSource || "CATALOG").toUpperCase() === "SECONDARY" ? "disabled" : ""}>+</button>
                     </div>
                     <button class="housing-market-cart-remove" type="button" data-housing-market-cart-remove="${escapeHtml(line.cartLineId)}">REMOVE</button>
                   </article>
@@ -1628,7 +1687,9 @@ window.WS_APP = window.WS_APP || {};
                 ? "Checkout authorizes Market and Service Billing, reserves stock, creates one ItemInstance directly in Service custody and schedules the linked Service Order. Final capture waits for confirmed physical placement."
                 : pickupCart
                   ? "Checkout captures Billing, commits stock and creates one ItemInstance per purchased unit in vendor custody. Confirm pickup before the reservation expires to move the same records into Citizen custody."
-                  : "Checkout authorizes Billing, reserves stock and Housing placement, creates one ItemInstance per purchased unit and commits the final placement.")}</p>
+                  : secondaryCart
+                    ? "Checkout reserves each exact used ItemInstance, captures Billing and transfers the same physical records into canonical Market delivery custody."
+                    : "Checkout authorizes Billing, reserves stock and Housing placement, creates one ItemInstance per purchased unit and commits the final placement.")}</p>
             </footer>
           </aside>
         </div>
@@ -1647,6 +1708,61 @@ window.WS_APP = window.WS_APP || {};
       const partialReturnActive = (Array.isArray(order.partialReturns) ? order.partialReturns : []).some((entry) => ["REQUESTED", "PROCESSING", "RECOVERY_REQUIRED"].includes(String(entry?.status || "").trim().toUpperCase()));
       if (partialReturnActive) return true;
       return !MARKET_ORDER_CLOSED_STATUSES.has(String(order.status || "").trim().toUpperCase());
+    }
+
+  function isCanonicalMarketWorkspaceOrderDelivered(order = {}) {
+      const status = String(order.status || "").trim().toUpperCase();
+      if (["FAILED", "CANCELLED", "DRAFT", "RESERVING", "AUTHORIZED", "FULFILLING", "RETURNING", "PAYMENT_RECOVERY_REQUIRED"].includes(status)) return false;
+      const deliveryStatus = String(order.deliveryFulfillment?.status || "").trim().toUpperCase();
+      const pickupStatus = String(order.pickupFulfillment?.status || "").trim().toUpperCase();
+      const serviceStatus = String(order.serviceFulfillment?.status || "").trim().toUpperCase();
+      if (deliveryStatus === "DELIVERED" || pickupStatus === "COMPLETED" || serviceStatus === "COMPLETED") return true;
+      return ["COMPLETED", "REFUNDED"].includes(status) && Boolean(order.completedAt);
+    }
+
+  function getMarketWorkspaceCampaignTimeIso() {
+      const raw = String(window.WS_APP.getCampaignTimeIso?.() || window.WS_APP.CAMPAIGN_TIME_ISO || "").trim();
+      const parsed = Date.parse(raw);
+      return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+    }
+
+  function formatMarketWorkspaceTimeRemaining(etaAt = "", completed = false) {
+      if (completed) return "COMPLETE";
+      const etaMs = Date.parse(String(etaAt || ""));
+      const currentMs = Date.parse(getMarketWorkspaceCampaignTimeIso());
+      if (!Number.isFinite(etaMs) || !Number.isFinite(currentMs)) return "NONE";
+      const remainingMinutes = Math.ceil((etaMs - currentMs) / 60000);
+      if (remainingMinutes <= 0) return "DUE NOW";
+      const days = Math.floor(remainingMinutes / 1440);
+      const hours = Math.floor((remainingMinutes % 1440) / 60);
+      const minutes = remainingMinutes % 60;
+      return [days ? `${days}D` : "", `${String(hours).padStart(2, "0")}H`, `${String(minutes).padStart(2, "0")}M`].filter(Boolean).join(" ");
+    }
+
+  function getCanonicalMarketWorkspaceOrderSummary(order = {}, citizen = {}) {
+      const shipment = window.WS_APP.getMarketOrderShipment?.(order) || null;
+      const delivered = isCanonicalMarketWorkspaceOrderDelivered(order);
+      const fulfillmentModes = [...new Set((order.lines || []).map((line) => String(line.fulfillmentMode || "DELIVER_TO_HOUSING").trim().toUpperCase()))];
+      const fulfillment = fulfillmentModes.map((mode) => formatMarketWorkspaceStoreLabel(mode)).join(" / ") || "UNKNOWN";
+      const destinationIds = [...new Set((order.lines || []).map((line) => line.destinationRef?.housingStorageId).filter(Boolean))];
+      const targetRecord = getCitizenHousingRecords(citizen).find((record) => (record.storageUnits || []).some((unit) => destinationIds.includes(unit.id))) || null;
+      const destination = targetRecord?.title
+        || order.pickupFulfillment?.sourceAddress
+        || order.pickupFulfillment?.organizationLocationId
+        || order.serviceFulfillment?.providerId
+        || destinationIds.join(" / ")
+        || "PENDING";
+      const etaAt = shipment?.etaAt || order.deliveryFulfillment?.etaAt || order.pickupFulfillment?.expiresAt || order.serviceFulfillment?.scheduledAt || "";
+      const completedAt = shipment?.deliveredAt || order.pickupFulfillment?.completedAt || order.serviceFulfillment?.completedAt || order.completedAt || "";
+      return {
+        delivered,
+        status: formatCanonicalMarketOrderStatus(order),
+        etaAt,
+        completedAt,
+        remaining: formatMarketWorkspaceTimeRemaining(etaAt, delivered),
+        fulfillment,
+        destination
+      };
     }
 
   function getCanonicalMarketWorkspaceOrderProductName(line = {}) {
@@ -1718,7 +1834,7 @@ window.WS_APP = window.WS_APP || {};
                   <div>
                     ${ids.map((instanceId, index) => `
                       <label>
-                        <input type="checkbox" value="${escapeHtml(instanceId)}" data-housing-market-partial-return-instance>
+                        <input class="ui-select-control" type="checkbox" value="${escapeHtml(instanceId)}" data-housing-market-partial-return-instance>
                         <span>UNIT ${escapeHtml(index + 1)} <small>${escapeHtml(instanceId)}</small></span>
                       </label>
                     `).join("")}
@@ -1856,15 +1972,16 @@ window.WS_APP = window.WS_APP || {};
   function renderCanonicalMarketWorkspaceOrderCard(order = {}, citizen = {}) {
       const status = String(order.status || "UNKNOWN").trim().toUpperCase();
       const destinationIds = [...new Set((order.lines || []).map((line) => line.destinationRef?.housingStorageId).filter(Boolean))];
-      const targetRecord = getCitizenHousingRecords(citizen).find((record) => record.storageUnits.some((unit) => destinationIds.includes(unit.id))) || null;
+      const targetRecord = getCitizenHousingRecords(citizen).find((record) => (record.storageUnits || []).some((unit) => destinationIds.includes(unit.id))) || null;
       const selected = getMarketSelectedOrderId(citizen.id) === order.marketOrderId;
       const actionState = window.WS_APP.getMarketOrderActionState?.(order) || { canRetryCheckout: false, canConfirmPickup: false, canRetryPickup: false, canCancel: false, canRetryCancellation: false, canRequestRefund: false, canExecuteRefund: false, canRetryRefund: false, canWithdrawRefundRequest: false, refundBlockers: [] };
       const itemCount = (order.lines || []).reduce((sum, line) => sum + Number(line.quantity || 0), 0);
+      const summary = getCanonicalMarketWorkspaceOrderSummary(order, citizen);
       return `
         <article class="housing-market-order-card is-${escapeHtml(status.toLowerCase().replace(/_/g, "-"))} ${selected ? "is-expanded" : ""}" data-market-order-card="${escapeHtml(order.marketOrderId)}">
           <header class="housing-market-order-card-head">
             <div>
-              <p class="kicker">${escapeHtml(formatCanonicalMarketOrderStatus(order))}</p>
+              <p class="kicker">${escapeHtml(summary.status)}</p>
               <h6>${escapeHtml(order.marketOrderId)}</h6>
               <small>${escapeHtml(`${itemCount} ITEM${itemCount === 1 ? "" : "S"} / ${order.vendorProviderId || "UNKNOWN VENDOR"}`)}</small>
             </div>
@@ -1873,6 +1990,13 @@ window.WS_APP = window.WS_APP || {};
               <small>${escapeHtml(order.paymentStatus || "UNKNOWN")}</small>
             </div>
           </header>
+          <div class="housing-market-order-progress" aria-label="Order fulfillment summary">
+            <span><small>STATUS</small><b>${escapeHtml(summary.status)}</b></span>
+            <span><small>${summary.delivered ? "DELIVERED AT" : "ETA"}</small><b>${escapeHtml((summary.delivered ? summary.completedAt : summary.etaAt) ? formatIsoLabel(summary.delivered ? summary.completedAt : summary.etaAt) : "NONE")}</b></span>
+            <span><small>TIME REMAINING</small><b>${escapeHtml(summary.remaining)}</b></span>
+            <span><small>FULFILLMENT</small><b>${escapeHtml(summary.fulfillment)}</b></span>
+            <span><small>DESTINATION</small><b>${escapeHtml(summary.destination)}</b></span>
+          </div>
           ${renderCanonicalMarketOrderLines(order)}
           <footer class="housing-market-order-card-actions">
             <span class="module-status-badge">${escapeHtml(formatIsoLabel(order.completedAt || order.createdAt))}</span>
@@ -1888,26 +2012,36 @@ window.WS_APP = window.WS_APP || {};
 
   function renderMarketOrderPanel(citizen = {}, requestedView = "") {
       const canonicalOrders = getCanonicalMarketWorkspaceOrders(citizen);
-      const canonicalActive = canonicalOrders.filter(isCanonicalMarketWorkspaceOrderActive);
-      const canonicalHistory = canonicalOrders.filter((order) => !isCanonicalMarketWorkspaceOrderActive(order));
+      const ordered = canonicalOrders.filter((order) => !isCanonicalMarketWorkspaceOrderDelivered(order));
+      const delivered = canonicalOrders.filter(isCanonicalMarketWorkspaceOrderDelivered);
       const activeView = normalizeMarketWorkspaceOrderView(requestedView || getMarketWorkspaceOrderView(citizen.id));
-      const visibleCanonical = activeView === "ACTIVE" ? canonicalActive : canonicalHistory;
+      const visibleCanonical = activeView === "DELIVERED" ? delivered : ordered;
+      const inTransit = ordered.filter((order) => ["PACKED", "IN_TRANSIT", "PREPARING"].includes(String((window.WS_APP.getMarketOrderShipment?.(order) || {}).status || order.deliveryFulfillment?.status || "").trim().toUpperCase())).length;
+      const attention = ordered.filter((order) => {
+        const shipmentStatus = String((window.WS_APP.getMarketOrderShipment?.(order) || {}).status || order.deliveryFulfillment?.status || "").trim().toUpperCase();
+        const refundStatus = String(order.refundRequest?.status || "").trim().toUpperCase();
+        return ["HELD", "RECOVERY_REQUIRED", "FAILED", "CANCELLED", "PAYMENT_RECOVERY_REQUIRED"].includes(shipmentStatus)
+          || ["FAILED", "CANCELLED", "PAYMENT_RECOVERY_REQUIRED"].includes(String(order.status || "").trim().toUpperCase())
+          || ["REQUESTED", "PROCESSING", "RECOVERY_REQUIRED"].includes(refundStatus);
+      }).length;
       return `
         <section class="housing-module-panel housing-shipment-panel housing-market-orders-panel">
           <header class="housing-module-panel-head">
             <div><p class="kicker">MARKET ORDER LEDGER</p><h5>Orders / Payment / Fulfillment</h5></div>
           </header>
           <div class="housing-market-summary housing-shipment-summary">
-            ${renderMarketMetric("ACTIVE", canonicalActive.length)}
-            ${renderMarketMetric("REFUND REQUESTS", canonicalOrders.filter((order) => order.refundRequest?.status === "REQUESTED").length)}
-            ${renderMarketMetric("RECOVERY REQUIRED", canonicalOrders.filter((order) => String(order.deliveryFulfillment?.status || "").toUpperCase() === "RECOVERY_REQUIRED" || String(order.refundRequest?.status || "").toUpperCase() === "RECOVERY_REQUIRED").length)}
-            ${renderMarketMetric("COMPLETED", canonicalOrders.filter((order) => order.status === "COMPLETED").length)}
-            ${renderMarketMetric("FAILED / CANCELLED", canonicalOrders.filter((order) => ["FAILED", "CANCELLED"].includes(order.status)).length)}
-            ${renderMarketMetric("TOTAL ORDERS", canonicalOrders.length)}
+            ${renderMarketMetric("ORDERED", ordered.length)}
+            ${renderMarketMetric("IN TRANSIT", inTransit)}
+            ${renderMarketMetric("ATTENTION", attention)}
+            ${renderMarketMetric("DELIVERED", delivered.length)}
+          </div>
+          <div class="housing-market-order-view-tabs system-inline-tabs" role="tablist" aria-label="Market order views">
+            <button class="housing-inline-action ${activeView === "ORDERED" ? "is-active" : ""}" type="button" role="tab" aria-selected="${activeView === "ORDERED" ? "true" : "false"}" data-housing-market-order-view="ORDERED">ORDERED <small>${escapeHtml(ordered.length)}</small></button>
+            <button class="housing-inline-action ${activeView === "DELIVERED" ? "is-active" : ""}" type="button" role="tab" aria-selected="${activeView === "DELIVERED" ? "true" : "false"}" data-housing-market-order-view="DELIVERED">DELIVERED <small>${escapeHtml(delivered.length)}</small></button>
           </div>
           <div class="housing-market-order-shell">
             <section>
-              <header><p class="kicker">CANONICAL ORDERS</p><h6>${escapeHtml(activeView === "ACTIVE" ? "Active / Recovery / Refund Requests" : "Completed / Failed / Cancelled")}</h6></header>
+              <header><p class="kicker">CANONICAL ORDERS</p><h6>${escapeHtml(activeView === "DELIVERED" ? "Delivered / Picked Up / Service Completed" : "Ordered / In Transit / Recovery / Closed Undelivered")}</h6></header>
               <div class="housing-market-order-list">
                 ${visibleCanonical.map((order) => renderCanonicalHousingMarketOrderCard(order, citizen)).join("")}
                 ${!visibleCanonical.length ? `<p class="file-empty">No canonical orders in this view.</p>` : ""}
@@ -1959,14 +2093,14 @@ window.WS_APP = window.WS_APP || {};
         .map((listing) => window.WS_APP.projectMarketSecondaryListing?.(listing) || listing)
         .filter(Boolean);
       const canonicalOrders = getCanonicalMarketWorkspaceOrders(latest);
-      const activeOrders = canonicalOrders.filter(isCanonicalMarketWorkspaceOrderActive).length;
-      const deliveredOrders = canonicalOrders.filter((order) => !isCanonicalMarketWorkspaceOrderActive(order)).length;
+      const orderedOrders = canonicalOrders.filter((order) => !isCanonicalMarketWorkspaceOrderDelivered(order)).length;
+      const deliveredOrders = canonicalOrders.filter(isCanonicalMarketWorkspaceOrderDelivered).length;
       const cartContext = getMarketWorkspaceCartContext(latest.id);
       const stats = {
         total: catalogItems.length,
         visible: visibleItems.length,
         secondaryActive: secondaryListings.length,
-        activeOrders,
+        orderedOrders,
         deliveredOrders
       };
       pagination.totalItems = visibleItems.length;
@@ -1996,7 +2130,7 @@ window.WS_APP = window.WS_APP || {};
             ${renderMarketWorkspaceCatalog(pageItems, latest, unit, filters, filterOptions, pagination)}
           ` : activeMode === "SECONDARY"
             ? renderMarketSecondaryWorkspace(secondaryListings)
-            : renderMarketOrderPanel(latest, activeMode === "DELIVERED" ? "HISTORY" : "ACTIVE")}
+            : renderMarketOrderPanel(latest, getMarketWorkspaceOrderView(latest.id))}
           ${renderMarketWorkspaceCartDrawer(latest, activeRecord, unit)}
           ${renderMarketWorkspaceWishlistDrawer(latest, unit)}
           ${renderMarketWorkspaceProductInspectorLayer()}
@@ -2093,9 +2227,17 @@ window.WS_APP = window.WS_APP || {};
         closeMarketWorkspaceCart(root, citizenId);
         return true;
       }
-      if (getMarketWorkspaceMode(citizenId) !== "CATALOG") {
+      const currentMode = getMarketWorkspaceMode(citizenId);
+      if (currentMode === "ORDERS" && getMarketWorkspaceOrderView(citizenId) === "DELIVERED") {
+        setMarketWorkspaceOrderView(citizenId, "ORDERED");
+        setMarketSelectedOrderId(citizenId, "");
+        setMarketFeedback(citizenId, "");
+        renderMarketModule(user);
+        return true;
+      }
+      if (currentMode !== "CATALOG") {
         setMarketWorkspaceMode(citizenId, "CATALOG");
-        setMarketWorkspaceOrderView(citizenId, "ACTIVE");
+        setMarketWorkspaceOrderView(citizenId, "ORDERED");
         setMarketSelectedOrderId(citizenId, "");
         setMarketFeedback(citizenId, "");
         renderMarketModule(user);
@@ -2114,22 +2256,31 @@ window.WS_APP = window.WS_APP || {};
               const nextMode = normalizeMarketWorkspaceMode(String(marketModeButton.getAttribute("data-housing-market-mode") || "CATALOG"));
               setMarketWorkspaceMode(citizenId, nextMode);
               setMarketWorkspaceSelectedProductId(citizenId, "");
-              if (nextMode === "ORDERS") setMarketWorkspaceOrderView(citizenId, "ACTIVE");
-              if (nextMode === "DELIVERED") setMarketWorkspaceOrderView(citizenId, "HISTORY");
+              if (nextMode === "ORDERS") setMarketWorkspaceOrderView(citizenId, "ORDERED");
               setMarketWorkspaceTab(citizenId, "MARKET");
               setMarketFeedback(citizenId, "");
               renderMarketModule(user);
               return true;
             }
       
+      const marketOrderViewButton = event.target.closest?.("[data-housing-market-order-view]");
+
+      if (marketOrderViewButton) {
+              setMarketWorkspaceOrderView(citizenId, String(marketOrderViewButton.getAttribute("data-housing-market-order-view") || "ORDERED"));
+              setMarketWorkspaceMode(citizenId, "ORDERS");
+              setMarketSelectedOrderId(citizenId, "");
+              setMarketFeedback(citizenId, "");
+              renderMarketModule(user);
+              return true;
+            }
+
       const marketOrderToggleButton = event.target.closest?.("[data-housing-market-order-toggle]");
       
       if (marketOrderToggleButton) {
               const orderId = String(marketOrderToggleButton.getAttribute("data-housing-market-order-toggle") || "");
               setMarketSelectedOrderId(citizenId, getMarketSelectedOrderId(citizenId) === orderId ? "" : orderId);
               setMarketWorkspaceTab(citizenId, "MARKET");
-              const currentMode = getMarketWorkspaceMode(citizenId);
-              setMarketWorkspaceMode(citizenId, currentMode === "DELIVERED" ? "DELIVERED" : "ORDERS");
+              setMarketWorkspaceMode(citizenId, "ORDERS");
               setMarketFeedback(citizenId, "");
               renderMarketModule(user);
               return true;
@@ -2151,7 +2302,7 @@ window.WS_APP = window.WS_APP || {};
           expectedRevision: shipment?.revision,
           idempotencyKey: `admin-market-delivery:${shipmentId}:${shipment?.revision || 0}`
         }) || { ok: false, reason: "MARKET_DELIVERY_ADMIN_API_UNAVAILABLE" };
-        syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "HISTORY" : "ACTIVE");
+        syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "DELIVERED" : "ORDERED");
         setMarketFeedback(citizenId, result.ok ? "Shipment delivered through the canonical delivery resolver." : `Admin delivery result: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
         renderMarketModule(user);
         return true;
@@ -2162,7 +2313,7 @@ window.WS_APP = window.WS_APP || {};
         const shipmentId = String(marketShipmentAdminRetryButton.getAttribute("data-housing-market-shipment-admin-retry") || "");
         const shipment = window.WS_APP.getMarketShipment?.(shipmentId);
         const result = window.WS_APP.retryMarketShipmentDelivery?.(shipmentId, { expectedRevision: shipment?.revision, force: true }) || { ok: false, reason: "MARKET_DELIVERY_RETRY_API_UNAVAILABLE" };
-        syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "HISTORY" : "ACTIVE");
+        syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "DELIVERED" : "ORDERED");
         setMarketFeedback(citizenId, result.ok ? "Shipment delivery recovery completed." : `Delivery retry result: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
         renderMarketModule(user);
         return true;
@@ -2173,7 +2324,7 @@ window.WS_APP = window.WS_APP || {};
         const shipmentId = String(marketShipmentAdminReconcileButton.getAttribute("data-housing-market-shipment-admin-reconcile") || "");
         const shipment = window.WS_APP.getMarketShipment?.(shipmentId);
         const result = window.WS_APP.reconcileMarketShipment?.(shipmentId, { expectedRevision: shipment?.revision, retryHeld: true }) || { ok: false, reason: "MARKET_DELIVERY_RECONCILE_API_UNAVAILABLE" };
-        syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "HISTORY" : "ACTIVE");
+        syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "DELIVERED" : "ORDERED");
         setMarketFeedback(citizenId, result.ok ? "Shipment reconciliation completed." : `Shipment reconciliation result: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
         renderMarketModule(user);
         return true;
@@ -2188,7 +2339,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 idempotencyKey: order?.pickupFulfillment?.completionIdempotencyKey || `market-pickup-complete:${orderId}`
               }) || { ok: false, reason: "MARKET_PICKUP_CONFIRM_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "DELIVERED" : "ORDERED");
               setMarketFeedback(citizenId, result.ok ? "Pickup confirmed. Purchased ItemInstance records moved from vendor custody to Citizen custody." : `Pickup confirmation failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2203,7 +2354,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 idempotencyKey: order?.pickupFulfillment?.completionIdempotencyKey
               }) || { ok: false, reason: "MARKET_PICKUP_RETRY_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.ok ? "DELIVERED" : "ORDERED");
               setMarketFeedback(citizenId, result.ok ? "Pickup recovery completed without duplicate ItemInstance records." : `Pickup recovery failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2218,7 +2369,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 paymentSource: "CREDITS"
               }) || { ok: false, reason: "MARKET_ORDER_CHECKOUT_RETRY_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceMode(citizenId) === "DELIVERED" ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceOrderView(citizenId));
               setMarketFeedback(citizenId, result.ok ? "Market checkout resumed without creating duplicate payment or ItemInstance records." : `Checkout retry failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2234,7 +2385,7 @@ window.WS_APP = window.WS_APP || {};
                 reasonCode: order?.cancellation?.reasonCode || "USER_REQUEST",
                 idempotencyKey: `market-order-cancel-retry:${orderId}:${order?.revision || 0}`
               }) || { ok: false, reason: "MARKET_ORDER_CANCELLATION_RETRY_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceMode(citizenId) === "DELIVERED" ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceOrderView(citizenId));
               setMarketFeedback(citizenId, result.ok ? "Market order cancellation recovery completed." : `Cancellation recovery failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2251,7 +2402,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 idempotencyKey: `market-order-cancel:${orderId}:${order?.revision || 0}`
               }) || { ok: false, reason: "MARKET_ORDER_CANCEL_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceMode(citizenId) === "DELIVERED" ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceOrderView(citizenId));
               setMarketFeedback(citizenId, result.ok ? "Market order cancelled. Reservations and pending payment were released." : `Cancellation failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2276,7 +2427,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 idempotencyKey: `market-order-partial-return-request:${orderId}:${instanceIds.join(":")}:${order?.revision || 0}`
               }) || { ok: false, reason: "MARKET_PARTIAL_RETURN_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, "ORDERED");
               setMarketFeedback(citizenId, result.ok ? `Partial return requested for ${instanceIds.length} unit${instanceIds.length === 1 ? "" : "s"}.` : `Partial return blocked: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2292,7 +2443,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 idempotencyKey: `market-order-partial-return-execute:${orderId}:${partialReturnId}:${order?.revision || 0}`
               }) || { ok: false, reason: "MARKET_PARTIAL_RETURN_EXECUTION_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.order?.status === "REFUNDED" ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.order?.status === "REFUNDED" ? "DELIVERED" : "ORDERED");
               setMarketFeedback(citizenId, result.ok ? "Selected units returned and the proportional Billing refund completed." : `Partial refund failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2305,7 +2456,7 @@ window.WS_APP = window.WS_APP || {};
               const orderId = String(marketOrderPartialReturnRetryButton.closest?.("[data-market-order-card]")?.getAttribute?.("data-market-order-card") || "");
               const order = window.WS_APP.getMarketOrder?.(orderId);
               const result = window.WS_APP.retryMarketOrderPartialReturn?.(orderId, partialReturnId, { expectedRevision: order?.revision }) || { ok: false, reason: "MARKET_PARTIAL_RETURN_RETRY_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.order?.status === "REFUNDED" ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, result?.order?.status === "REFUNDED" ? "DELIVERED" : "ORDERED");
               setMarketFeedback(citizenId, result.ok ? "Partial refund recovery completed without duplicate stock, item or Billing mutations." : `Partial refund recovery failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2321,7 +2472,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 idempotencyKey: `market-order-partial-return-withdraw:${orderId}:${partialReturnId}:${order?.revision || 0}`
               }) || { ok: false, reason: "MARKET_PARTIAL_RETURN_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, "HISTORY");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, "DELIVERED");
               setMarketFeedback(citizenId, result.ok ? "Partial return request withdrawn." : `Partial return update failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2338,7 +2489,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 idempotencyKey: `market-order-refund-request:${orderId}:${order?.revision || 0}`
               }) || { ok: false, reason: "MARKET_ORDER_REFUND_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, "ORDERED");
               setMarketFeedback(citizenId, result.ok ? "Refund request recorded. Item return and Billing refund remain pending." : `Refund request blocked: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2355,7 +2506,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 idempotencyKey: `market-order-refund-execute:${orderId}:${order?.revision || 0}`
               }) || { ok: false, reason: "MARKET_ORDER_REFUND_EXECUTION_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceMode(citizenId) === "DELIVERED" ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceOrderView(citizenId));
               setMarketFeedback(citizenId, result.ok ? "Item return and Billing refund completed through the canonical transaction boundary." : `Refund execution failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2369,7 +2520,7 @@ window.WS_APP = window.WS_APP || {};
               const result = window.WS_APP.retryMarketOrderRefund?.(orderId, {
                 expectedRevision: order?.revision
               }) || { ok: false, reason: "MARKET_ORDER_REFUND_RETRY_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceMode(citizenId) === "DELIVERED" ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceOrderView(citizenId));
               setMarketFeedback(citizenId, result.ok ? "Refund recovery completed without duplicating ItemInstance or Billing records." : `Refund recovery failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2384,7 +2535,7 @@ window.WS_APP = window.WS_APP || {};
                 expectedRevision: order?.revision,
                 idempotencyKey: `market-order-refund-withdraw:${orderId}:${order?.revision || 0}`
               }) || { ok: false, reason: "MARKET_ORDER_REFUND_API_UNAVAILABLE" };
-              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceMode(citizenId) === "DELIVERED" ? "HISTORY" : "ACTIVE");
+              syncMarketWorkspaceModeToOrder(citizenId, result?.order || null, getMarketWorkspaceOrderView(citizenId));
               setMarketFeedback(citizenId, result.ok ? "Refund request withdrawn." : `Refund request update failed: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
               renderMarketModule(user);
               return true;
@@ -2624,6 +2775,18 @@ window.WS_APP = window.WS_APP || {};
               return true;
             }
       
+      const addSecondaryListingButton = event.target.closest?.("[data-housing-market-add-secondary-listing]");
+
+      if (addSecondaryListingButton) {
+              const latestCitizen = window.WS_APP.getCitizenById?.(citizenId) || { id: citizenId };
+              const { unit } = getHousingActiveStorageTarget(latestCitizen);
+              const listingId = String(addSecondaryListingButton.getAttribute("data-housing-market-add-secondary-listing") || "");
+              const result = addMarketWorkspaceSecondaryListingToCart(latestCitizen, listingId, unit);
+              setMarketFeedback(citizenId, result.ok ? "Concrete secondary ItemInstance added to the Market delivery cart." : `Secondary purchase blocked: ${String(result.reason || "UNKNOWN").replace(/_/g, " ")}.`, result.ok ? "OK" : "ERROR");
+              renderMarketModule(user);
+              return true;
+            }
+
       const addOfferButton = event.target.closest?.("[data-housing-market-add-offer]");
       
       if (addOfferButton) {
@@ -2702,7 +2865,7 @@ window.WS_APP = window.WS_APP || {};
               }) : { ok: false, reason: "MARKET_CART_NOT_FOUND" };
               if (result?.ok) {
                 setMarketWorkspaceCartOpen(citizenId, false);
-                setMarketWorkspaceOrderView(citizenId, "ACTIVE");
+                setMarketWorkspaceOrderView(citizenId, "ORDERED");
                 setMarketWorkspaceMode(citizenId, "ORDERS");
                 const operation = String(result.operation || "").toUpperCase();
                 const servicePending = ["SERVICE_PENDING", "SERVICE_PENDING_REPLAY"].includes(operation);
@@ -2764,6 +2927,7 @@ window.WS_APP = window.WS_APP || {};
       getMarketWorkspaceCatalogItemById,
       getMarketWorkspaceItemTokens,
       hasMarketWorkspaceItemToken,
+      getMarketWorkspaceCatalogDomain,
       getMarketWorkspaceDepartment,
       getMarketWorkspaceSubcategory,
       getMarketWorkspaceItemType,
@@ -2799,6 +2963,7 @@ window.WS_APP = window.WS_APP || {};
       getMarketWorkspaceCartContext,
       getMarketWorkspaceAvailability,
       addMarketWorkspaceOfferToCart,
+      addMarketWorkspaceSecondaryListingToCart,
       addMarketWorkspaceOfferForPickupToCart,
       addMarketWorkspaceOfferWithServiceToCart,
       updateMarketWorkspaceCartQuantity,
@@ -2836,6 +3001,10 @@ window.WS_APP = window.WS_APP || {};
       renderMarketWorkspaceCartDrawer,
       getCanonicalMarketWorkspaceOrders,
       isCanonicalMarketWorkspaceOrderActive,
+      isCanonicalMarketWorkspaceOrderDelivered,
+      getMarketWorkspaceCampaignTimeIso,
+      formatMarketWorkspaceTimeRemaining,
+      getCanonicalMarketWorkspaceOrderSummary,
       getCanonicalMarketWorkspaceOrderProductName,
       formatCanonicalMarketOrderStatus,
       renderCanonicalMarketOrderLines,

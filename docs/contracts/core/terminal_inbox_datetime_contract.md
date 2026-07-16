@@ -18,12 +18,12 @@ Campaign Time Event Windows
 
 Terminal Inbox does not own Campaign Time and does not advance it.
 
-## Notification record v3
+## Notification record v4
 
 Every normalized Terminal Inbox entry uses:
 
 ```text
-schemaVersion: 3
+schemaVersion: 4
 occurredAt
 createdAt
 sentAt
@@ -74,7 +74,8 @@ YYYY-MM-DD
 → YYYY-MM-DDT00:00:00.000Z
 ```
 
-The migration preserves `id`, `citizenId`, revision, event identity, folder and user flags. Normalized v3 records are written back to `ws_app_terminal_entries_v1` on first store read.
+The migration preserves `id`, `citizenId`, revision, event identity, folder and user flags. Normalized v4 records are written back to `ws_app_terminal_entries_v1` on first store read.
+The same migration also canonicalizes `domain`, `category`, `eventCode`, lifecycle and actions. Legacy `type`, `subtype` and `links` are compatibility inputs only and are not consumed by Inbox filtering or card actions.
 
 ## Ordering and UI
 
@@ -152,7 +153,7 @@ Terminal Inbox does not persist a deferred queue. The owning domain may keep the
 
 ## Campaign Data I/O
 
-`ws_app_terminal_entries_v1` remains the sole persisted Inbox key and is exported/imported by Campaign Snapshot v6. Import uses the same normalizer and preserves stable IDs plus v3 timestamps.
+`ws_app_terminal_entries_v1` remains the sole persisted Inbox key and is exported/imported by Campaign Snapshot v6. Import uses the same normalizer and preserves stable IDs plus v4 canonical identity and timestamps.
 
 ## Ownership exclusions
 

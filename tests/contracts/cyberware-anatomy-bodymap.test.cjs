@@ -98,9 +98,9 @@ test("Cyberware module bundle loads anatomy registry, renderer and stylesheet be
   const end = modules.indexOf("  market: {", start);
   const block = modules.slice(start, end);
 
-  assert.match(block, /css\/cyberware-anatomy-bodymap\.css\?v=1/);
+  assert.match(block, /css\/cyberware-anatomy-bodymap\.css\?v=2/);
   assert.match(block, /data\/cyberware-bodymap-layouts\.js\?v=1/);
   assert.match(block, /js\/cyberware-anatomy-bodymap\.js\?v=1/);
   assert.ok(block.indexOf("data/cyberware-bodymap-layouts.js?v=1") < block.indexOf("js/cyberware-anatomy-bodymap.js?v=1"));
-  assert.ok(block.indexOf("js/cyberware-anatomy-bodymap.js?v=1") < block.indexOf("js/cyberware-workspace.js?v=3"));
+  assert.ok(block.indexOf("js/cyberware-anatomy-bodymap.js?v=1") < block.indexOf("js/cyberware-workspace.js?v=4"));
 });

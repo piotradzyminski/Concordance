@@ -41,18 +41,24 @@ js/cyberware-index.js
 
 js/cyberware-planner.js
   operation planning UI over the existing planner/domain API
-
-js/equipment-cyberware-link.js
-  Equipment-to-Cyberware navigation bridge only
 ```
 
-Equipment must not lazy-load the full Cyberware runtime, planner, Definition Index or workspace. Its bundle may load only `js/equipment-cyberware-link.js` as the navigation bridge.
+Equipment does not lazy-load the Cyberware runtime, planner, Definition Index, workspace or a navigation bridge. Cross-module navigation uses the canonical module router and the public Cyberware API owned by the standalone Cyberware module.
 
-## Shared presentation helpers
+## Presentation boundary
 
-The Cyberware bundle may reuse `css/equipment.css`, `js/equipment-render-utils.js` and `js/equipment-items-panel.js` for existing neutral presentation helpers such as ItemInstance rename controls. This does not transfer Equipment domain ownership to Cyberware and does not create shared UI state.
+```text
+Equipment bundle
+  css/equipment.css
 
-A later stylesheet extraction may move Cyberware selectors from `css/equipment.css` into a dedicated Cyberware stylesheet. That cleanup is not required for the module boundary.
+Cyberware bundle
+  css/cyberware.css
+  css/cyberware-anatomy-bodymap.css
+```
+
+`css/equipment.css` contains no Cyberware selectors and the Cyberware bundle does not load it. `css/cyberware.css` owns all Cyberware domain selectors plus a bounded copy of the neutral Equipment UI primitives still used by Cyberware markup, including shell panels, badges, selects and the definition-index drawer. This presentation reuse does not create shared UI state or transfer domain ownership.
+
+The Cyberware bundle may continue to reuse `js/equipment-render-utils.js` and `js/equipment-items-panel.js` for neutral rendering helpers. Those files do not own Cyberware persistence, selection or workspace state.
 
 ## Public navigation API
 
@@ -65,7 +71,7 @@ openCyberwareMaintenance()
 openCyberwareIndex()
 ```
 
-Equipment integrations use `openCyberwareFromEquipment()` and never switch an Equipment workspace to `CYBERWARE`.
+Equipment integrations use the canonical module router or the public standalone Cyberware API and never switch an Equipment workspace to `CYBERWARE`.
 
 ## Deep links
 
@@ -80,7 +86,7 @@ params.operationId
 params.cyberwareView
 ```
 
-Legacy persisted Equipment workspace value `CYBERWARE` normalizes to `CYBERGRID`.
+The retired Equipment workspace compatibility state and the `openEquipmentWorkspace` alias do not exist.
 
 ## State ownership
 

@@ -27,6 +27,9 @@ patch_housing_notification_events_2.6x.zip
 CURRENT DATETIME PATCH:
 patch_terminal_inbox_datetime_1.0x.zip
 
+CURRENT CANONICAL INBOX MODEL PATCH:
+patch_terminal_inbox_canonical_model_3.0x.zip
+
 BASE USED FOR 2.1x:
 World Bridge Prerequisites Merge 9.0x
 Equipment Bodymap Anchor Layout 1.1x
@@ -79,7 +82,10 @@ TerminalNotifications API
 = validation, content projection, emission, deduplication, lifecycle and write orchestration
 
 Terminal entry store in js/store.js
-= persistence, migration, per-citizen retention and legacy Inbox compatibility
+= persistence, per-citizen retention and the single legacy-to-canonical Inbox adapter
+
+Terminal Inbox UI
+= read-only consumer of canonical notification fields; it does not infer identity from legacy type/subtype/tags
 ```
 
 Provider capability records must not duplicate organization names, organization type, organization locations or addresses.
@@ -203,17 +209,20 @@ SUPPRESSED_BY_POLICY
 
 ---
 
-# 5. Notification record v3
+# 5. Notification record v4
 
-The store preserves the following bridge fields:
+Every persisted and newly emitted Inbox entry is normalized to:
 
 ```text
-schemaVersion
+schemaVersion: 4
+id
 eventId
+citizenId
 domain
-eventCode
 category
+eventCode
 source
+severity
 attention
 audience
 lifecycle
@@ -223,6 +232,7 @@ relatedRefs
 correlationId
 dedupeKey
 revision
+title
 summary
 body
 templateId
@@ -238,36 +248,59 @@ expiresAt
 actions
 retentionPolicy
 aggregationPolicy
-```
-
-
-Datetime semantics and skipped-interval emission are defined by:
-
-```text
-docs/contracts/core/terminal_inbox_datetime_contract.md
-```
-
-Legacy fields remain available for the current Terminal UI:
-
-```text
-type
-subtype
-severity
-title
 layout
 panels
 finalRows
 tags
-links
+date
+sortIndex
 read
 important
 folder
+```
+
+Canonical classification is:
+
+```text
+domain
+category
+eventCode
+lifecycle.status
+severity
+tags
+```
+
+The player Inbox filters only these fields. Supported filter scopes are:
+
+```text
+DOMAIN
+CATEGORY
+EVENT
+STATUS
+SEVERITY
+TAG
+```
+
+Compatibility fields remain serialized temporarily for non-Inbox call-sites and import compatibility:
+
+```text
+type
+subtype
+links
 createdBy
 ```
 
-The current Inbox renderer remains compatible without a UI redesign.
+They are not interpreted by the Inbox renderer or filter UI. `actions` is the sole action projection consumed by the card renderer.
 
----
+Legacy records are normalized once on store read. The adapter:
+
+- resolves an exact Notification Event Catalog identity when `eventCode` is known;
+- otherwise derives a stable namespaced event code from legacy domain/type and subtype;
+- derives one canonical category inside the store adapter;
+- converts legacy `links[]` to canonical `actions[]`;
+- writes schema v4 back to `ws_app_terminal_entries_v1`;
+- remains idempotent on later reads.
+
 
 # 6. Audience
 

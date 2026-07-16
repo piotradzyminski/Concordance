@@ -52,10 +52,13 @@ window.WS_APP.bindModuleBackButton = function bindModuleBackButton(user, fallbac
 };
 
 const CYBERWARE_CATALOG_DATA_SCRIPTS = [
+  "data/cyberware-taxonomy.js?v=1",
+  "js/cyberware-taxonomy.js?v=1",
   "data/neurochip-catalog.js?v=3",
   "data/interface-catalog.js?v=3",
   "data/service-port-catalog.js?v=3",
   "data/body-cyberware-catalog.js?v=3",
+  "js/cyberware-taxonomy-migration.js?v=1",
   "data/cyberware-upgrade-catalog.js?v=1"
 ];
 
@@ -63,7 +66,7 @@ const CYBERWARE_CATALOG_DATA_SCRIPTS = [
 // excludes Cyberware UI, diagnostics, maintenance, operations and controller code.
 const CYBERWARE_MARKET_PROJECTION_SCRIPTS = [
   ...CYBERWARE_CATALOG_DATA_SCRIPTS,
-  "js/cyberware-store.js?v=10",
+  "js/cyberware-store.js?v=11",
   "js/cyberware-rules.js?v=7",
   "js/subscription-entitlement.js?v=8",
   "js/cyberware-bodymap-panel.js?v=2",
@@ -71,12 +74,29 @@ const CYBERWARE_MARKET_PROJECTION_SCRIPTS = [
   "js/cyberware-market-projection.js?v=1"
 ];
 
-// Full Cyberware domain and UI runtime. The standalone Cyberware module and
-// Citizen record views use this bundle; Equipment loads only a navigation bridge.
+// Citizen Card owns a small read-only projection boundary. It consumes eager
+// Citizen, ItemInstance, Equipment Catalog, finance and entitlement APIs without
+// loading Equipment, Subscriptions or Cyberware operational UI controllers.
+const CITIZEN_CARD_PROJECTION_SCRIPTS = [
+  "js/citizen-card-equipment-projection.js?v=1",
+  "js/citizen-card-subscription-projection.js?v=1",
+  "js/citizen-card-cyberware-projection.js?v=1"
+];
+
+// Shared Citizen Card detail boundary. The GM registry renderer is intentionally
+// excluded so player cards and Citizen Files do not load registry-only code.
+const CITIZEN_CARD_RENDERER_SCRIPTS = [
+  ...CITIZEN_CARD_PROJECTION_SCRIPTS,
+  "js/citizen-card-renderers.js?v=1",
+  "js/citizen-card-shell.js?v=3"
+];
+
+// Full Cyberware domain and UI runtime. Only the standalone Cyberware module
+// loads diagnostics, maintenance, operations and controller code.
 const CYBERWARE_UI_RUNTIME_SCRIPTS = [
   ...CYBERWARE_CATALOG_DATA_SCRIPTS,
   "data/firmware-registry.js?v=1",
-  "js/cyberware-store.js?v=10",
+  "js/cyberware-store.js?v=11",
   "js/cyberware-rules.js?v=7",
   "js/subscription-entitlement.js?v=8",
   "js/firmware-registry.js?v=1",
@@ -98,12 +118,12 @@ const MODULE_BUNDLES = {
   "terminal-hub": {
     styles: [
       "css/terminal-module.css?v=4",
-      "css/billing.css?v=11",
+      "css/billing.css?v=12",
       "css/terminal-calendar.css?v=5"
     ],
     scripts: [
-      "js/billing.js?v=15",
-      "js/terminal-module.js?v=11"
+      "js/billing.js?v=16",
+      "js/terminal-module.js?v=15"
     ]
   },
   subscriptions: {
@@ -112,16 +132,16 @@ const MODULE_BUNDLES = {
       "css/subscriptions.css?v=21"
     ],
     scripts: [
-      "data/subscription-catalog.js?v=13",
+      "data/subscription-catalog.js?v=15",
       "data/subscription-bridge-fixtures.js?v=1",
       "js/subscription-entitlement.js?v=8",
-      "js/subscription-catalog-store.js?v=8",
+      "js/subscription-catalog-store.js?v=10",
       "js/subscription-api.js?v=6",
       "js/coverage-resolver.js?v=2",
       "js/subscription-notification-producer.js?v=1",
       "js/subscription-bridge-readiness.js?v=2",
       "js/subscription-action-feedback.js?v=1",
-      "js/subscriptions.js?v=35",
+      "js/subscriptions.js?v=36",
       "js/subscriptions-workspace.js?v=7"
     ]
   },
@@ -138,37 +158,35 @@ const MODULE_BUNDLES = {
     ]
   },
   "service-income": {
-    styles: ["css/billing.css?v=11"],
-    scripts: ["js/billing.js?v=15"]
+    styles: ["css/billing.css?v=12"],
+    scripts: ["js/billing.js?v=16"]
   },
   equipment: {
     styles: [
-      "css/equipment.css?v=129"
+      "css/equipment.css?v=132"
     ],
     scripts: [
       "data/item-type-catalog.js?v=5",
       "js/item-type-registry.js?v=2",
       "js/item-type-operations-ui.js?v=3",
       "js/equipment-render-utils.js?v=1",
-      "js/equipment-store.js?v=35",
+      "js/equipment-store.js?v=36",
       "js/equipment-loadout-rules.js?v=6",
       "js/equipment-assignment.js?v=10",
       "js/equipment-inventory.js?v=20",
       "js/equipment-housing-grid.js?v=5",
-      "js/equipment-actions.js?v=57",
+      "js/equipment-actions.js?v=58",
       "js/equipment-items-panel.js?v=30",
       "js/equipment-body-regions-panel.js?v=11",
       "js/equipment-bodymap-panel.js?v=25",
       "js/equipment-containers-panel.js?v=39",
-      "js/equipment-cyberware-link.js?v=20",
-      "js/equipment.js?v=118"
+      "js/equipment.js?v=119"
     ]
   },
   cyberware: {
     styles: [
-      "css/equipment.css?v=129",
-      "css/cyberware.css?v=2",
-      "css/cyberware-anatomy-bodymap.css?v=1"
+      "css/cyberware.css?v=3",
+      "css/cyberware-anatomy-bodymap.css?v=2"
     ],
     scripts: [
       ...CYBERWARE_UI_RUNTIME_SCRIPTS,
@@ -178,23 +196,23 @@ const MODULE_BUNDLES = {
       "js/equipment-items-panel.js?v=30",
       "js/cyberware-index.js?v=2",
       "js/cyberware-planner.js?v=8",
-      "js/cyberware-workspace.js?v=3",
+      "js/cyberware-workspace.js?v=4",
       "js/cyberware-module.js?v=3"
     ]
   },
   market: {
-    styles: ["css/housing.css?v=38"],
+    styles: ["css/housing.css?v=40"],
     scripts: [
       ...CYBERWARE_MARKET_PROJECTION_SCRIPTS,
       "data/market-offers.js?v=4",
-      "js/market-store.js?v=13",
+      "js/market-store.js?v=14",
       "js/market-wishlist-store.js?v=1",
-      "js/market-workspace-runtime.js?v=3",
-      "js/market.js?v=4"
+      "js/market-workspace-runtime.js?v=6",
+      "js/market.js?v=5"
     ]
   },
   housing: {
-    styles: ["css/housing.css?v=38"],
+    styles: ["css/housing.css?v=40"],
     scripts: [
       "data/item-type-catalog.js?v=5",
       "data/equipment-catalog.js?v=28",
@@ -202,15 +220,15 @@ const MODULE_BUNDLES = {
       "js/item-type-registry.js?v=2",
       "js/equipment-catalog-store.js?v=15",
       "js/equipment-render-utils.js?v=1",
-      "js/equipment-store.js?v=34",
+      "js/equipment-store.js?v=36",
       "js/equipment-inventory.js?v=20",
       "js/equipment-housing-grid.js?v=5",
       "js/grid-pointer-session.js?v=3",
       "js/housing-grid-engine-adapter.js?v=4",
-      "js/housing-storage-runtime.js?v=3",
-      "js/housing-household-runtime.js?v=3",
+      "js/housing-storage-runtime.js?v=4",
+      "js/housing-household-runtime.js?v=4",
       "js/housing-household-hub.js?v=1",
-      "js/housing.js?v=53"
+      "js/housing.js?v=54"
     ]
   },
   database: {
@@ -218,54 +236,65 @@ const MODULE_BUNDLES = {
   },
   "citizen-card": {
     scripts: [
-      ...CYBERWARE_UI_RUNTIME_SCRIPTS,
-      "js/citizen-records.js?v=36"
+      ...CITIZEN_CARD_RENDERER_SCRIPTS,
+      "js/citizen-records.js?v=39"
     ]
   },
   "citizen-cards": {
     scripts: [
-      ...CYBERWARE_UI_RUNTIME_SCRIPTS,
-      "js/citizen-records.js?v=36"
+      ...CITIZEN_CARD_RENDERER_SCRIPTS,
+      "js/citizen-cards-registry.js?v=1",
+      "js/citizen-records.js?v=39"
     ]
   },
   "citizen-files": {
     scripts: [
-      ...CYBERWARE_UI_RUNTIME_SCRIPTS,
+      ...CITIZEN_CARD_RENDERER_SCRIPTS,
       "js/database.js?v=2",
-      "js/citizen-records.js?v=36",
-      "js/citizen-database.js?v=3"
+      "js/citizen-records.js?v=39",
+      "js/citizen-database.js?v=4"
     ]
   },
   "citizen-database": {
     scripts: [
-      ...CYBERWARE_UI_RUNTIME_SCRIPTS,
+      ...CITIZEN_CARD_RENDERER_SCRIPTS,
       "js/database.js?v=2",
-      "js/citizen-records.js?v=36",
-      "js/citizen-database.js?v=3"
+      "js/citizen-records.js?v=39",
+      "js/citizen-database.js?v=4"
     ]
   },
   "admin-control": {
-    styles: ["css/admin-control.css?v=34"],
+    styles: ["css/admin-control.css?v=35"],
     scripts: [
       "js/admin/admin-shell.js?v=1",
-      "js/admin/admin-workspace-registry.js?v=5",
+      "js/admin/admin-workspace-registry.js?v=6",
       "js/admin/admin-workspace-loader.js?v=2",
-      "js/admin-control.js?v=66",
+      "js/admin-control.js?v=68",
       "js/admin/workspaces/admin-workspace-dashboard.js?v=1"
     ]
   },
   "admin-workspace-operations": {
     scripts: [
       "js/admin-operations-command.js?v=1",
-      "js/admin/workspaces/admin-workspace-operations.js?v=1"
+      "js/admin/workspaces/admin-workspace-operations.js?v=2"
     ]
   },
   "admin-workspace-catalog-management": {
+    styles: ["css/admin-subscription-catalog-authoring.css?v=1"],
     scripts: [
       ...CYBERWARE_CATALOG_DATA_SCRIPTS,
       "js/admin-equipment-catalog-authoring.js?v=1",
-      "js/admin-catalog-management.js?v=2",
-      "js/admin/workspaces/admin-workspace-catalog-management.js?v=2"
+      "js/admin-subscription-catalog-authoring.js?v=1",
+      "js/admin-catalog-management.js?v=3",
+      "js/admin/workspaces/admin-workspace-catalog-management.js?v=3"
+    ]
+  },
+  "admin-workspace-cyberware-runtime": {
+    scripts: [
+      ...CYBERWARE_UI_RUNTIME_SCRIPTS,
+      "js/cyberware-planner.js?v=8",
+      "js/admin-cyberware-runtime-command.js?v=1",
+      "js/admin/workspaces/admin-workspace-cyberware-runtime.js?v=1"
     ]
   },
   "admin-workspace-citizens": {
@@ -275,7 +304,7 @@ const MODULE_BUNDLES = {
       "js/item-type-registry.js?v=2",
       "js/equipment-catalog-store.js?v=15",
       "js/equipment-render-utils.js?v=1",
-      "js/equipment-store.js?v=34",
+      "js/equipment-store.js?v=36",
       "js/equipment-inventory.js?v=20",
       "js/equipment-housing-grid.js?v=5",
       "js/admin/workspaces/admin-workspace-citizens.js?v=1"
@@ -1134,9 +1163,10 @@ async function renderModuleDirect(moduleId, user, module = getModuleDefinition(m
 
     if (moduleId === "housing") {
       const targetCitizenId = String(options.citizenId || "").trim();
-      const section = String(options.section || options.params?.housingTab || "").trim().toUpperCase();
+      const requestedSection = String(options.section || options.params?.housingTab || "").trim().toUpperCase();
+      const section = ["UNIT", "HISTORY"].includes(requestedSection) ? "OVERVIEW" : requestedSection === "COLLECTION" ? "STORAGE" : requestedSection;
       if (targetCitizenId) window.WS_APP.housingTargetCitizenId = targetCitizenId;
-      if (targetCitizenId && ["UNIT", "HOUSEHOLD", "STORAGE", "DELIVERIES"].includes(section)) {
+      if (targetCitizenId && ["OVERVIEW", "HOUSEHOLD", "STORAGE", "DELIVERIES"].includes(section)) {
         window.WS_APP.housingActiveTabByCitizen = window.WS_APP.housingActiveTabByCitizen || {};
         window.WS_APP.housingActiveTabByCitizen[targetCitizenId] = section;
       }
@@ -1307,51 +1337,6 @@ function renderRecordTagPills(record = {}) {
       ` : ""}
     </div>
   `;
-}
-
-function renderEntryInput(name, label, value = "", extraClass = "") {
-  return `
-    <label class="entry-form-field ${escapeHtml(extraClass)}">
-      ${escapeHtml(label)}
-      <input name="${escapeHtml(name)}" value="${escapeHtml(value)}" />
-    </label>
-  `;
-}
-
-function renderEntryTextarea(name, label, value = "", extraClass = "", rows = 4) {
-  return `
-    <label class="entry-form-field ${escapeHtml(extraClass)}">
-      ${escapeHtml(label)}
-      <textarea name="${escapeHtml(name)}" rows="${escapeHtml(rows)}">${escapeHtml(value)}</textarea>
-    </label>
-  `;
-}
-
-function renderEntrySelect(name, label, value = "PUBLIC") {
-  const levels = ["PUBLIC", "CIVIL", "RESTRICTED", "BLACK", "GM"];
-
-  return `
-    <label class="entry-form-field">
-      ${escapeHtml(label)}
-      <select name="${escapeHtml(name)}">
-        ${levels.map((level) => `<option value="${escapeHtml(level)}" ${level === value ? "selected" : ""}>${escapeHtml(level)}</option>`).join("")}
-      </select>
-    </label>
-  `;
-}
-
-function parseRegistryList(value) {
-  return String(value || "")
-    .split(/[\n,]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function normalizeRegistryQuery(value) {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function parseCreditValue(value) {

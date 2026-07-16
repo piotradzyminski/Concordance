@@ -139,6 +139,9 @@
 }
 
 .housing-inline-action {
+  width: auto;
+  max-width: 100%;
+  min-height: 30px;
   border: 1px solid rgba(143, 189, 180, 0.2);
   background: rgba(143, 189, 180, 0.045);
   color: var(--ok);
@@ -149,6 +152,7 @@
   padding: 7px 9px;
   text-align: center;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .housing-inline-action:hover,
@@ -676,18 +680,8 @@
   padding-top: 10px;
 }
 
-.housing-storage-organizer-panel {
-  overflow: hidden;
-}
-
-.housing-storage-organizer {
-  display: grid;
-  grid-template-columns: minmax(190px, 230px) minmax(320px, 1fr) minmax(260px, 330px);
-  align-items: stretch;
-}
 
 .housing-storage-filter-rail,
-.housing-storage-results,
 .housing-storage-inspector {
   min-width: 0;
 }
@@ -702,7 +696,6 @@
 }
 
 .housing-storage-filter-head,
-.housing-storage-results-head,
 .housing-storage-inspector-head {
   align-items: flex-start;
   display: flex;
@@ -711,7 +704,6 @@
 }
 
 .housing-storage-filter-head h5,
-.housing-storage-results-head h5,
 .housing-storage-inspector-head h5 {
   color: var(--text);
   margin: 2px 0 0;
@@ -794,25 +786,6 @@
   background: rgba(143, 189, 180, 0.075);
 }
 
-.housing-storage-results {
-  border-right: 1px solid rgba(143, 189, 180, 0.1);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.housing-storage-results-head {
-  border-bottom: 1px solid rgba(143, 189, 180, 0.1);
-  padding: 14px;
-}
-
-.housing-storage-result-list {
-  align-content: start;
-  display: grid;
-  gap: 8px;
-  max-height: 520px;
-  overflow: auto;
-  padding: 14px;
-}
 
 .housing-storage-list-row {
   align-items: stretch;
@@ -952,7 +925,6 @@
   .housing-record-grid,
   .housing-market-summary,
   .housing-storage-layout,
-  .housing-storage-organizer,
   .housing-storage-inspector-metrics,
   .housing-summary-grid,
   .housing-unit-status-rail,
@@ -2308,6 +2280,69 @@ body.housing-market-modal-open .screen.is-active {
   opacity: 0.62;
 }
 
+
+.housing-market-order-view-tabs {
+  border-bottom: 1px solid rgba(143, 189, 180, 0.1);
+  border-top: 1px solid rgba(143, 189, 180, 0.1);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 10px 14px;
+}
+
+.housing-market-order-view-tabs .housing-inline-action {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  min-height: 38px;
+}
+
+.housing-market-order-view-tabs .housing-inline-action small {
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: var(--tracking-wide);
+}
+
+.housing-market-order-view-tabs .housing-inline-action.is-active {
+  background: rgba(143, 189, 180, 0.075);
+  border-color: rgba(189, 237, 224, 0.48);
+  color: var(--text);
+}
+
+.housing-market-order-progress {
+  border-bottom: 1px solid rgba(143, 189, 180, 0.1);
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 10px 14px;
+}
+
+.housing-market-order-progress span {
+  background: rgba(143, 189, 180, 0.02);
+  border: 1px solid rgba(143, 189, 180, 0.08);
+  min-width: 0;
+  padding: 8px 9px;
+}
+
+.housing-market-order-progress small,
+.housing-market-order-progress b {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.housing-market-order-progress small {
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.housing-market-order-progress b {
+  color: var(--text);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
 .housing-market-order-shell {
   display: grid;
   gap: 12px;
@@ -2586,9 +2621,6 @@ body.housing-market-modal-open .screen.is-active {
   padding: 8px;
 }
 
-.housing-market-partial-return-line input {
-  accent-color: var(--accent);
-}
 
 .housing-market-partial-return-line span,
 .housing-market-partial-return-line small {
@@ -2812,6 +2844,7 @@ body.housing-market-modal-open .screen.is-active {
   .housing-market-cart-quote,
   .housing-market-cart-actions,
   .housing-market-order-detail-grid,
+  .housing-market-order-progress,
   .housing-market-order-workflow,
   .housing-market-partial-return-summary,
   .housing-market-partial-return-line > div {
@@ -3594,7 +3627,7 @@ body.housing-market-modal-open .screen.is-active {
 
 /* Housing Household Hub 5.0x */
 .housing-module-tabs--hub {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .housing-hub-overview,
@@ -3816,4 +3849,193 @@ body.housing-market-modal-open .screen.is-active {
   .housing-hub-weather-current { grid-template-columns: 1fr; }
   .housing-hub-weather-current > strong { grid-row: auto; }
   .housing-hub-collection-item > div:first-child { grid-template-columns: 1fr; }
+}
+
+
+/* Housing Household UI Consolidation 5.1x */
+.housing-overview-consolidated,
+.housing-household-consolidated,
+.housing-storage-consolidated {
+  display: grid;
+  gap: 14px;
+}
+
+.housing-action-rail,
+.housing-record-transition-actions,
+.housing-storage-action-stack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.housing-household-slot-candidates,
+.housing-household-replacement-list {
+  display: grid;
+  gap: 6px;
+}
+
+.housing-household-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.housing-household-action-row > b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.housing-hub-collection-storage .housing-hub-collection-list,
+.housing-hub-display-panel .housing-hub-display-hosts {
+  max-height: 520px;
+  overflow: auto;
+  padding: 12px;
+}
+
+.housing-item-index-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+}
+
+.housing-item-index-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 4, 4, 0.78);
+}
+
+.housing-item-index-drawer {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: min(760px, calc(100vw - 28px));
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px;
+  border-left: 1px solid rgba(169, 195, 193, 0.52);
+  background: rgba(5, 7, 7, 0.988);
+  box-shadow: -28px 0 70px rgba(0, 0, 0, 0.52);
+}
+
+.housing-item-index-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.housing-item-index-head h5 { margin: 0; }
+
+.housing-item-index-controls > .housing-storage-filter-rail {
+  grid-template-columns: minmax(180px, 1fr) minmax(140px, .55fr) minmax(140px, .55fr);
+  border: 1px solid rgba(143, 189, 180, 0.12);
+  padding: 10px;
+}
+
+.housing-item-index-controls .housing-storage-filter-head,
+.housing-item-index-controls .housing-storage-kind-tabs {
+  grid-column: 1 / -1;
+}
+
+.housing-item-index-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  border: 1px solid rgba(143, 189, 180, 0.12);
+}
+
+.housing-item-index-list {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 12px;
+  border-right: 1px solid rgba(143, 189, 180, 0.1);
+}
+
+.housing-item-index-section { display: grid; gap: 7px; }
+.housing-item-index-section > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 9px;
+  border: 1px solid rgba(143, 189, 180, 0.16);
+  background: rgba(8, 12, 13, 0.98);
+}
+.housing-item-index-section > div { display: grid; gap: 7px; }
+
+.housing-item-index-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid rgba(143, 189, 180, 0.14);
+  background: rgba(0, 0, 0, 0.18);
+  padding-right: 8px;
+}
+
+.housing-item-index-row.is-selected {
+  border-color: rgba(169, 195, 193, 0.58);
+  background: rgba(143, 189, 180, 0.08);
+}
+
+.housing-item-index-row__main {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.housing-item-index-row__main b,
+.housing-item-index-row__main small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.housing-item-index-row__main small { color: var(--dim); }
+
+.housing-item-index-drawer > .housing-storage-inspector,
+.housing-item-index-body > .housing-storage-inspector {
+  max-height: none;
+  overflow: auto;
+}
+
+.housing-physical-grid__item.is-located,
+.housing-household-room-item.is-located,
+.housing-open-container-grid__item.is-located {
+  border-color: rgba(208, 241, 237, 0.82);
+  box-shadow: 0 0 0 1px rgba(208, 241, 237, 0.34), 0 0 24px rgba(143, 189, 180, 0.24);
+}
+
+@media (max-width: 900px) {
+  .housing-item-index-body { grid-template-columns: 1fr; }
+  .housing-item-index-list { border-right: 0; border-bottom: 1px solid rgba(143, 189, 180, 0.1); }
+  .housing-item-index-controls > .housing-storage-filter-rail { grid-template-columns: 1fr; }
+  .housing-item-index-controls .housing-storage-filter-head,
+  .housing-item-index-controls .housing-storage-kind-tabs { grid-column: auto; }
+}
+
+@media (max-width: 640px) {
+  .housing-module-tabs--hub { grid-template-columns: 1fr; }
+  .housing-item-index-drawer { width: 100%; padding: 12px; }
+  .housing-household-action-row { grid-template-columns: 1fr auto; }
 }

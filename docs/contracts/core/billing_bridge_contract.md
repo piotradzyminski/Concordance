@@ -7,7 +7,7 @@ PATCH:
 patch_billing_bridge_foundation_2.0x.zip
 
 SCHEMA:
-billing_bridge_schema_2_1x
+billing_bridge_schema_2_2x
 
 PRIMARY OWNER:
 js/billing-store.js
@@ -29,12 +29,14 @@ Billing Store
 = BillingIntent lifecycle
 = BillingTransaction lifecycle
 = Admin BillingTransfer lifecycle
+= MarketplaceSettlement lifecycle
 = Organization transfer-account ledger
 = authorization reservation
 = capture
 = void
 = refund
 = paired debit/credit transfer
+= marketplace buyer/seller/platform split
 = idempotency
 = targeted Billing events
 ```
@@ -108,6 +110,20 @@ voidBillingIntent(billingIntentId, options)
 refundBillingTransaction(billingTransactionId, amount, options)
 createAndCaptureBillingIntent(input, options)
 ```
+
+## Marketplace settlement API
+
+```js
+quoteMarketplaceSettlement(input)
+commitMarketplaceSettlement(input)
+refundMarketplaceSettlement(settlementId, amount, options)
+retryMarketplaceSettlement(settlementId, options)
+reconcileMarketplaceSettlements(options)
+getMarketplaceSettlement(idOrIdempotencyKey)
+getMarketplaceSettlements(filters)
+```
+
+See `docs/contracts/core/billing_marketplace_settlement_contract.md`.
 
 ## Public read API
 
@@ -254,6 +270,7 @@ Campaign export/import includes:
 billingIntents
 billingTransactions
 billingHistory
+marketplaceSettlements
 ```
 
 Billing History remains a UI compatibility projection.

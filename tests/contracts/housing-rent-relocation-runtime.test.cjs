@@ -308,8 +308,8 @@ test("Relocation runtime loads after the Rent bridge and Housing UI exposes appr
   assert.ok(index.indexOf("js/housing-rent-subscription-bridge.js?v=3") < index.indexOf("js/housing-rent-relocation-runtime.js?v=1"));
   assert.match(housing, /data-housing-approve-relocation/);
   assert.match(housing, /data-housing-cancel-relocation/);
-  assert.match(modules, /css\/housing\.css\?v=38/);
-  assert.match(modules, /js\/housing\.js\?v=53/);
+  assert.match(modules, /css\/housing\.css\?v=40/);
+  assert.match(modules, /js\/housing\.js\?v=54/);
 });
 
 test("Relocation commits through the canonical ItemInstance transaction stores", () => {

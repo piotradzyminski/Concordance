@@ -36,5 +36,5 @@ test("Campaign Snapshot v6 includes transfer accounts and transfer records", () 
   const adapters = read("js/campaign-data-io-adapters.js");
   assert.match(adapters, /ws_app_billing_transfer_accounts_v1/);
   assert.match(adapters, /ws_app_billing_transfers_v1/);
-  assert.match(adapters, /billing_bridge_schema_2_1x/);
+  assert.match(adapters, /billing_bridge_schema_2_2x/);
 });

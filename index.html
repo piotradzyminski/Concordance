@@ -16,22 +16,23 @@
   <link rel="stylesheet" href="css/citizen-profile.css?v=33" />
     <link rel="stylesheet" href="css/citizen-editor.css?v=54" />
   <link rel="stylesheet" href="css/citizen-profile-editor.css?v=2" />
-  <link rel="stylesheet" href="css/citizen-admin-editor.css?v=3" />
+  <link rel="stylesheet" href="css/citizen-admin-editor.css?v=4" />
   <link rel="stylesheet" href="css/citizen-quick-npc.css?v=1" />
   <link rel="stylesheet" href="css/citizen-creator.css?v=2" />
   <link rel="stylesheet" href="css/global-search.css?v=37" />
   <link rel="stylesheet" href="css/data-io.css?v=42" />
-  <link rel="stylesheet" href="css/encyclopedia.css?v=43" />
+  <link rel="stylesheet" href="css/registry-controls.css?v=1" />
   <link rel="stylesheet" href="css/address-core.css?v=43" />
   <link rel="stylesheet" href="css/tag-registry.css?v=41" />
   <link rel="stylesheet" href="css/case-files.css?v=46" />
-  <link rel="stylesheet" href="css/terminal-effects.css?v=44" />
-<link rel="stylesheet" href="css/modules.css?v=147" />
+  <link rel="stylesheet" href="css/terminal-effects.css?v=45" />
+<link rel="stylesheet" href="css/modules.css?v=149" />
+  <link rel="stylesheet" href="css/ui-controls.css?v=1" />
   <link rel="stylesheet" href="css/system-tabs.css?v=8" />
   <link rel="stylesheet" href="css/module-cards.css?v=7" />
   <link rel="stylesheet" href="css/database.css?v=8" />
-  <link rel="stylesheet" href="css/citizen-card.css?v=23" />
-  <link rel="stylesheet" href="css/knowledge-sections.css?v=15" />
+  <link rel="stylesheet" href="css/citizen-card.css?v=24" />
+  <link rel="stylesheet" href="css/knowledge-sections.css?v=16" />
 </head>
 
 <body>
@@ -261,28 +262,28 @@
   </main>
 
   <script src="data/users.js?v=28"></script>
-  <script src="data/citizens.js?v=79"></script>
+  <script src="data/citizens.js?v=80"></script>
   <script src="data/housing-furnishing-lifecycle.js?v=1"></script>
-  <script src="data/item-instances.js?v=9"></script>
+  <script src="data/item-instances.js?v=10"></script>
   <script src="data/modules.js?v=58"></script>
   <script src="data/citizen-creation-config.js?v=1"></script>
   <script src="data/citizen-templates.js?v=1"></script>
   <script src="data/entries.js?v=46"></script>
   <script src="data/addresses.js?v=41"></script>
-  <script src="data/organizations.js?v=1"></script>
+  <script src="data/organizations.js?v=2"></script>
   <script src="data/organization-locations.js?v=2"></script>
   <script src="data/tags.js?v=41"></script>
   <script src="data/access-tags.js?v=1"></script>
   <script src="data/inbox-notification-types.js?v=6"></script>
   <script src="data/notification-event-catalog.js?v=6"></script>
   <script src="data/notification-content-templates.js?v=3"></script>
-  <script src="data/notification-provider-capabilities.js?v=4"></script>
+  <script src="data/notification-provider-capabilities.js?v=5"></script>
   <script src="data/item-type-catalog.js?v=5"></script>
   <script src="data/equipment-catalog.js?v=28"></script>
   <script src="data/market-offers.js?v=4"></script>
   <script src="data/housing-rent-standards.js?v=1"></script>
   <script src="data/housing-layout-pools.js?v=1"></script>
-  <script src="data/subscription-catalog.js?v=13"></script>
+  <script src="data/subscription-catalog.js?v=15"></script>
   <script src="data/subscription-bridge-fixtures.js?v=1"></script>
   <script src="data/service-definitions.js?v=4"></script>
   <script src="data/firmware-registry.js?v=1"></script>
@@ -291,10 +292,11 @@
   <script src="data/case-files.js?v=43"></script>
 
   <script src="js/store-utils.js?v=3"></script>
+  <script src="js/subscription-data-cleanup.js?v=1"></script>
   <script src="js/citizen-identity.js?v=4"></script>
   <script src="js/item-type-registry.js?v=2"></script>
   <script src="js/equipment-catalog-store.js?v=15"></script>
-  <script src="js/item-instance-store.js?v=16"></script>
+  <script src="js/item-instance-store.js?v=17"></script>
   <script src="js/item-type-operations.js?v=3"></script>
   <script src="js/item-instance-transaction-store.js?v=2"></script>
   <script src="js/subscription-entitlement.js?v=8"></script>
@@ -302,15 +304,16 @@
   <script src="js/service-log-lifecycle.js?v=1"></script>
   <script src="js/terminal-entry-store.js?v=2"></script>
   <script src="js/terminal-reminder-store.js?v=1"></script>
-  <script src="js/store.js?v=144"></script>
+  <script src="js/citizen-subscription-adapter.js?v=1"></script>
+  <script src="js/store.js?v=147"></script>
   <script src="js/entries-store.js?v=51"></script>
   <script src="js/address-store.js?v=41"></script>
   <script src="js/organization-store.js?v=1"></script>
   <script src="js/notification-registry.js?v=1"></script>
   <script src="js/notification-content-resolver.js?v=4"></script>
   <script src="js/notification-projection-policy.js?v=2"></script>
-  <script src="js/notification-api.js?v=4"></script>
-  <script src="js/billing-store.js?v=4"></script>
+  <script src="js/notification-api.js?v=5"></script>
+  <script src="js/billing-store.js?v=5"></script>
   <script src="js/citizen-command-api.js?v=4"></script>
   <script src="js/citizen-template-service.js?v=1"></script>
   <script src="js/admin-audit-store.js?v=1"></script>
@@ -318,7 +321,7 @@
   <script src="js/housing-layout-store.js?v=1"></script>
   <script src="js/housing-bridge-store.js?v=5"></script>
   <script src="js/household-store.js?v=4"></script>
-  <script src="js/market-store.js?v=13"></script>
+  <script src="js/market-store.js?v=14"></script>
   <script src="js/service-bridge-store.js?v=9"></script>
   <script src="js/world-bridge-operation-store.js?v=1"></script>
   <script src="js/admin-dependency-resolver.js?v=2"></script>
@@ -330,8 +333,8 @@
   <script src="js/housing-shipment-event-bridge.js?v=1"></script>
   <script src="js/housing-notification-producer.js?v=1"></script>
   <script src="js/tag-store.js?v=41"></script>
-    <script src="js/access-control.js?v=11"></script>
-  <script src="js/subscription-catalog-store.js?v=8"></script>
+    <script src="js/access-control.js?v=12"></script>
+  <script src="js/subscription-catalog-store.js?v=10"></script>
   <script src="js/subscription-api.js?v=6"></script>
   <script src="js/housing-rent-subscription-bridge.js?v=3"></script>
   <script src="js/housing-rent-relocation-runtime.js?v=1"></script>
@@ -349,24 +352,25 @@
   <script src="js/database-relations.js?v=1"></script>
   <script src="js/address-core.js?v=45"></script>
   <script src="js/tag-registry.js?v=45"></script>
-  <script src="js/case-files.js?v=50"></script>
+  <script src="js/case-files.js?v=51"></script>
   <script src="js/transition.js?v=31"></script>
   <script src="js/terminal-effects.js?v=48"></script>
+  <script src="js/registry-ui.js?v=1"></script>
   <script src="js/citizen-profile.js?v=49"></script>
-  <script src="js/modules.js?v=309"></script>
-  <script src="js/citizen-creator.js?v=3"></script>
+  <script src="js/modules.js?v=318"></script>
+  <script src="js/citizen-creator.js?v=4"></script>
 
-  <script src="js/subscription-catalog-editor.js?v=2"></script>
-    <script src="js/system-registry.js?v=18"></script>
-    <script src="js/encyclopedia-module.js?v=15"></script>
+  <script src="js/subscription-catalog-editor.js?v=3"></script>
+    <script src="js/system-registry.js?v=19"></script>
+    <script src="js/encyclopedia-module.js?v=16"></script>
   <script src="js/global-search.js?v=48"></script>
   <script src="js/campaign-data-io-registry.js?v=1"></script>
-  <script src="js/campaign-data-io-adapters.js?v=11"></script>
+  <script src="js/campaign-data-io-adapters.js?v=12"></script>
   <script src="js/campaign-data-io-v6.js?v=2"></script>
   <script src="js/data-io.js?v=54"></script>
     <script src="js/citizen-editor.js?v=63"></script>
   <script src="js/citizen-profile-editor.js?v=2"></script>
-  <script src="js/citizen-admin-editor.js?v=5"></script>
+  <script src="js/citizen-admin-editor.js?v=6"></script>
   <script src="js/citizen-quick-npc.js?v=1"></script>
   <script src="js/terminal.js?v=43"></script>
   <script src="js/auth.js?v=29"></script>
@@ -374,7 +378,7 @@
   <script src="js/world-time-event-windows.js?v=1"></script>
   <script src="js/world-time-scheduled-events.js?v=1"></script>
   <script src="js/market-time-scheduler.js?v=1"></script>
-  <script src="js/market-secondary-listing-store.js?v=1"></script>
+  <script src="js/market-secondary-listing-store.js?v=2"></script>
   <script src="js/world-time-service-scheduler.js?v=3"></script>
 </body>
 </html>

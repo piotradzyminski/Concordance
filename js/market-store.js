@@ -4,9 +4,9 @@ window.WS_APP = window.WS_APP || {};
   const CART_STORAGE_KEY = "ws_market_carts_v1";
   const ORDER_STORAGE_KEY = "ws_market_orders_v1";
   const STOCK_STORAGE_KEY = "ws_market_stock_v1";
-  const MARKET_OFFER_SCHEMA_VERSION = 3;
-  const MARKET_CART_SCHEMA_VERSION = 2;
-  const MARKET_ORDER_SCHEMA_VERSION = 7;
+  const MARKET_OFFER_SCHEMA_VERSION = 4;
+  const MARKET_CART_SCHEMA_VERSION = 3;
+  const MARKET_ORDER_SCHEMA_VERSION = 8;
   const MARKET_SHIPMENT_SCHEMA_VERSION = 2;
   const MARKET_DELIVERY_FULFILLMENT_SCHEMA_VERSION = "market_delivery_fulfillment_6_3x";
   const MARKET_SERVICE_FULFILLMENT_SCHEMA_VERSION = "market_service_fulfillment_4_3x";
@@ -34,6 +34,7 @@ window.WS_APP = window.WS_APP || {};
     CANCELLED: new Set(["CANCELLED"])
   });
   const ACTIVE_STOCK_RESERVATION_STATUSES = new Set(["RESERVED"]);
+  const MARKET_OFFER_SOURCES = new Set(["CATALOG", "SECONDARY"]);
   const MARKET_ORDER_TRANSITIONS = Object.freeze({
     DRAFT: new Set(["DRAFT", "RESERVING", "FAILED", "CANCELLED"]),
     RESERVING: new Set(["RESERVING", "AUTHORIZED", "FAILED", "CANCELLED", "PAYMENT_RECOVERY_REQUIRED"]),
@@ -185,7 +186,12 @@ window.WS_APP = window.WS_APP || {};
       deliveryFulfillmentHeld: 0,
       deliveryFulfillmentRecoveries: 0,
       deliveryFulfillmentFailures: 0,
-      deliveryAdminForces: 0
+      deliveryAdminForces: 0,
+      secondaryReservationAttempts: 0,
+      secondaryReservationsCommitted: 0,
+      secondaryReservationsReleased: 0,
+      secondaryExistingInstancesTransferred: 0,
+      secondaryReturnsReopened: 0
     };
   }
 
@@ -541,7 +547,10 @@ window.WS_APP = window.WS_APP || {};
     if (!id) return null;
     ensureMarketOfferIndex();
     const offer = offerIndex.get(id) || null;
-    return offer ? clone(offer) : null;
+    if (offer) return clone(offer);
+    const listing = window.WS_APP.getMarketSecondaryListingByMarketOfferId?.(id) || null;
+    const secondaryOffer = listing ? window.WS_APP.projectMarketSecondaryOffer?.(listing) || null : null;
+    return secondaryOffer ? clone(secondaryOffer) : null;
   }
 
   function getMarketOffersByCatalogItemId(catalogItemId = "") {
@@ -609,7 +618,7 @@ window.WS_APP = window.WS_APP || {};
 
   function getMarketOfferRevision() {
     ensureMarketOfferIndex();
-    return offerRevision;
+    return offerRevision + Number(window.WS_APP.getMarketSecondaryListingRevision?.() || 0);
   }
 
   function projectMarketOfferCatalogItem(offerOrId = "") {
@@ -734,30 +743,41 @@ window.WS_APP = window.WS_APP || {};
 
   function normalizeMarketOrderLine(value = {}, index = 0) {
     const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const offerSource = MARKET_OFFER_SOURCES.has(normalizeToken(source.offerSource || (source.listingId ? "SECONDARY" : "CATALOG")))
+      ? normalizeToken(source.offerSource || (source.listingId ? "SECONDARY" : "CATALOG"))
+      : "CATALOG";
+    const quantity = offerSource === "SECONDARY" ? 1 : clampInteger(source.quantity || 1, 1, 99);
+    const sourceInstanceId = normalizeId(source.sourceInstanceId);
     return {
       marketOrderLineId: normalizeId(source.marketOrderLineId) || makeRuntimeId(`market_order_line_${index + 1}`),
       cartLineId: normalizeId(source.cartLineId),
       marketOfferId: normalizeId(source.marketOfferId),
+      offerSource,
+      listingId: normalizeId(source.listingId),
+      listingRevision: clampInteger(source.listingRevision || 0, 0, 999999),
+      sourceInstanceId,
+      sourceMarketOfferId: normalizeId(source.sourceMarketOfferId),
       catalogItemId: normalizeId(source.catalogItemId),
       definitionId: normalizeId(source.definitionId || source.catalogItemId),
       vendorProviderId: normalizeId(source.vendorProviderId),
       organizationLocationId: normalizeId(source.organizationLocationId),
       sourceAddress: normalizeId(source.sourceAddress),
       vendorDisplayName: normalizeId(source.vendorDisplayName),
-      quantity: clampInteger(source.quantity || 1, 1, 99),
-      fulfillmentMode: normalizeToken(source.fulfillmentMode || "DELIVER_TO_HOUSING"),
+      quantity,
+      fulfillmentMode: offerSource === "SECONDARY" ? "DELIVER_TO_HOUSING" : normalizeToken(source.fulfillmentMode || "DELIVER_TO_HOUSING"),
       destinationRef: normalizeDestinationRef(source.destinationRef),
       unitPrice: clampInteger(source.unitPrice, 0, 999999999),
       lineTotal: clampInteger(source.lineTotal, 0, 999999999),
       stockReservationId: normalizeId(source.stockReservationId),
       housingReservationIds: Array.isArray(source.housingReservationIds) ? source.housingReservationIds.map(normalizeId).filter(Boolean) : [],
-      createdItemInstanceIds: Array.isArray(source.createdItemInstanceIds) ? source.createdItemInstanceIds.map(normalizeId).filter(Boolean) : [],
-      linkedServiceSelection: source.linkedServiceSelection && typeof source.linkedServiceSelection === "object" ? clone(source.linkedServiceSelection) : null,
-      serviceDefinitionId: normalizeId(source.serviceDefinitionId || source.linkedServiceSelection?.serviceDefinitionId),
-      serviceProviderId: normalizeId(source.serviceProviderId || source.linkedServiceSelection?.providerId),
-      serviceOfferId: normalizeId(source.serviceOfferId),
-      serviceOrderId: normalizeId(source.serviceOrderId),
-      serviceStatus: normalizeToken(source.serviceStatus || "NOT_REQUIRED")
+      createdItemInstanceIds: Array.isArray(source.createdItemInstanceIds) ? source.createdItemInstanceIds.map(normalizeId).filter(Boolean) : (sourceInstanceId ? [sourceInstanceId] : []),
+      transferredItemInstanceIds: Array.isArray(source.transferredItemInstanceIds) ? source.transferredItemInstanceIds.map(normalizeId).filter(Boolean) : (sourceInstanceId ? [sourceInstanceId] : []),
+      linkedServiceSelection: offerSource === "SECONDARY" ? null : (source.linkedServiceSelection && typeof source.linkedServiceSelection === "object" ? clone(source.linkedServiceSelection) : null),
+      serviceDefinitionId: offerSource === "SECONDARY" ? "" : normalizeId(source.serviceDefinitionId || source.linkedServiceSelection?.serviceDefinitionId),
+      serviceProviderId: offerSource === "SECONDARY" ? "" : normalizeId(source.serviceProviderId || source.linkedServiceSelection?.providerId),
+      serviceOfferId: offerSource === "SECONDARY" ? "" : normalizeId(source.serviceOfferId),
+      serviceOrderId: offerSource === "SECONDARY" ? "" : normalizeId(source.serviceOrderId),
+      serviceStatus: offerSource === "SECONDARY" ? "NOT_REQUIRED" : normalizeToken(source.serviceStatus || "NOT_REQUIRED")
     };
   }
 
@@ -943,6 +963,8 @@ window.WS_APP = window.WS_APP || {};
       totals: source.totals && typeof source.totals === "object" ? clone(source.totals) : { finalTotal: 0, currency: "CREDIT" },
       billingRefs: source.billingRefs && typeof source.billingRefs === "object" ? clone(source.billingRefs) : {},
       createdItemInstanceIds: Array.isArray(source.createdItemInstanceIds) ? source.createdItemInstanceIds.map(normalizeId).filter(Boolean) : [],
+      transferredItemInstanceIds: Array.isArray(source.transferredItemInstanceIds) ? source.transferredItemInstanceIds.map(normalizeId).filter(Boolean) : [],
+      secondaryListingIds: [...new Set((Array.isArray(source.secondaryListingIds) ? source.secondaryListingIds : []).map(normalizeId).filter(Boolean))],
       linkedServiceOfferIds: [...new Set((Array.isArray(source.linkedServiceOfferIds) ? source.linkedServiceOfferIds : []).map(normalizeId).filter(Boolean))],
       linkedServiceOrderIds: [...new Set((Array.isArray(source.linkedServiceOrderIds) ? source.linkedServiceOrderIds : []).map(normalizeId).filter(Boolean))],
       pickupFulfillment: normalizeMarketPickupFulfillment(source.pickupFulfillment),
@@ -1019,6 +1041,8 @@ window.WS_APP = window.WS_APP || {};
     if (previous.refundRequest?.status !== next.refundRequest?.status) fields.push("refundRequest.status");
     if (JSON.stringify(previous.partialReturns || []) !== JSON.stringify(next.partialReturns || [])) fields.push("partialReturns");
     if (JSON.stringify(previous.createdItemInstanceIds || []) !== JSON.stringify(next.createdItemInstanceIds || [])) fields.push("createdItemInstanceIds");
+    if (JSON.stringify(previous.transferredItemInstanceIds || []) !== JSON.stringify(next.transferredItemInstanceIds || [])) fields.push("transferredItemInstanceIds");
+    if (JSON.stringify(previous.secondaryListingIds || []) !== JSON.stringify(next.secondaryListingIds || [])) fields.push("secondaryListingIds");
     if (JSON.stringify(previous.linkedServiceOrderIds || []) !== JSON.stringify(next.linkedServiceOrderIds || [])) fields.push("linkedServiceOrderIds");
     if (previous.serviceFulfillment?.status !== next.serviceFulfillment?.status) fields.push("serviceFulfillment.status");
     if (previous.deliveryFulfillment?.status !== next.deliveryFulfillment?.status) fields.push("deliveryFulfillment.status");
@@ -1045,6 +1069,8 @@ window.WS_APP = window.WS_APP || {};
         changedFields: getChangedMarketOrderFields(previous, order),
         changedDomains: ["MARKET_ORDER"],
         createdItemInstanceIds: [...(order.createdItemInstanceIds || [])],
+        transferredItemInstanceIds: [...(order.transferredItemInstanceIds || [])],
+        secondaryListingIds: [...(order.secondaryListingIds || [])],
         cancellationStatus: order.cancellation?.status || "NONE",
         refundRequestStatus: order.refundRequest?.status || "NONE",
         shipmentId: order.shipmentId || "",
@@ -1963,6 +1989,18 @@ window.WS_APP = window.WS_APP || {};
       touchedOfferIds.forEach(refreshIndexedOfferStock);
       return { ok: false, reason: "MARKET_STOCK_PERSISTENCE_FAILED", rolledBack: true };
     }
+    for (const lineReceipt of lineReceipts) {
+      const line = (order.lines || []).find((entry) => entry.marketOrderLineId === lineReceipt.marketOrderLineId);
+      if (!line || !isSecondaryMarketLine(line)) continue;
+      const reopened = window.WS_APP.returnMarketSecondaryListingSale?.({ listingId: line.listingId, marketOfferId: line.marketOfferId, marketOrderId: order.marketOrderId, returnedAt: getWorldTime() });
+      if (!reopened?.ok) {
+        stockRuntimeByOfferId = previousStock;
+        persistMarketStock();
+        touchedOfferIds.forEach(refreshIndexedOfferStock);
+        return { ok: false, reason: reopened?.reason || "MARKET_SECONDARY_RETURN_REOPEN_FAILED", rolledBack: true };
+      }
+      marketBridgeDiagnostics.secondaryReturnsReopened += 1;
+    }
     touchedOfferIds.forEach(refreshIndexedOfferStock);
     offerRevision += 1;
     return { ok: true, operation: "PARTIALLY_RETURNED", receipts: committedReceipts, marketOfferIds: [...touchedOfferIds] };
@@ -2260,6 +2298,17 @@ window.WS_APP = window.WS_APP || {};
       touchedOfferIds.forEach(refreshIndexedOfferStock);
       return { ok: false, reason: "MARKET_STOCK_PERSISTENCE_FAILED", rolledBack: true };
     }
+    for (const line of order.lines || []) {
+      if (!isSecondaryMarketLine(line)) continue;
+      const reopened = window.WS_APP.returnMarketSecondaryListingSale?.({ listingId: line.listingId, marketOfferId: line.marketOfferId, marketOrderId: order.marketOrderId, returnedAt: getWorldTime() });
+      if (!reopened?.ok) {
+        stockRuntimeByOfferId = previousStock;
+        persistMarketStock();
+        touchedOfferIds.forEach(refreshIndexedOfferStock);
+        return { ok: false, reason: reopened?.reason || "MARKET_SECONDARY_RETURN_REOPEN_FAILED", rolledBack: true };
+      }
+      marketBridgeDiagnostics.secondaryReturnsReopened += 1;
+    }
     touchedOfferIds.forEach(refreshIndexedOfferStock);
     offerRevision += 1;
     return { ok: true, operation: "RETURNED", reservationIds: returnedReservationIds, marketOfferIds: [...touchedOfferIds] };
@@ -2555,45 +2604,52 @@ window.WS_APP = window.WS_APP || {};
 
   function reserveMarketStock(input = {}) {
     const marketOfferId = normalizeId(input.marketOfferId);
-    const quantity = clampInteger(input.quantity || 1, 1, 999999);
+    const offer = getMarketOffer(marketOfferId);
+    const secondary = normalizeToken(input.offerSource || offer?.offerSource || offer?.sourceType) === "SECONDARY";
+    const quantity = secondary ? 1 : clampInteger(input.quantity || 1, 1, 999999);
     const idempotencyKey = normalizeId(input.idempotencyKey);
     const reservationId = normalizeId(input.reservationId) || makeDeterministicId("market_stock_reservation", idempotencyKey || `${marketOfferId}:${quantity}`);
     if (!marketOfferId || !idempotencyKey) return { ok: false, reason: !marketOfferId ? "MARKET_OFFER_ID_REQUIRED" : "IDEMPOTENCY_KEY_REQUIRED" };
-    const offer = getMarketOffer(marketOfferId);
     if (!offer) return { ok: false, reason: "MARKET_OFFER_NOT_FOUND" };
     const runtime = getOfferStockRuntime(marketOfferId);
     const replay = Object.values(runtime.reservations).find((reservation) => reservation?.idempotencyKey === idempotencyKey || reservation?.reservationId === reservationId);
     if (replay) return { ok: true, operation: "IDEMPOTENT_REPLAY", reservation: clone(replay), stock: offer.stock };
-    if (offer.stock.mode === "FINITE" && offer.stock.availableQuantity - offer.stock.reservedQuantity < quantity) {
-      return { ok: false, reason: "INSUFFICIENT_STOCK", availableQuantity: Math.max(0, offer.stock.availableQuantity - offer.stock.reservedQuantity) };
+    if (offer.stock.mode === "FINITE" && offer.stock.availableQuantity - offer.stock.reservedQuantity < quantity) return { ok: false, reason: "INSUFFICIENT_STOCK", availableQuantity: Math.max(0, offer.stock.availableQuantity - offer.stock.reservedQuantity) };
+
+    let secondaryReservation = null;
+    if (secondary) {
+      marketBridgeDiagnostics.secondaryReservationAttempts += 1;
+      const listingResult = window.WS_APP.reserveMarketSecondaryListing?.({
+        listingId: normalizeId(input.listingId || offer.listingId), marketOfferId, citizenId: normalizeId(input.citizenId), cartId: normalizeId(input.cartId), marketOrderId: normalizeId(input.marketOrderId),
+        reservationId, idempotencyKey, expectedRevision: input.listingRevision
+      });
+      if (!listingResult?.ok) return { ok: false, reason: listingResult?.reason || "MARKET_SECONDARY_RESERVATION_FAILED", listing: listingResult?.listing || null };
+      secondaryReservation = listingResult.reservation || listingResult.listing?.reservation || null;
     }
+
     const reservation = {
-      reservationId,
-      marketOfferId,
-      marketOrderId: normalizeId(input.marketOrderId),
-      quantity,
-      status: "RESERVED",
-      idempotencyKey,
-      createdAt: getWorldTime()
+      reservationId, marketOfferId, marketOrderId: normalizeId(input.marketOrderId), citizenId: normalizeId(input.citizenId), cartId: normalizeId(input.cartId), quantity,
+      sourceType: secondary ? "SECONDARY" : "CATALOG", listingId: normalizeId(input.listingId || offer.listingId), sourceInstanceId: normalizeId(input.sourceInstanceId || offer.sourceInstanceId),
+      secondaryReservationId: normalizeId(secondaryReservation?.reservationId), status: "RESERVED", idempotencyKey, createdAt: getWorldTime()
     };
     const previousRuntime = stockRuntimeByOfferId[marketOfferId] ? clone(stockRuntimeByOfferId[marketOfferId]) : null;
     runtime.reservations[reservationId] = reservation;
     stockRuntimeByOfferId = { ...stockRuntimeByOfferId, [marketOfferId]: runtime };
     if (!persistMarketStock()) {
       const next = { ...stockRuntimeByOfferId };
-      if (previousRuntime) next[marketOfferId] = previousRuntime;
-      else delete next[marketOfferId];
+      if (previousRuntime) next[marketOfferId] = previousRuntime; else delete next[marketOfferId];
       stockRuntimeByOfferId = next;
       refreshIndexedOfferStock(marketOfferId);
+      if (secondary) window.WS_APP.releaseMarketSecondaryListingReservation?.({ listingId: reservation.listingId, marketOfferId, reservationId, reason: "MARKET_STOCK_PERSISTENCE_FAILED" });
       return { ok: false, reason: "MARKET_STOCK_PERSISTENCE_FAILED" };
     }
     refreshIndexedOfferStock(marketOfferId);
     return { ok: true, operation: "RESERVED", reservation: clone(reservation), stock: clone(offerIndex?.get(marketOfferId)?.stock || offer.stock) };
   }
 
-  function commitMarketStockReservation(reservationId = "") {
+  function commitMarketStockReservation(reservationId = "", input = {}) {
     const id = normalizeId(reservationId);
-    for (const [marketOfferId, rawRuntime] of Object.entries(stockRuntimeByOfferId)) {
+    for (const [marketOfferId] of Object.entries(stockRuntimeByOfferId)) {
       const runtime = getOfferStockRuntime(marketOfferId);
       const reservation = runtime.reservations[id];
       if (!reservation) continue;
@@ -2610,6 +2666,21 @@ window.WS_APP = window.WS_APP || {};
         refreshIndexedOfferStock(marketOfferId);
         return { ok: false, reason: "MARKET_STOCK_PERSISTENCE_FAILED" };
       }
+      if (normalizeToken(reservation.sourceType) === "SECONDARY") {
+        const listingCommit = window.WS_APP.commitMarketSecondaryListingSale?.({
+          listingId: reservation.listingId, marketOfferId, reservationId: reservation.secondaryReservationId || reservation.reservationId,
+          marketOrderId: reservation.marketOrderId, buyerCitizenId: reservation.citizenId,
+          billingTransactionId: normalizeId(input.billingTransactionId), itemTransactionId: normalizeId(input.itemTransactionId),
+          idempotencyKey: `${reservation.idempotencyKey}:listing-sale`, reservationIdempotencyKey: reservation.idempotencyKey
+        });
+        if (!listingCommit?.ok) {
+          stockRuntimeByOfferId = { ...stockRuntimeByOfferId, [marketOfferId]: previousRuntime };
+          persistMarketStock();
+          refreshIndexedOfferStock(marketOfferId);
+          return { ok: false, reason: listingCommit?.reason || "MARKET_SECONDARY_SALE_COMMIT_FAILED", listing: listingCommit?.listing || null };
+        }
+        marketBridgeDiagnostics.secondaryReservationsCommitted += 1;
+      }
       refreshIndexedOfferStock(marketOfferId);
       return { ok: true, operation: "COMMITTED", reservation: clone(reservation) };
     }
@@ -2624,7 +2695,8 @@ window.WS_APP = window.WS_APP || {};
       if (!reservation) continue;
       if (reservation.status === "RELEASED") return { ok: true, operation: "IDEMPOTENT_REPLAY", reservation: clone(reservation) };
       const previousRuntime = clone(stockRuntimeByOfferId[marketOfferId] || runtime);
-      if (reservation.status === "COMMITTED") runtime.soldQuantity = Math.max(0, runtime.soldQuantity - clampInteger(reservation.quantity, 0, 999999));
+      const wasCommitted = reservation.status === "COMMITTED";
+      if (wasCommitted) runtime.soldQuantity = Math.max(0, runtime.soldQuantity - clampInteger(reservation.quantity, 0, 999999));
       reservation.status = "RELEASED";
       reservation.releaseReason = normalizeId(reason);
       reservation.releasedAt = getWorldTime();
@@ -2634,6 +2706,19 @@ window.WS_APP = window.WS_APP || {};
         stockRuntimeByOfferId = { ...stockRuntimeByOfferId, [marketOfferId]: previousRuntime };
         refreshIndexedOfferStock(marketOfferId);
         return { ok: false, reason: "MARKET_STOCK_PERSISTENCE_FAILED" };
+      }
+      if (normalizeToken(reservation.sourceType) === "SECONDARY") {
+        const released = window.WS_APP.releaseMarketSecondaryListingReservation?.({
+          listingId: reservation.listingId, marketOfferId, reservationId: reservation.secondaryReservationId || reservation.reservationId,
+          reason: normalizeToken(reason || "MARKET_STOCK_RELEASE"), allowCommittedRollback: wasCommitted
+        });
+        if (!released?.ok) {
+          stockRuntimeByOfferId = { ...stockRuntimeByOfferId, [marketOfferId]: previousRuntime };
+          persistMarketStock();
+          refreshIndexedOfferStock(marketOfferId);
+          return { ok: false, reason: released?.reason || "MARKET_SECONDARY_RESERVATION_RELEASE_FAILED", listing: released?.listing || null };
+        }
+        marketBridgeDiagnostics.secondaryReservationsReleased += 1;
       }
       refreshIndexedOfferStock(marketOfferId);
       return { ok: true, operation: "RELEASED", reservation: clone(reservation) };
@@ -2718,17 +2803,29 @@ window.WS_APP = window.WS_APP || {};
     const marketOfferId = normalizeId(source.marketOfferId);
     if (!marketOfferId) return null;
     const offer = getMarketOffer(marketOfferId);
-    const requestedMode = normalizeToken(source.fulfillmentMode || "DELIVER_TO_HOUSING");
-    const fulfillmentMode = offer?.fulfillmentOptions?.includes(requestedMode)
-      ? requestedMode
-      : offer?.fulfillmentOptions?.[0] || "DELIVER_TO_HOUSING";
+    const offerSource = MARKET_OFFER_SOURCES.has(normalizeToken(source.offerSource || offer?.offerSource || offer?.sourceType))
+      ? normalizeToken(source.offerSource || offer?.offerSource || offer?.sourceType)
+      : "CATALOG";
+    const secondary = offerSource === "SECONDARY";
+    const requestedMode = secondary ? "DELIVER_TO_HOUSING" : normalizeToken(source.fulfillmentMode || "DELIVER_TO_HOUSING");
+    const fulfillmentMode = secondary
+      ? "DELIVER_TO_HOUSING"
+      : (offer?.fulfillmentOptions?.includes(requestedMode) ? requestedMode : offer?.fulfillmentOptions?.[0] || "DELIVER_TO_HOUSING");
+    const listing = secondary
+      ? (window.WS_APP.getMarketSecondaryListing?.(source.listingId) || window.WS_APP.getMarketSecondaryListingByMarketOfferId?.(marketOfferId) || null)
+      : null;
     return {
       cartLineId: normalizeId(source.cartLineId) || makeRuntimeId(`cart_line_${index + 1}`),
       marketOfferId,
-      quantity: clampInteger(source.quantity || 1, 1, 99),
+      offerSource,
+      listingId: normalizeId(source.listingId || listing?.listingId || offer?.listingId),
+      listingRevision: clampInteger(source.listingRevision ?? listing?.revision ?? offer?.listingRevision ?? 0, 0, 999999),
+      sourceInstanceId: normalizeId(source.sourceInstanceId || listing?.sourceInstanceId || offer?.sourceInstanceId),
+      sourceMarketOfferId: normalizeId(source.sourceMarketOfferId || listing?.sourceMarketOfferId || offer?.sourceMarketOfferId),
+      quantity: secondary ? 1 : clampInteger(source.quantity || 1, 1, 99),
       fulfillmentMode,
       destinationRef: normalizeDestinationRef(source.destinationRef),
-      linkedServiceSelection: fulfillmentMode === "PURCHASE_WITH_SERVICE"
+      linkedServiceSelection: !secondary && fulfillmentMode === "PURCHASE_WITH_SERVICE"
         ? normalizeLinkedServiceSelection(source.linkedServiceSelection, offer)
         : null
     };
@@ -2815,12 +2912,14 @@ window.WS_APP = window.WS_APP || {};
       const addition = normalizeCartLine(patch.addLine, lines.length);
       if (!addition || !getMarketOffer(addition.marketOfferId)) return { ok: false, reason: "MARKET_OFFER_NOT_FOUND", cart: current };
       const existingIndex = lines.findIndex((line) => line.marketOfferId === addition.marketOfferId
+        && normalizeId(line.listingId) === normalizeId(addition.listingId)
         && line.fulfillmentMode === addition.fulfillmentMode
         && normalizeId(line.destinationRef?.housingStorageId) === normalizeId(addition.destinationRef?.housingStorageId)
         && normalizeId(line.linkedServiceSelection?.serviceDefinitionId) === normalizeId(addition.linkedServiceSelection?.serviceDefinitionId)
         && normalizeId(line.linkedServiceSelection?.providerId) === normalizeId(addition.linkedServiceSelection?.providerId));
       if (existingIndex >= 0) {
-        lines[existingIndex] = { ...lines[existingIndex], quantity: clampInteger(lines[existingIndex].quantity + addition.quantity, 1, 99) };
+        const secondary = normalizeToken(lines[existingIndex].offerSource) === "SECONDARY";
+        lines[existingIndex] = { ...lines[existingIndex], quantity: secondary ? 1 : clampInteger(lines[existingIndex].quantity + addition.quantity, 1, 99) };
       } else {
         lines.push(addition);
       }
@@ -2831,7 +2930,9 @@ window.WS_APP = window.WS_APP || {};
       const quantity = clampInteger(patch.setQuantity.quantity, 0, 99);
       lines = quantity === 0
         ? lines.filter((line) => line.cartLineId !== targetId)
-        : lines.map((line) => line.cartLineId === targetId ? { ...line, quantity } : line);
+        : lines.map((line) => line.cartLineId === targetId
+          ? { ...line, quantity: normalizeToken(line.offerSource) === "SECONDARY" ? 1 : quantity }
+          : line);
     }
     if (patch.clear === true) lines = [];
 
@@ -2851,14 +2952,27 @@ window.WS_APP = window.WS_APP || {};
     const quotedLines = cart.lines.map((line) => {
       const offer = getMarketOffer(line.marketOfferId);
       const lineBlockers = [];
+      const secondary = normalizeToken(line.offerSource || offer?.offerSource || offer?.sourceType) === "SECONDARY";
+      const listing = secondary
+        ? (window.WS_APP.getMarketSecondaryListing?.(line.listingId) || window.WS_APP.getMarketSecondaryListingByMarketOfferId?.(line.marketOfferId) || null)
+        : null;
       if (!offer || !offer.active) lineBlockers.push("MARKET_OFFER_NOT_FOUND");
       if (offer && !["AVAILABLE", "LIMITED", "RESTRICTED"].includes(offer.availability)) lineBlockers.push(`OFFER_${offer.availability}`);
+      if (secondary) {
+        if (!listing) lineBlockers.push("MARKET_SECONDARY_LISTING_NOT_FOUND");
+        else if (listing.status !== "ACTIVE") lineBlockers.push(`MARKET_SECONDARY_LISTING_${listing.status}`);
+        if (line.quantity !== 1) lineBlockers.push("MARKET_SECONDARY_QUANTITY_MUST_EQUAL_ONE");
+        if (line.fulfillmentMode !== "DELIVER_TO_HOUSING") lineBlockers.push("MARKET_SECONDARY_DELIVERY_ONLY");
+        const sourceValidation = listing ? window.WS_APP.validateMarketSecondarySourceInstance?.(listing) : null;
+        if (!sourceValidation?.ok) lineBlockers.push(sourceValidation?.reason || "MARKET_SECONDARY_SOURCE_INSTANCE_INVALID");
+        if (listing && normalizeId(line.sourceInstanceId) && normalizeId(line.sourceInstanceId) !== normalizeId(listing.sourceInstanceId)) lineBlockers.push("MARKET_SECONDARY_SOURCE_INSTANCE_MISMATCH");
+      }
       if (offer?.stock.mode === "FINITE" && offer.stock.availableQuantity - offer.stock.reservedQuantity < line.quantity) lineBlockers.push("INSUFFICIENT_STOCK");
       if (offer) lineBlockers.push(...validateMarketOfferPurchaseRequirements(offer, cart.citizenId).blockers);
       if (line.fulfillmentMode === "DELIVER_TO_HOUSING" && !line.destinationRef?.housingStorageId) lineBlockers.push("HOUSING_DESTINATION_REQUIRED");
 
       let linkedServiceSelection = null;
-      if (line.fulfillmentMode === "PURCHASE_WITH_SERVICE") {
+      if (!secondary && line.fulfillmentMode === "PURCHASE_WITH_SERVICE") {
         marketBridgeDiagnostics.serviceFulfillmentQuotes += 1;
         linkedServiceSelection = normalizeLinkedServiceSelection(line.linkedServiceSelection, offer);
         if (!isCyberwareProduct(offer?.catalogItem || {})) lineBlockers.push("SERVICE_FULFILLMENT_CYBERWARE_REQUIRED");
@@ -2870,22 +2984,24 @@ window.WS_APP = window.WS_APP || {};
           : null;
         if (!definition) lineBlockers.push("LINKED_SERVICE_DEFINITION_NOT_FOUND");
         if (definition && normalizeToken(definition.serviceType) !== "CYBERWARE_INSTALL") lineBlockers.push("LINKED_SERVICE_TYPE_INVALID");
-        if (definition?.subjectPolicy?.maxInstanceCount && line.quantity > Number(definition.subjectPolicy.maxInstanceCount)) {
-          lineBlockers.push("LINKED_SERVICE_INSTANCE_LIMIT_EXCEEDED");
-        }
+        if (definition?.subjectPolicy?.maxInstanceCount && line.quantity > Number(definition.subjectPolicy.maxInstanceCount)) lineBlockers.push("LINKED_SERVICE_INSTANCE_LIMIT_EXCEEDED");
         if (linkedServiceSelection.providerId && typeof window.WS_APP.providerSupports === "function"
-          && window.WS_APP.providerSupports(linkedServiceSelection.providerId, "CYBERWARE_INSTALL") !== true) {
-          lineBlockers.push("LINKED_SERVICE_PROVIDER_CAPABILITY_REQUIRED");
-        }
-      } else if (line.fulfillmentMode === "PICKUP") {
+          && window.WS_APP.providerSupports(linkedServiceSelection.providerId, "CYBERWARE_INSTALL") !== true) lineBlockers.push("LINKED_SERVICE_PROVIDER_CAPABILITY_REQUIRED");
+      } else if (!secondary && line.fulfillmentMode === "PICKUP") {
         marketBridgeDiagnostics.pickupFulfillmentQuotes += 1;
         if (!offer?.organizationLocationId) lineBlockers.push("PICKUP_LOCATION_REQUIRED");
       }
 
-      const unitPrice = offer?.pricing.finalPrice || 0;
+      const unitPrice = secondary ? Number(listing?.listedPrice || offer?.pricing.finalPrice || 0) : Number(offer?.pricing.finalPrice || 0);
       blockers.push(...lineBlockers.map((code) => `${line.cartLineId}:${code}`));
       return {
         ...clone(line),
+        offerSource: secondary ? "SECONDARY" : "CATALOG",
+        listingId: normalizeId(listing?.listingId || line.listingId),
+        listingRevision: clampInteger(listing?.revision ?? line.listingRevision ?? 0, 0, 999999),
+        sourceInstanceId: normalizeId(listing?.sourceInstanceId || line.sourceInstanceId),
+        sourceMarketOfferId: normalizeId(listing?.sourceMarketOfferId || line.sourceMarketOfferId),
+        quantity: secondary ? 1 : line.quantity,
         linkedServiceSelection,
         serviceDefinitionId: linkedServiceSelection?.serviceDefinitionId || "",
         serviceProviderId: linkedServiceSelection?.providerId || "",
@@ -2896,7 +3012,7 @@ window.WS_APP = window.WS_APP || {};
         organizationLocationId: offer?.organizationLocationId || "",
         sourceAddress: offer?.sourceAddress || "",
         unitPrice,
-        lineTotal: unitPrice * line.quantity,
+        lineTotal: unitPrice * (secondary ? 1 : line.quantity),
         currency: offer?.pricing.currency || "CREDIT",
         blockers: lineBlockers
       };
@@ -2918,12 +3034,7 @@ window.WS_APP = window.WS_APP || {};
       fulfillmentMode: fulfillmentModes[0] || "DELIVER_TO_HOUSING",
       lines: quotedLines,
       blockers: [...new Set(blockers)],
-      totals: {
-        subtotal,
-        modifiers: [],
-        finalTotal: subtotal,
-        currency: currencies[0] || "CREDIT"
-      }
+      totals: { subtotal, modifiers: [], finalTotal: subtotal, currency: currencies[0] || "CREDIT" }
     };
   }
 
@@ -2937,12 +3048,20 @@ window.WS_APP = window.WS_APP || {};
       ["voidBillingIntent", window.WS_APP.voidBillingIntent],
       ["refundBillingTransaction", window.WS_APP.refundBillingTransaction]
     ];
-    if (quote.fulfillmentMode === "PURCHASE_WITH_SERVICE") {
+    const hasSecondary = quote.lines.some((line) => normalizeToken(line.offerSource) === "SECONDARY");
+    if (hasSecondary) {
       requiredApiPairs.push(
-        ["createItemInstance", window.WS_APP.createItemInstance],
-        ["removeItemInstance", window.WS_APP.removeItemInstance]
+        ["getMarketSecondaryListing", window.WS_APP.getMarketSecondaryListing],
+        ["getMarketSecondaryListingByMarketOfferId", window.WS_APP.getMarketSecondaryListingByMarketOfferId],
+        ["validateMarketSecondarySourceInstance", window.WS_APP.validateMarketSecondarySourceInstance],
+        ["reserveMarketSecondaryListing", window.WS_APP.reserveMarketSecondaryListing],
+        ["commitMarketSecondaryListingSale", window.WS_APP.commitMarketSecondaryListingSale],
+        ["releaseMarketSecondaryListingReservation", window.WS_APP.releaseMarketSecondaryListingReservation],
+        ["returnMarketSecondaryListingSale", window.WS_APP.returnMarketSecondaryListingSale],
+        ["getItemInstanceById", window.WS_APP.getItemInstanceById]
       );
     }
+    if (quote.fulfillmentMode === "PURCHASE_WITH_SERVICE") requiredApiPairs.push(["createItemInstance", window.WS_APP.createItemInstance], ["removeItemInstance", window.WS_APP.removeItemInstance]);
     if (quote.fulfillmentMode === "DELIVER_TO_HOUSING") {
       requiredApiPairs.push(
         ["commitItemInstanceTransaction", window.WS_APP.commitItemInstanceTransaction],
@@ -2956,96 +3075,59 @@ window.WS_APP = window.WS_APP || {};
         ["flushHousingPlacementPersistence", window.WS_APP.flushHousingPlacementPersistence]
       );
     }
-    if (quote.fulfillmentMode === "PICKUP") {
-      requiredApiPairs.push(
-        ["commitItemInstanceTransaction", window.WS_APP.commitItemInstanceTransaction],
-        ["getItemInstanceTransactionByIdempotencyKey", window.WS_APP.getItemInstanceTransactionByIdempotencyKey],
-        ["compensateItemInstanceTransaction", window.WS_APP.compensateItemInstanceTransaction],
-        ["removeItemInstance", window.WS_APP.removeItemInstance]
-      );
-    }
+    if (quote.fulfillmentMode === "PICKUP") requiredApiPairs.push(["commitItemInstanceTransaction", window.WS_APP.commitItemInstanceTransaction], ["getItemInstanceTransactionByIdempotencyKey", window.WS_APP.getItemInstanceTransactionByIdempotencyKey], ["compensateItemInstanceTransaction", window.WS_APP.compensateItemInstanceTransaction], ["removeItemInstance", window.WS_APP.removeItemInstance]);
     if (quote.fulfillmentMode === "PURCHASE_WITH_SERVICE") {
       requiredApiPairs.push(
-        ["getServiceDefinition", window.WS_APP.getServiceDefinition],
-        ["providerSupports", window.WS_APP.providerSupports],
-        ["createServiceOffer", window.WS_APP.createServiceOffer],
-        ["createServiceOrderFromOffer", window.WS_APP.createServiceOrderFromOffer],
-        ["authorizeServiceOrder", window.WS_APP.authorizeServiceOrder],
-        ["scheduleServiceOrder", window.WS_APP.scheduleServiceOrder],
-        ["getServiceOrder", window.WS_APP.getServiceOrder],
-        ["cancelServiceOrder", window.WS_APP.cancelServiceOrder],
-        ["voidServiceOrderBilling", window.WS_APP.voidServiceOrderBilling],
-        ["refundServiceOrderBilling", window.WS_APP.refundServiceOrderBilling]
+        ["getServiceDefinition", window.WS_APP.getServiceDefinition], ["providerSupports", window.WS_APP.providerSupports], ["createServiceOffer", window.WS_APP.createServiceOffer],
+        ["createServiceOrderFromOffer", window.WS_APP.createServiceOrderFromOffer], ["authorizeServiceOrder", window.WS_APP.authorizeServiceOrder], ["scheduleServiceOrder", window.WS_APP.scheduleServiceOrder],
+        ["getServiceOrder", window.WS_APP.getServiceOrder], ["cancelServiceOrder", window.WS_APP.cancelServiceOrder], ["voidServiceOrderBilling", window.WS_APP.voidServiceOrderBilling], ["refundServiceOrderBilling", window.WS_APP.refundServiceOrderBilling]
       );
     }
     const requiredApis = requiredApiPairs.filter(([, api]) => typeof api !== "function").map(([name]) => name);
     const blockers = [...quote.blockers, ...requiredApis.map((name) => `API_REQUIRED:${name}`)];
     if (!normalizeId(input.idempotencyKey)) blockers.push("IDEMPOTENCY_KEY_REQUIRED");
     if (!quote.lines.length) blockers.push("MARKET_CART_EMPTY");
-    return {
-      ...quote,
-      ok: quote.ok && blockers.length === 0,
-      reason: blockers.length ? "MARKET_CHECKOUT_BLOCKED" : "CHECKOUT_READY",
-      blockers: [...new Set(blockers)],
-      requiredApis
-    };
+    return { ...quote, ok: quote.ok && blockers.length === 0, reason: blockers.length ? "MARKET_CHECKOUT_BLOCKED" : "CHECKOUT_READY", blockers: [...new Set(blockers)], requiredApis };
   }
 
   function buildMarketOrderFromQuote(cart = {}, quote = {}, idempotencyKey = "") {
     const marketOrderId = makeDeterministicId("market_order", idempotencyKey);
     const vendorProviderId = quote.lines[0]?.vendorProviderId || "";
+    const lines = quote.lines.map((line, lineIndex) => {
+      const marketOrderLineId = makeDeterministicId("market_order_line", `${idempotencyKey}:${line.cartLineId}:${lineIndex}`);
+      const serviceDefinitionId = normalizeId(line.serviceDefinitionId || line.linkedServiceSelection?.serviceDefinitionId);
+      const serviceProviderId = normalizeId(line.serviceProviderId || line.linkedServiceSelection?.providerId);
+      const secondary = normalizeToken(line.offerSource) === "SECONDARY";
+      const itemIds = secondary
+        ? [normalizeId(line.sourceInstanceId)].filter(Boolean)
+        : Array.from({ length: line.quantity }, (_, quantityIndex) => makeDeterministicId("item_market", `${idempotencyKey}:${line.cartLineId}:${quantityIndex}`));
+      return {
+        ...line,
+        marketOrderLineId,
+        definitionId: getMarketOffer(line.marketOfferId)?.definitionId || line.catalogItemId,
+        stockReservationId: makeDeterministicId("market_stock_reservation", `${idempotencyKey}:${line.cartLineId}`),
+        housingReservationIds: [],
+        createdItemInstanceIds: itemIds,
+        transferredItemInstanceIds: secondary ? itemIds : [],
+        serviceDefinitionId,
+        serviceProviderId,
+        serviceOfferId: line.fulfillmentMode === "PURCHASE_WITH_SERVICE" ? makeDeterministicId("service_offer", `${idempotencyKey}:${line.cartLineId}`) : "",
+        serviceOrderId: line.fulfillmentMode === "PURCHASE_WITH_SERVICE" ? makeDeterministicId("service_order", `${idempotencyKey}:${line.cartLineId}`) : "",
+        serviceStatus: line.fulfillmentMode === "PURCHASE_WITH_SERVICE" ? "PENDING" : "NOT_REQUIRED"
+      };
+    });
     return normalizeMarketOrder({
-      marketOrderId,
-      cartId: cart.cartId,
-      citizenId: cart.citizenId,
-      vendorProviderId,
-      status: "DRAFT",
-      paymentStatus: "NOT_REQUIRED",
-      idempotencyKey,
-      totals: clone(quote.totals),
-      lines: quote.lines.map((line, lineIndex) => {
-        const marketOrderLineId = makeDeterministicId("market_order_line", `${idempotencyKey}:${line.cartLineId}:${lineIndex}`);
-        const serviceDefinitionId = normalizeId(line.serviceDefinitionId || line.linkedServiceSelection?.serviceDefinitionId);
-        const serviceProviderId = normalizeId(line.serviceProviderId || line.linkedServiceSelection?.providerId);
-        return {
-          ...line,
-          marketOrderLineId,
-          definitionId: getMarketOffer(line.marketOfferId)?.definitionId || line.catalogItemId,
-          stockReservationId: makeDeterministicId("market_stock_reservation", `${idempotencyKey}:${line.cartLineId}`),
-          housingReservationIds: [],
-          createdItemInstanceIds: Array.from({ length: line.quantity }, (_, quantityIndex) => makeDeterministicId("item_market", `${idempotencyKey}:${line.cartLineId}:${quantityIndex}`)),
-          serviceDefinitionId,
-          serviceProviderId,
-          serviceOfferId: line.fulfillmentMode === "PURCHASE_WITH_SERVICE" ? makeDeterministicId("service_offer", `${idempotencyKey}:${line.cartLineId}`) : "",
-          serviceOrderId: line.fulfillmentMode === "PURCHASE_WITH_SERVICE" ? makeDeterministicId("service_order", `${idempotencyKey}:${line.cartLineId}`) : "",
-          serviceStatus: line.fulfillmentMode === "PURCHASE_WITH_SERVICE" ? "PENDING" : "NOT_REQUIRED"
-        };
-      }),
+      marketOrderId, cartId: cart.cartId, citizenId: cart.citizenId, vendorProviderId, status: "DRAFT", paymentStatus: "NOT_REQUIRED", idempotencyKey, totals: clone(quote.totals), lines,
+      createdItemInstanceIds: lines.flatMap((line) => line.createdItemInstanceIds || []),
+      transferredItemInstanceIds: lines.flatMap((line) => line.transferredItemInstanceIds || []),
+      secondaryListingIds: [...new Set(lines.map((line) => normalizeId(line.listingId)).filter(Boolean))],
       linkedServiceOfferIds: quote.lines.filter((line) => line.fulfillmentMode === "PURCHASE_WITH_SERVICE").map((line) => makeDeterministicId("service_offer", `${idempotencyKey}:${line.cartLineId}`)),
       linkedServiceOrderIds: quote.lines.filter((line) => line.fulfillmentMode === "PURCHASE_WITH_SERVICE").map((line) => makeDeterministicId("service_order", `${idempotencyKey}:${line.cartLineId}`)),
       shipmentId: quote.fulfillmentMode === "DELIVER_TO_HOUSING" ? makeDeterministicId("market_shipment", `${idempotencyKey}:delivery`) : "",
-      deliveryFulfillment: quote.fulfillmentMode === "DELIVER_TO_HOUSING"
-        ? { status: "PENDING", shipmentId: makeDeterministicId("market_shipment", `${idempotencyKey}:delivery`), recoveryRequired: false }
-        : { status: "NOT_REQUIRED" },
-      pickupFulfillment: quote.fulfillmentMode === "PICKUP"
-        ? {
-            status: "PENDING",
-            providerId: quote.lines[0]?.vendorProviderId || vendorProviderId,
-            organizationLocationId: quote.lines[0]?.organizationLocationId || "",
-            sourceAddress: quote.lines[0]?.sourceAddress || "",
-            vendorDisplayName: quote.lines[0]?.vendorDisplayName || "",
-            reservationDays: getPickupReservationDays(),
-            completionIdempotencyKey: `${idempotencyKey}:pickup-complete`,
-            recoveryRequired: false,
-            errors: []
-          }
-        : { status: "NOT_REQUIRED" },
-      serviceFulfillment: quote.fulfillmentMode === "PURCHASE_WITH_SERVICE"
-        ? { status: "PENDING", startedAt: null, completedAt: null, failedAt: null, lastServiceOrderId: "", lastServiceStatus: "", recoveryRequired: false, errors: [] }
-        : { status: "NOT_REQUIRED" },
-      createdAt: getWorldTime(),
-      updatedAt: getWorldTime(),
-      revision: 1
+      deliveryFulfillment: quote.fulfillmentMode === "DELIVER_TO_HOUSING" ? { status: "PENDING", shipmentId: makeDeterministicId("market_shipment", `${idempotencyKey}:delivery`), recoveryRequired: false } : { status: "NOT_REQUIRED" },
+      pickupFulfillment: quote.fulfillmentMode === "PICKUP" ? { status: "PENDING", providerId: quote.lines[0]?.vendorProviderId || vendorProviderId, organizationLocationId: quote.lines[0]?.organizationLocationId || "", sourceAddress: quote.lines[0]?.sourceAddress || "", vendorDisplayName: quote.lines[0]?.vendorDisplayName || "", reservationDays: getPickupReservationDays(), completionIdempotencyKey: `${idempotencyKey}:pickup-complete`, recoveryRequired: false, errors: [] } : { status: "NOT_REQUIRED" },
+      serviceFulfillment: quote.fulfillmentMode === "PURCHASE_WITH_SERVICE" ? { status: "PENDING", startedAt: null, completedAt: null, failedAt: null, lastServiceOrderId: "", lastServiceStatus: "", recoveryRequired: false, errors: [] } : { status: "NOT_REQUIRED" },
+      createdAt: getWorldTime(), updatedAt: getWorldTime(), revision: 1
     });
   }
 
@@ -3063,6 +3145,54 @@ window.WS_APP = window.WS_APP || {};
     const next = updateCheckoutOrder(order, patch);
     if (!next) throw new Error(failureCode);
     return next;
+  }
+
+  function isSecondaryMarketLine(line = {}) {
+    return normalizeToken(line.offerSource) === "SECONDARY" || Boolean(normalizeId(line.listingId));
+  }
+
+  function buildSecondaryCustodyOperation(order = {}, orderLine = {}, placementContext = {}) {
+    const instanceId = normalizeId(orderLine.sourceInstanceId || orderLine.transferredItemInstanceIds?.[0] || orderLine.createdItemInstanceIds?.[0]);
+    if (!instanceId) throw new Error("MARKET_SECONDARY_SOURCE_INSTANCE_REQUIRED");
+    return {
+      type: "MOVE",
+      instanceId,
+      expected: { ownerId: "", locationType: "VENDOR", lifecycleState: "PACKAGED" },
+      ownerId: order.citizenId,
+      toLocation: {
+        type: "VENDOR",
+        vendorId: orderLine.vendorProviderId || order.vendorProviderId,
+        vendorProviderId: orderLine.vendorProviderId || order.vendorProviderId,
+        organizationLocationId: orderLine.organizationLocationId || placementContext.organizationLocationId || "",
+        sourceAddress: orderLine.sourceAddress || placementContext.sourceAddress || "",
+        marketOrderId: order.marketOrderId,
+        marketOrderLineId: orderLine.marketOrderLineId,
+        shipmentId: placementContext.deliveryShipmentId || order.shipmentId || "",
+        deliveryStatus: "IN_TRANSIT",
+        destinationStorageId: orderLine.destinationRef?.housingStorageId || ""
+      },
+      lifecycleState: "PACKAGED",
+      patch: {
+        acquisition: {
+          sourceType: "MARKET_SECONDARY",
+          marketOrderId: order.marketOrderId,
+          marketOrderLineId: orderLine.marketOrderLineId,
+          marketOfferId: orderLine.marketOfferId,
+          sourceMarketOfferId: orderLine.sourceMarketOfferId || "",
+          listingId: orderLine.listingId || "",
+          vendorProviderId: order.vendorProviderId,
+          deliveryShipmentId: placementContext.deliveryShipmentId || order.shipmentId || "",
+          deliveryEtaAt: placementContext.etaAt || order.deliveryFulfillment?.etaAt || null,
+          acquiredAt: getWorldTime(),
+          price: orderLine.unitPrice,
+          currency: order.totals?.currency || "CREDIT"
+        },
+        marketOrderId: order.marketOrderId,
+        marketOrderLineId: orderLine.marketOrderLineId,
+        marketOfferId: orderLine.marketOfferId,
+        flags: { inTransit: true, delivered: false, secondaryMarket: true }
+      }
+    };
   }
 
   function buildMarketItemInstanceSource(order = {}, orderLine = {}, unitIndex = 0, placementContext = {}) {
@@ -3424,29 +3554,36 @@ window.WS_APP = window.WS_APP || {};
     if (existing && isDeliveryOrder(existing) && ["FULFILLING", "COMPLETED"].includes(existing.status)) {
       marketBridgeDiagnostics.checkoutIdempotentReplays += 1;
       const shipment = getMarketOrderShipment(existing);
-      return { ok: true, operation: existing.status === "COMPLETED" ? "IDEMPOTENT_REPLAY" : "DELIVERY_IN_TRANSIT_REPLAY", status: existing.status, marketOrderId: existing.marketOrderId, billingTransactionId: existing.billingRefs?.billingTransactionId || "", createdItemInstanceIds: [...existing.createdItemInstanceIds], shipment, order: existing };
+      return { ok: true, operation: existing.status === "COMPLETED" ? "IDEMPOTENT_REPLAY" : "DELIVERY_IN_TRANSIT_REPLAY", status: existing.status, marketOrderId: existing.marketOrderId, billingTransactionId: existing.billingRefs?.billingTransactionId || "", createdItemInstanceIds: [...existing.createdItemInstanceIds], transferredItemInstanceIds: [...existing.transferredItemInstanceIds], shipment, order: existing };
     }
     if (existing && ["FAILED", "CANCELLED", "PAYMENT_RECOVERY_REQUIRED"].includes(existing.status)) return { ok: false, status: existing.status, reason: existing.failureCode || existing.status, marketOrderId: existing.marketOrderId, order: existing };
 
     const validation = validateMarketCheckout({ cartId, idempotencyKey });
-    if (!validation.ok) return { ok: false, status: "BLOCKED", reason: validation.reason, cartId: normalizeId(cartId), blockers: validation.blockers, requiredApis: validation.requiredApis, marketOrderId: "", billingTransactionId: "", createdItemInstanceIds: [] };
+    if (!validation.ok) return { ok: false, status: "BLOCKED", reason: validation.reason, cartId: normalizeId(cartId), blockers: validation.blockers, requiredApis: validation.requiredApis, marketOrderId: "", billingTransactionId: "", createdItemInstanceIds: [], transferredItemInstanceIds: [] };
     if (validation.fulfillmentMode !== "DELIVER_TO_HOUSING") return { ok: false, status: "BLOCKED", reason: "MARKET_DELIVERY_CART_REQUIRED" };
 
     const cart = getMarketCart(cartId);
     let order = existing || saveMarketOrder(buildMarketOrderFromQuote(cart, validation, idempotencyKey));
     if (!order) return { ok: false, status: "FAILED", reason: "MARKET_ORDER_PERSISTENCE_FAILED" };
     let shipment = getMarketOrderShipment(order);
-    const context = { stockReservationIds: [], housingReservationIds: [], createdItemInstanceIds: [], billingIntentId: order.billingRefs?.billingIntentId || "", billingTransactionId: order.billingRefs?.billingTransactionId || "", itemTransactionId: shipment?.custodyItemTransactionId || "" };
+    const context = {
+      stockReservationIds: [], housingReservationIds: [], createdItemInstanceIds: [], custodyItemInstanceIds: [],
+      billingIntentId: order.billingRefs?.billingIntentId || "", billingTransactionId: order.billingRefs?.billingTransactionId || "", itemTransactionId: shipment?.custodyItemTransactionId || ""
+    };
 
     try {
       if (order.status === "DRAFT") order = requireCheckoutOrderUpdate(order, { status: "RESERVING" });
       for (const line of order.lines) {
-        const stockResult = reserveMarketStock({ marketOfferId: line.marketOfferId, quantity: line.quantity, marketOrderId: order.marketOrderId, reservationId: line.stockReservationId, idempotencyKey: `${idempotencyKey}:stock:${line.marketOrderLineId}` });
+        const stockResult = reserveMarketStock({
+          marketOfferId: line.marketOfferId, offerSource: line.offerSource, listingId: line.listingId, listingRevision: line.listingRevision,
+          sourceInstanceId: line.sourceInstanceId, citizenId: order.citizenId, cartId: order.cartId, quantity: line.quantity,
+          marketOrderId: order.marketOrderId, reservationId: line.stockReservationId, idempotencyKey: `${idempotencyKey}:stock:${line.marketOrderLineId}`
+        });
         if (!stockResult.ok) throw new Error(stockResult.reason || "STOCK_RESERVATION_FAILED");
         context.stockReservationIds.push(stockResult.reservation.reservationId);
       }
 
-      const billingCreate = window.WS_APP.createBillingIntent({ citizenId: order.citizenId, sourceDomain: "MARKET", sourceRefId: order.marketOrderId, amount: order.totals.finalTotal, currency: order.totals.currency || "CREDIT", descriptionCode: "MARKET_DELIVERY_CHECKOUT", paymentSource: normalizeToken(paymentInput.paymentSource || "CREDITS"), idempotencyKey: `${idempotencyKey}:billing`, correlationId: order.marketOrderId, providerId: order.vendorProviderId, metadata: { cartId: order.cartId, fulfillmentMode: "DELIVER_TO_HOUSING" } });
+      const billingCreate = window.WS_APP.createBillingIntent({ citizenId: order.citizenId, sourceDomain: "MARKET", sourceRefId: order.marketOrderId, amount: order.totals.finalTotal, currency: order.totals.currency || "CREDIT", descriptionCode: "MARKET_DELIVERY_CHECKOUT", paymentSource: normalizeToken(paymentInput.paymentSource || "CREDITS"), idempotencyKey: `${idempotencyKey}:billing`, correlationId: order.marketOrderId, providerId: order.vendorProviderId, metadata: { cartId: order.cartId, fulfillmentMode: "DELIVER_TO_HOUSING", secondaryListingIds: [...order.secondaryListingIds] } });
       if (!billingCreate?.ok) throw new Error(billingCreate?.error?.code || "BILLING_INTENT_CREATE_FAILED");
       context.billingIntentId = billingCreate.billingIntent.billingIntentId;
       const billingAuthorize = window.WS_APP.authorizeBillingIntent(context.billingIntentId, { idempotencyKey: `${idempotencyKey}:authorize` });
@@ -3460,34 +3597,58 @@ window.WS_APP = window.WS_APP || {};
       if (!shipment) throw new Error("MARKET_SHIPMENT_PERSISTENCE_FAILED");
       order = requireCheckoutOrderUpdate(order, { status: "FULFILLING", paymentStatus: "CAPTURED", billingRefs: { billingIntentId: context.billingIntentId, billingTransactionId: context.billingTransactionId }, shipmentId: shipment.shipmentId, deliveryFulfillment: { status: "PREPARING", shipmentId: shipment.shipmentId, etaAt: shipment.etaAt, routeClass: shipment.routeClass, recoveryRequired: false } });
 
-      const createOperations = [];
-      order.lines.forEach((line) => line.createdItemInstanceIds.forEach((instanceId, unitIndex) => {
-        createOperations.push({ type: "CREATE", instanceId, expected: { exists: false }, instance: buildMarketItemInstanceSource(order, line, unitIndex, { deliveryShipmentId: shipment.shipmentId, organizationLocationId: shipment.organizationLocationId, sourceAddress: shipment.sourceAddress, etaAt: shipment.etaAt }) });
-        context.createdItemInstanceIds.push(instanceId);
-      }));
-      const itemCommit = window.WS_APP.commitItemInstanceTransaction({ idempotencyKey: `${idempotencyKey}:delivery-custody`, sourceDomain: "MARKET", sourceRefId: order.marketOrderId, citizenId: order.citizenId, changedDomains: ["ITEM_INSTANCE", "EQUIPMENT", "MARKET", "MARKET_SHIPMENT"], metadata: { operationType: "MARKET_DELIVERY_PREPARE", shipmentId: shipment.shipmentId, providerId: shipment.providerId, etaAt: shipment.etaAt }, operations: createOperations });
+      const custodyOperations = [];
+      order.lines.forEach((line) => {
+        const placementContext = { deliveryShipmentId: shipment.shipmentId, organizationLocationId: shipment.organizationLocationId, sourceAddress: shipment.sourceAddress, etaAt: shipment.etaAt };
+        if (isSecondaryMarketLine(line)) {
+          const instanceId = normalizeId(line.sourceInstanceId || line.createdItemInstanceIds?.[0]);
+          custodyOperations.push(buildSecondaryCustodyOperation(order, line, placementContext));
+          context.custodyItemInstanceIds.push(instanceId);
+          marketBridgeDiagnostics.secondaryExistingInstancesTransferred += 1;
+          return;
+        }
+        line.createdItemInstanceIds.forEach((instanceId, unitIndex) => {
+          custodyOperations.push({ type: "CREATE", instanceId, expected: { exists: false }, instance: buildMarketItemInstanceSource(order, line, unitIndex, placementContext) });
+          context.createdItemInstanceIds.push(instanceId);
+          context.custodyItemInstanceIds.push(instanceId);
+        });
+      });
+      const itemCommit = window.WS_APP.commitItemInstanceTransaction({
+        idempotencyKey: `${idempotencyKey}:delivery-custody`, sourceDomain: "MARKET", sourceRefId: order.marketOrderId, citizenId: order.citizenId,
+        changedDomains: ["ITEM_INSTANCE", "EQUIPMENT", "MARKET", "MARKET_SHIPMENT"],
+        metadata: { operationType: "MARKET_DELIVERY_PREPARE", shipmentId: shipment.shipmentId, providerId: shipment.providerId, etaAt: shipment.etaAt, secondaryListingIds: [...order.secondaryListingIds] },
+        operations: custodyOperations
+      });
       if (!itemCommit?.ok || itemCommit.compensated) throw new Error(itemCommit?.reason || "ITEM_INSTANCE_DELIVERY_CUSTODY_FAILED");
       context.itemTransactionId = normalizeId(itemCommit.transaction?.transactionId);
-      for (const line of order.lines) { const stockCommit = commitMarketStockReservation(line.stockReservationId); if (!stockCommit.ok) throw new Error(stockCommit.reason || "STOCK_COMMIT_FAILED"); }
+      for (const line of order.lines) {
+        const stockCommit = commitMarketStockReservation(line.stockReservationId, { billingTransactionId: context.billingTransactionId, itemTransactionId: context.itemTransactionId });
+        if (!stockCommit.ok) throw new Error(stockCommit.reason || "STOCK_COMMIT_FAILED");
+      }
       window.WS_APP.flushScheduledItemStorePersistence?.();
       const checkedOutCart = saveCart({ ...cart, status: "CHECKED_OUT", updatedAt: getWorldTime(), revision: cart.revision + 1 }, "MARKET_CART_CHECKED_OUT");
       if (!checkedOutCart || !flushMarketCartPersistence()) throw new Error("MARKET_CART_PERSISTENCE_FAILED");
 
-      shipment = saveMarketShipment({ ...shipment, status: "PACKED", instanceIds: [...context.createdItemInstanceIds], custodyItemTransactionId: context.itemTransactionId, packedAt: shipment.packedAt || getWorldTime(), recoveryRequired: false, lastErrorCode: "" }, { expectedRevision: shipment.revision });
+      shipment = saveMarketShipment({ ...shipment, status: "PACKED", instanceIds: [...context.custodyItemInstanceIds], custodyItemTransactionId: context.itemTransactionId, packedAt: shipment.packedAt || getWorldTime(), recoveryRequired: false, lastErrorCode: "" }, { expectedRevision: shipment.revision });
       if (!shipment) throw new Error("MARKET_SHIPMENT_PACKED_PERSISTENCE_FAILED");
       shipment = saveMarketShipment({ ...shipment, status: "IN_TRANSIT", inTransitAt: getWorldTime() }, { expectedRevision: shipment.revision });
       if (!shipment) throw new Error("MARKET_SHIPMENT_TRANSIT_PERSISTENCE_FAILED");
-      order = requireCheckoutOrderUpdate(order, { status: "FULFILLING", paymentStatus: "CAPTURED", createdItemInstanceIds: [...context.createdItemInstanceIds], compensationStatus: "NOT_REQUIRED", shipmentId: shipment.shipmentId, deliveryFulfillment: { status: "IN_TRANSIT", shipmentId: shipment.shipmentId, etaAt: shipment.etaAt, routeClass: shipment.routeClass, recoveryRequired: false, lastErrorCode: "" } });
+      order = requireCheckoutOrderUpdate(order, {
+        status: "FULFILLING", paymentStatus: "CAPTURED", createdItemInstanceIds: [...context.custodyItemInstanceIds],
+        transferredItemInstanceIds: [...new Set(order.lines.flatMap((line) => line.transferredItemInstanceIds || []))], secondaryListingIds: [...order.secondaryListingIds],
+        compensationStatus: "NOT_REQUIRED", shipmentId: shipment.shipmentId,
+        deliveryFulfillment: { status: "IN_TRANSIT", shipmentId: shipment.shipmentId, etaAt: shipment.etaAt, routeClass: shipment.routeClass, recoveryRequired: false, lastErrorCode: "" }
+      });
       marketBridgeDiagnostics.deliveryFulfillmentInTransit += 1;
       offerRevision += 1;
-      window.dispatchEvent?.(new CustomEvent("ws:market-shipment-in-transit", { detail: { eventId: `market-shipment-in-transit:${shipment.shipmentId}:${shipment.revision}`, shipmentId: shipment.shipmentId, marketOrderId: order.marketOrderId, citizenId: order.citizenId, etaAt: shipment.etaAt, instanceIds: [...shipment.instanceIds], changedDomains: ["MARKET", "MARKET_SHIPMENT", "ITEM_INSTANCE", "MARKET_STOCK"], revision: shipment.revision } }));
-      return { ok: true, operation: "DELIVERY_IN_TRANSIT", status: order.status, cart: checkedOutCart, marketOrderId: order.marketOrderId, billingTransactionId: context.billingTransactionId, createdItemInstanceIds: [...context.createdItemInstanceIds], shipment, order };
+      window.dispatchEvent?.(new CustomEvent("ws:market-shipment-in-transit", { detail: { eventId: `market-shipment-in-transit:${shipment.shipmentId}:${shipment.revision}`, shipmentId: shipment.shipmentId, marketOrderId: order.marketOrderId, citizenId: order.citizenId, etaAt: shipment.etaAt, instanceIds: [...shipment.instanceIds], secondaryListingIds: [...order.secondaryListingIds], changedDomains: ["MARKET", "MARKET_SHIPMENT", "ITEM_INSTANCE", "MARKET_STOCK"], revision: shipment.revision } }));
+      return { ok: true, operation: "DELIVERY_IN_TRANSIT", status: order.status, cart: checkedOutCart, marketOrderId: order.marketOrderId, billingTransactionId: context.billingTransactionId, createdItemInstanceIds: [...context.custodyItemInstanceIds], transferredItemInstanceIds: [...order.transferredItemInstanceIds], secondaryListingIds: [...order.secondaryListingIds], shipment, order };
     } catch (error) {
       marketBridgeDiagnostics.deliveryFulfillmentFailures += 1;
       const failureCode = normalizeToken(error?.message || "MARKET_DELIVERY_CHECKOUT_FAILED");
       const failedOrder = compensateMarketCheckout(order, context, failureCode) || order;
       if (shipment && !MARKET_SHIPMENT_TERMINAL_STATUSES.has(shipment.status)) saveMarketShipment({ ...shipment, status: failedOrder.status === "PAYMENT_RECOVERY_REQUIRED" ? "RECOVERY_REQUIRED" : "CANCELLED", recoveryRequired: failedOrder.status === "PAYMENT_RECOVERY_REQUIRED", lastErrorCode: failureCode, cancelledAt: failedOrder.status === "PAYMENT_RECOVERY_REQUIRED" ? shipment.cancelledAt : getWorldTime() }, { expectedRevision: shipment.revision });
-      return { ok: false, status: failedOrder.status || "FAILED", reason: failureCode, marketOrderId: failedOrder.marketOrderId, billingTransactionId: context.billingTransactionId, createdItemInstanceIds: [], order: failedOrder };
+      return { ok: false, status: failedOrder.status || "FAILED", reason: failureCode, marketOrderId: failedOrder.marketOrderId, billingTransactionId: context.billingTransactionId, createdItemInstanceIds: [], transferredItemInstanceIds: [], order: failedOrder };
     }
   }
 

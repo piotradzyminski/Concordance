@@ -104,9 +104,9 @@ test("Profiles CSS and entrypoint versions are registered canonically", () => {
 
   assert.match(modules, /css\/subscription-action-feedback\.css\?v=1/);
   assert.match(modules, /css\/subscriptions\.css\?v=21/);
-  assert.match(modules, /js\/subscriptions\.js\?v=35/);
+  assert.match(modules, /js\/subscriptions\.js\?v=36/);
 
-  assert.match(index, /js\/modules\.js\?v=309/);
+  assert.match(index, /js\/modules\.js\?v=318/);
 
   assert.doesNotMatch(index, /<script[^>]+js\/subscriptions\.js/);
 });

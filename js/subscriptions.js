@@ -1936,7 +1936,7 @@ function bindSubscriptionTierProfileActions(user, subscription, returnView = "")
       if (getSubscriptionActionFeedback()?.isBusy?.(button)) return;
       const subscriptionId = button.dataset.tierCancelSubscription || subscription.id;
       const citizen = window.WS_APP.getCitizenById(user.citizenId);
-      const confirmed = await confirmRegistryAction("CANCEL SUBSCRIPTION", getSubscriptionCancellationMessage(citizen, subscriptionId), "Cancel Subscription");
+      const confirmed = await window.WS_APP.registryUI.confirmAction("CANCEL SUBSCRIPTION", getSubscriptionCancellationMessage(citizen, subscriptionId), "Cancel Subscription");
       if (!confirmed) return;
 
       const release = lockSubscriptionAction(button, "CANCELLING...");
@@ -3076,7 +3076,7 @@ function renderPlayerSubscriptionsModule(user, options = {}) {
   }
 
   document.querySelector("[data-clear-cancelled-subscriptions='ALL']")?.addEventListener("click", async () => {
-    const confirmed = await confirmRegistryAction("CLEAR CANCELLED SUBSCRIPTIONS", "Remove all cancelled subscriptions from your card? Paid, pending, overdue and suspended services will not be changed.", "Clear Cancelled");
+    const confirmed = await window.WS_APP.registryUI.confirmAction("CLEAR CANCELLED SUBSCRIPTIONS", "Remove all cancelled subscriptions from your card? Paid, pending, overdue and suspended services will not be changed.", "Clear Cancelled");
     if (!confirmed) return;
 
     const result = getSubscriptionCommandApi()?.clearCancelledSubscriptionContracts?.(user.citizenId, {
@@ -3531,7 +3531,7 @@ function bindAdminCitizenSubscriptionActions(user, citizenId, category) {
     button.addEventListener("click", async () => {
       const [targetCitizenId, subscriptionId] = String(button.dataset.adminCancelSubscription || "").split("::");
       const citizen = window.WS_APP.getCitizenById(targetCitizenId);
-      const confirmed = await confirmRegistryAction("ADMIN CANCEL SUBSCRIPTION", getSubscriptionCancellationMessage(citizen, subscriptionId, { admin: true }), "Cancel Subscription");
+      const confirmed = await window.WS_APP.registryUI.confirmAction("ADMIN CANCEL SUBSCRIPTION", getSubscriptionCancellationMessage(citizen, subscriptionId, { admin: true }), "Cancel Subscription");
       if (!confirmed) return;
 
       const result = getSubscriptionCommandApi()?.cancelSubscriptionContract?.(subscriptionId, "ADMIN_CANCELLED", {
@@ -3549,7 +3549,7 @@ function bindAdminCitizenSubscriptionActions(user, citizenId, category) {
   document.querySelectorAll("[data-admin-remove-subscription]").forEach((button) => {
     button.addEventListener("click", async () => {
       const [targetCitizenId, subscriptionId] = String(button.dataset.adminRemoveSubscription || "").split("::");
-      const confirmed = await confirmRegistryAction("REMOVE SUBSCRIPTION", "Permanently remove this subscription from the selected citizen card?", "Remove");
+      const confirmed = await window.WS_APP.registryUI.confirmAction("REMOVE SUBSCRIPTION", "Permanently remove this subscription from the selected citizen card?", "Remove");
       if (!confirmed) return;
 
       const result = getSubscriptionCommandApi()?.removeSubscriptionContractRecord?.(subscriptionId, {
@@ -3569,7 +3569,7 @@ function bindAdminCitizenSubscriptionActions(user, citizenId, category) {
   });
 
   document.querySelector("[data-admin-clear-cancelled]")?.addEventListener("click", async () => {
-    const confirmed = await confirmRegistryAction("CLEAR CANCELLED SUBSCRIPTIONS", "Remove all cancelled subscriptions from this citizen card?", "Clear Cancelled");
+    const confirmed = await window.WS_APP.registryUI.confirmAction("CLEAR CANCELLED SUBSCRIPTIONS", "Remove all cancelled subscriptions from this citizen card?", "Clear Cancelled");
     if (!confirmed) return;
 
     const result = getSubscriptionCommandApi()?.clearCancelledSubscriptionContracts?.(citizenId, {

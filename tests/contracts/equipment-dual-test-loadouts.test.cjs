@@ -201,7 +201,7 @@ test("Citizen B covers complete independent wear layers, blocked mounts, item-mo
 
 test("entrypoint cache versions load the dual test loadout seed", () => {
   const index = fs.readFileSync(path.join(PROJECT_ROOT, "index.html"), "utf8");
-  assert.match(index, /data\/citizens\.js\?v=79/);
-  assert.match(index, /data\/item-instances\.js\?v=9/);
-  assert.match(index, /js\/item-instance-store\.js\?v=16/);
+  assert.match(index, /data\/citizens\.js\?v=80/);
+  assert.match(index, /data\/item-instances\.js\?v=10/);
+  assert.match(index, /js\/item-instance-store\.js\?v=17/);
 });

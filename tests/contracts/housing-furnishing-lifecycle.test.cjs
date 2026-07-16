@@ -246,7 +246,7 @@ test("Housing UI exposes lifecycle, slots, repair, replacement and disposal acti
   assert.match(bridgeSource, /detachedOperatorModuleInstanceIds/);
   assert.match(bridgeSource, /INSTALLED_IN_ITEM/);
   assert.doesNotMatch(read("data/housing-furnishing-lifecycle.js"), /CONSUMABLE_USE|SECURE_CONSUMABLE_STORAGE|MEDICAL_CONSUMABLE_USE/);
-  assert.match(moduleMap, /js\/housing-household-runtime\.js\?v=3/);
+  assert.match(moduleMap, /js\/housing-household-runtime\.js\?v=4/);
   assert.match(index, /data\/housing-furnishing-lifecycle\.js\?v=1/);
   assert.match(index, /js\/housing-furnishing-lifecycle\.js\?v=1/);
 });

@@ -101,12 +101,7 @@ window.APP_DATA.notificationProviderCapabilities = [
     organizationId: "sleepstandard",
     supportedDomains: ["SUBSCRIPTION", "MEDICAL"]
   },
-  {
-    providerId: "provider-learnmin-access",
-    organizationId: "learnmin-access",
-    supportedDomains: ["SUBSCRIPTION", "EDUCATION", "SYSTEM"]
-  },
-  {
+    {
     providerId: "system-runtime",
     sourceKind: "SYSTEM_PROCESS",
     supportedDomains: ["SYSTEM", "CYBERWARE", "WORLD_BRIDGE"]

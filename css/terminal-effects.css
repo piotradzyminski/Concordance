@@ -568,23 +568,6 @@
   padding-right: 4px;
   color: var(--muted);
   font-size: var(--type-control);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(143, 189, 180, 0.28) rgba(0, 0, 0, 0.24);
-}
-
-.terminal-sidefeed #terminal-log-lines::-webkit-scrollbar,
-.session-log #terminal-log-lines::-webkit-scrollbar {
-  width: 6px;
-}
-
-.terminal-sidefeed #terminal-log-lines::-webkit-scrollbar-track,
-.session-log #terminal-log-lines::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.24);
-}
-
-.terminal-sidefeed #terminal-log-lines::-webkit-scrollbar-thumb,
-.session-log #terminal-log-lines::-webkit-scrollbar-thumb {
-  background: rgba(143, 189, 180, 0.28);
 }
 
 .terminal-sidefeed .log-line,

@@ -2,18 +2,23 @@ window.WS_APP = window.WS_APP || {};
 
 (function initSubscriptionCatalogStoreModule() {
   const app = window.WS_APP;
-  const STORAGE_KEY = "ws_app_subscription_catalog_definitions_v4";
-  const STORAGE_SCHEMA_KEY = "ws_app_subscription_catalog_definitions_schema_v4";
-  const STORAGE_SCHEMA_VERSION = "subscription_catalog_housing_rent_4_0x";
+  const STORAGE_KEY = "ws_app_subscription_catalog_definitions_v6";
+  const STORAGE_SCHEMA_KEY = "ws_app_subscription_catalog_definitions_schema_v6";
+  const STORAGE_SCHEMA_VERSION = "subscription_catalog_authoring_4_8x";
   const LEGACY_STORAGE_KEYS = [
     "ws_app_subscription_catalog_definitions_v1",
     "ws_app_subscription_catalog_definitions_schema",
     "ws_app_subscription_catalog_definitions_v2",
     "ws_app_subscription_catalog_definitions_schema_v2",
     "ws_app_subscription_catalog_definitions_v3",
-    "ws_app_subscription_catalog_definitions_schema_v3"
+    "ws_app_subscription_catalog_definitions_schema_v3",
+    "ws_app_subscription_catalog_definitions_v4",
+    "ws_app_subscription_catalog_definitions_schema_v4",
+    "ws_app_subscription_catalog_definitions_v5",
+    "ws_app_subscription_catalog_definitions_schema_v5"
   ];
   const VALID_TARGET_TYPES = new Set(["CITIZEN", "ITEM_INSTANCE"]);
+  const VALID_CATALOG_STATUSES = new Set(["CANONICAL", "PROVISIONAL", "TEST_ONLY", "DEPRECATED"]);
   const VALID_DOMAINS = new Set([
     "GENERAL", "MEDICAL", "CYBERWARE", "EQUIPMENT", "HOUSING", "NETWORK",
     "SECURITY", "FOOD", "TRANSPORT", "REST", "EDUCATION"
@@ -289,6 +294,11 @@ window.WS_APP = window.WS_APP || {};
     return Array.from(byId.values()).sort((a, b) => a.tierLevel - b.tierLevel || a.label.localeCompare(b.label));
   }
 
+  function normalizeSubscriptionCatalogStatus(value = "") {
+    const status = token(value || "PROVISIONAL") || "PROVISIONAL";
+    return VALID_CATALOG_STATUSES.has(status) ? status : "PROVISIONAL";
+  }
+
   function normalizeSubscriptionDefinition(definition = {}) {
     const title = String(definition.title || definition.label || definition.name || "New Subscription").trim();
     const subscriptionCatalogId = String(definition.subscriptionCatalogId || definition.id || `sub-${slugify(title)}`).trim();
@@ -334,6 +344,7 @@ window.WS_APP = window.WS_APP || {};
         summary: String(definition.summary || definition.shortSummary || "").trim(),
         description: String(definition.description || "").trim()
       }),
+      catalogStatus: normalizeSubscriptionCatalogStatus(definition.catalogStatus || definition.authoringStatus),
       tiers: tiers.length ? tiers : [normalizeSubscriptionTier({ tierId: "tier-default", label: "T1", amount: 0, billingCycle }, 0)],
       active,
       revision: clampInteger(definition.revision ?? 1, 1, Number.MAX_SAFE_INTEGER, 1)
@@ -368,6 +379,7 @@ window.WS_APP = window.WS_APP || {};
       summary: normalized.summary,
       description: normalized.description,
       presentation: clone(normalized.presentation),
+      catalogStatus: normalized.catalogStatus,
       tiers: normalized.tiers.map(serializeSubscriptionTier),
       active: normalized.active,
       revision: normalized.revision
@@ -402,6 +414,12 @@ window.WS_APP = window.WS_APP || {};
       byId.set(normalized.subscriptionCatalogId, normalized);
     });
     (Array.isArray(storedList) ? storedList : []).forEach((item) => {
+      const hasCatalogStatus = Boolean(
+        item
+        && typeof item === "object"
+        && !Array.isArray(item)
+        && (item.catalogStatus !== undefined || item.authoringStatus !== undefined)
+      );
       const normalized = normalizeSubscriptionDefinition(item);
       const base = byId.get(normalized.subscriptionCatalogId);
       if (!base) {
@@ -432,6 +450,7 @@ window.WS_APP = window.WS_APP || {};
       byId.set(normalized.subscriptionCatalogId, normalizeSubscriptionDefinition({
         ...base,
         ...normalized,
+        catalogStatus: hasCatalogStatus ? normalized.catalogStatus : base.catalogStatus,
         presentation: mergeSubscriptionPresentation(base.presentation, normalized.presentation),
         coverageRules: Array.from(coverageRulesById.values()),
         tiers: Array.from(tiersById.values())
@@ -442,10 +461,15 @@ window.WS_APP = window.WS_APP || {};
 
   function mergeSubscriptionCatalogDefinitions(baseDefinitions = {}, storedDefinitions = {}) {
     const base = normalizeSubscriptionCatalogDefinitions(baseDefinitions);
-    const stored = normalizeSubscriptionCatalogDefinitions(storedDefinitions);
+    const storedSource = storedDefinitions && typeof storedDefinitions === "object"
+      ? storedDefinitions
+      : {};
+    const storedSubscriptions = Array.isArray(storedSource.subscriptions)
+      ? storedSource.subscriptions
+      : [];
     return {
       schemaVersion: STORAGE_SCHEMA_VERSION,
-      subscriptions: mergeSubscriptionDefinitionList(base.subscriptions, stored.subscriptions)
+      subscriptions: mergeSubscriptionDefinitionList(base.subscriptions, storedSubscriptions)
     };
   }
 
@@ -455,10 +479,21 @@ window.WS_APP = window.WS_APP || {};
 
   function readStoredDefinitions() {
     try {
-      if (window.localStorage.getItem(STORAGE_SCHEMA_KEY) !== STORAGE_SCHEMA_VERSION) return null;
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      return normalizeSubscriptionCatalogDefinitions(JSON.parse(raw));
+      if (window.localStorage.getItem(STORAGE_SCHEMA_KEY) === STORAGE_SCHEMA_VERSION) {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return normalizeSubscriptionCatalogDefinitions(JSON.parse(raw));
+      }
+
+      const legacyV5Schema = window.localStorage.getItem("ws_app_subscription_catalog_definitions_schema_v5");
+      const legacyV5Raw = window.localStorage.getItem("ws_app_subscription_catalog_definitions_v5");
+      if (legacyV5Schema === "subscription_catalog_cleanup_4_7x" && legacyV5Raw) {
+        const migrated = normalizeSubscriptionCatalogDefinitions(JSON.parse(legacyV5Raw));
+        window.localStorage.setItem(STORAGE_SCHEMA_KEY, STORAGE_SCHEMA_VERSION);
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeSubscriptionCatalogDefinitions(migrated)));
+        return migrated;
+      }
+      return null;
     } catch (error) {
       console.warn("W&S subscription catalog store could not read localStorage.", error);
       return null;
@@ -509,7 +544,9 @@ window.WS_APP = window.WS_APP || {};
   app.initSubscriptionCatalogStore = function initSubscriptionCatalogStore() {
     const seed = readSeedDefinitions();
     const stored = readStoredDefinitions();
-    subscriptionCatalogDefinitions = stored ? mergeSubscriptionCatalogDefinitions(seed, stored) : seed;
+    // Authoring v6 stores a full catalog snapshot. A deliberate deletion must not be
+    // resurrected from the seed on the next reload.
+    subscriptionCatalogDefinitions = stored || seed;
     cleanupLegacyCatalogStorage();
     if (!stored) writeStoredDefinitions(subscriptionCatalogDefinitions);
     return clone(subscriptionCatalogDefinitions);
@@ -518,8 +555,10 @@ window.WS_APP = window.WS_APP || {};
   app.ensureSubscriptionCatalogLoaded = function ensureSubscriptionCatalogLoaded() {
     if (window.APP_DATA?.subscriptionCatalogDefinitions) return Promise.resolve(clone(subscriptionCatalogDefinitions));
     if (app.loadLazyScript) {
-      return app.loadLazyScript("data/subscription-catalog.js?v=13").then(() => {
-        subscriptionCatalogDefinitions = mergeSubscriptionCatalogDefinitions(readSeedDefinitions(), subscriptionCatalogDefinitions);
+      return app.loadLazyScript("data/subscription-catalog.js?v=15").then(() => {
+        if (!(subscriptionCatalogDefinitions?.subscriptions || []).length) {
+          subscriptionCatalogDefinitions = readSeedDefinitions();
+        }
         return clone(subscriptionCatalogDefinitions);
       });
     }
@@ -537,6 +576,7 @@ window.WS_APP = window.WS_APP || {};
   app.normalizeSubscriptionTierPresentation = normalizeSubscriptionTierPresentation;
   app.normalizeSubscriptionLogoPath = normalizeSubscriptionLogoPath;
   app.normalizeSubscriptionMarketInput = normalizeSubscriptionMarketInput;
+  app.normalizeSubscriptionCatalogStatus = normalizeSubscriptionCatalogStatus;
   app.inferSubscriptionMarket = inferSubscriptionMarket;
   app.getSubscriptionCatalogCategories = getSubscriptionCatalogCategories;
   app.getSubscriptionCatalogTierPrices = function getSubscriptionCatalogTierPrices(definition = {}) {
@@ -558,17 +598,48 @@ window.WS_APP = window.WS_APP || {};
   app.getSubscriptionCatalogDefinitions = () => clone(subscriptionCatalogDefinitions);
   app.setSubscriptionCatalogDefinitions = setSubscriptionCatalogDefinitions;
   app.updateSubscriptionCatalogDefinitions = updateSubscriptionCatalogDefinitions;
+  app.replaceSubscriptionCatalogDefinitions = function replaceSubscriptionCatalogDefinitions(definitions = {}, options = {}) {
+    return setSubscriptionCatalogDefinitions(definitions, {
+      ...options,
+      replace: true,
+      mergeSeed: false,
+      persist: options.persist !== false,
+      source: options.source || "subscription-catalog-replace"
+    });
+  };
+  app.resetSubscriptionCatalogToSeed = function resetSubscriptionCatalogToSeed(options = {}) {
+    return setSubscriptionCatalogDefinitions(readSeedDefinitions(), {
+      replace: true,
+      mergeSeed: false,
+      persist: options.persist !== false,
+      source: options.source || "subscription-catalog-seed-reset"
+    });
+  };
   app.getSubscriptionCatalog = function getSubscriptionCatalog(options = {}) {
     const includeArchived = options.includeArchived === true;
+    const includeTestOnly = options.includeTestOnly === true;
+    const includeDeprecated = options.includeDeprecated === true;
     const category = options.category ? token(options.category) : null;
+    const catalogStatus = options.catalogStatus ? normalizeSubscriptionCatalogStatus(options.catalogStatus) : null;
     let definitions = normalizeSubscriptionCatalogDefinitions(subscriptionCatalogDefinitions).subscriptions;
     if (!includeArchived) definitions = definitions.filter((definition) => definition.active);
+    if (!includeTestOnly) definitions = definitions.filter((definition) => definition.catalogStatus !== "TEST_ONLY");
+    if (!includeDeprecated) definitions = definitions.filter((definition) => definition.catalogStatus !== "DEPRECATED");
+    if (catalogStatus) definitions = definitions.filter((definition) => definition.catalogStatus === catalogStatus);
     if (category) definitions = definitions.filter((definition) => definition.category === category);
     return clone(definitions);
   };
+  app.getSubscriptionCatalogStatusSummary = function getSubscriptionCatalogStatusSummary() {
+    return app.getSubscriptionCatalog({ includeArchived: true, includeTestOnly: true, includeDeprecated: true })
+      .reduce((summary, definition) => {
+        const status = normalizeSubscriptionCatalogStatus(definition.catalogStatus);
+        summary[status] = Number(summary[status] || 0) + 1;
+        return summary;
+      }, { CANONICAL: 0, PROVISIONAL: 0, TEST_ONLY: 0, DEPRECATED: 0 });
+  };
   app.getSubscriptionCatalogEntry = function getSubscriptionCatalogEntry(subscriptionCatalogId) {
     const id = String(subscriptionCatalogId || "").trim();
-    const definition = app.getSubscriptionCatalog({ includeArchived: true })
+    const definition = app.getSubscriptionCatalog({ includeArchived: true, includeTestOnly: true, includeDeprecated: true })
       .find((item) => item.subscriptionCatalogId === id);
     return definition ? clone(definition) : null;
   };

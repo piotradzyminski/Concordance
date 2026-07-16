@@ -1,10 +1,10 @@
-# Subscription Contracts Contract — Housing Rent Catalog 4.0x / Public API 3.1x / Events 2.3x / Workspace UI 4.0 + Terminal Cards 4.0x / Profiles UI 4.1 / UI Stability 4.2.1 / Actions & Feedback 4.3 / Catalog Presentation 4.4 / Responsive & Accessibility 4.5 / Entitlement Projection 4.6
+# Subscription Contracts Contract — Housing Rent Catalog 4.0x / Public API 3.1x / Events 2.3x / Workspace UI 4.0 + Terminal Cards 4.0x / Profiles UI 4.1 / UI Stability 4.2.1 / Actions & Feedback 4.3 / Catalog Presentation 4.4 / Responsive & Accessibility 4.5 / Entitlement Projection 4.6 / Catalog Cleanup 4.7x / Catalog Authoring 4.8x
 
 ## Status
 
 ```text
 SCHEMA: subscription_contracts_bridge_schema_2_0x
-CATALOG: subscription_catalog_housing_rent_4_0x
+CATALOG: subscription_catalog_authoring_4_8x
 WORLD BRIDGE PHASE: SUBSCRIPTIONS / BRIDGE READY 3.1x
 ENTITLEMENT PROJECTION: subscriptions_entitlement_3_1x
 ```
@@ -18,7 +18,7 @@ data/subscription-catalog.js
   seed catalog with machine-readable ItemInstance target eligibility
 
 js/subscription-catalog-store.js
-  catalog normalization, target-policy runtime views and canonical v4 persistence
+  catalog normalization, target-policy runtime views, v6 full-snapshot persistence and v5 cleanup-snapshot migration
 
 js/subscription-entitlement.js
   contract normalization, validation, strict citizen sanitization and canonical persistence projection
@@ -1200,3 +1200,165 @@ The player tier matrix uses included scope, explicit limits, priority/target and
 ## Responsive and accessibility boundary
 
 The player workspace uses one roving-tabindex tablist for Overview, Contracts, Catalog and Providers. Each selected view is a labelled `tabpanel`; filtered result totals are announced through polite status regions. Product tier comparison uses table/row/columnheader/cell semantics without introducing a second data projection. Profile navigation moves focus to the new route heading. Player layouts must remain bounded at 980, 720 and 520 px and honor reduced-motion preferences.
+
+
+## Catalog cleanup 4.7x
+
+### Catalog authoring status
+
+Every normalized Subscription definition persists one:
+
+```text
+catalogStatus:
+CANONICAL
+PROVISIONAL
+TEST_ONLY
+DEPRECATED
+```
+
+Unknown or missing values normalize to `PROVISIONAL`.
+
+Player/runtime catalog reads exclude `TEST_ONLY` and `DEPRECATED` by default. Diagnostic or authoring reads may request them explicitly through:
+
+```js
+getSubscriptionCatalog({
+  includeTestOnly: true,
+  includeDeprecated: true,
+  includeArchived: true
+})
+```
+
+`catalogStatus` is authoring/presentation metadata. It does not alter Billing, target eligibility, contract lifecycle or entitlement resolution.
+
+### Current live catalog
+
+```text
+schemaVersion: subscription_catalog_cleanup_4_7x
+products: 26
+providers: 18
+CANONICAL: 13
+PROVISIONAL: 13
+TEST_ONLY: 0
+DEPRECATED: 0
+```
+
+LearnMin Access and Skill Channel are retired. The live catalog, Organization Store seed and Subscription notification provider manifests must not contain:
+
+```text
+provider-learnmin-access
+learnmin-access
+sub-skill-channel
+LEARNMIN_EDUCATION_ACCESS
+LEARNMIN_EDUCATION_ACCESS_T*
+```
+
+No replacement Education product is inferred by this cleanup. A future authoring decision may create a TruthMin-owned product with new stable IDs.
+
+### Persistence reset
+
+Catalog storage uses:
+
+```text
+ws_app_subscription_catalog_definitions_v5
+ws_app_subscription_catalog_definitions_schema_v5
+```
+
+A v4 payload is not migrated or merged. It is deleted and the current seed is written to v5 storage. This is intentional pre-alpha cleanup.
+
+### Retired seed contracts
+
+The following technical seed contracts are not campaign data:
+
+```text
+sub-citizen-a-mass-compression-capacity-licensed
+sub-citizen-b-mass-compression-capacity-corporate
+sub-citizen-b-habitat-secured
+```
+
+They are removed from:
+
+```text
+data/citizens.js
+Citizen persistence normalization
+Housing linkedSubscriptionId normalization
+ItemInstance authorizationRefs.subscriptionId normalization
+```
+
+The cleanup matches exact IDs only. It does not delete user-created contracts, contracts created through `SubscriptionAPI`, or the world-facing Mara Chen Live & Prevail contract.
+
+### Fixture boundary
+
+`data/subscription-bridge-fixtures.js` remains a declarative readiness fixture source. Its `fixture-*` citizens and ItemInstances are not inserted into the Citizen Store, ItemInstance Store or `citizen.subscriptions[]` during normal campaign startup.
+
+## Catalog authoring 4.8x
+
+### Ownership and persistence
+
+`js/admin-subscription-catalog-authoring.js` is the command/UI boundary for Subscription definition authoring. It does not own another catalog collection. All accepted changes are normalized and persisted through `js/subscription-catalog-store.js`.
+
+Catalog storage uses:
+
+```text
+ws_app_subscription_catalog_definitions_v6
+ws_app_subscription_catalog_definitions_schema_v6
+schemaVersion: subscription_catalog_authoring_4_8x
+```
+
+A valid v5 cleanup snapshot may migrate once into v6. After migration, the persisted v6 array is a complete replacement snapshot. Runtime initialization must not merge missing seed definitions back into an authored v6 catalog. `resetSubscriptionCatalogToSeed()` is the only explicit seed reset path.
+
+### Authoring commands
+
+```text
+createSubscriptionDefinition
+updateSubscriptionDefinition
+duplicateSubscriptionDefinition
+archiveSubscriptionDefinition
+restoreSubscriptionDefinition
+deleteSubscriptionDefinition
+replaceSubscriptionCatalog
+exportSubscriptionCatalogPack
+previewSubscriptionCatalogPack
+importSubscriptionCatalogPack
+```
+
+Commands require normalized stable identity, validation, idempotency and optimistic revision checks where applicable. A product's `subscriptionCatalogId` and an existing tier's `tierId` are immutable. Tier revisions advance only when normalized tier content changes.
+
+### Provider identity
+
+Authoring selects providers through the Subscription provider registry and Organization Store identity. Canonical relations use:
+
+```text
+providerId
+organizationId
+```
+
+Display names are presentation fields and must not become relation keys. A definition with an unresolved provider or contradictory organization relation is rejected.
+
+### Lifecycle and deletion
+
+Authoring statuses remain:
+
+```text
+CANONICAL
+PROVISIONAL
+TEST_ONLY
+DEPRECATED
+```
+
+Archive/restore are non-destructive lifecycle operations. Hard delete is rejected while any Citizen contract references the definition unless the caller uses an explicit force operation. Hard delete never removes or mutates Citizen contracts by itself.
+
+### Pack import/export
+
+Catalog packs use:
+
+```text
+schemaVersion: subscription_catalog_authoring_pack_1
+mode: MERGE | REPLACE
+```
+
+Import is two-stage: preview/validation, then explicit apply. `MERGE` keeps unrelated current definitions and replaces matching stable IDs. `REPLACE` installs the validated pack as the complete authored catalog. Neither mode creates contracts, Billing transactions, entitlement grants or Organization records.
+
+### UI boundary
+
+Admin Catalog Management is the writable authoring surface. The legacy SYSTEM Subscription Catalog editor is read-only and may only route to Admin Catalog Management. It must not serialize a reduced form over canonical definitions because it does not own complete provider, entitlement, coverage, presentation and tier identity data.
+

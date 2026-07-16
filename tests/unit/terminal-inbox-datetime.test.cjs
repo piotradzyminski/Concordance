@@ -19,6 +19,7 @@ function createStoreRuntime(initialTime = "2109-02-13T10:00:00.000Z") {
     "js/service-log-lifecycle.js",
     "js/terminal-entry-store.js",
     "js/terminal-reminder-store.js",
+    "js/citizen-subscription-adapter.js",
     "js/store.js"
   ]);
   return {
@@ -66,7 +67,7 @@ test("new Terminal Inbox entries use Campaign Time for created, sent and receive
     title: "Campaign timestamp"
   });
 
-  assert.equal(entry.schemaVersion, 3);
+  assert.equal(entry.schemaVersion, 4);
   assert.equal(entry.createdAt, "2109-02-13T10:42:00.000Z");
   assert.equal(entry.sentAt, "2109-02-13T10:42:00.000Z");
   assert.equal(entry.receivedAt, "2109-02-13T10:42:00.000Z");

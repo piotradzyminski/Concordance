@@ -3,7 +3,7 @@
 ## Baseline
 
 ```text
-runtime: Parallel Scope Merge 15.19x
+runtime: Parallel Scope Merge 15.23x
 phase: pre-alpha
 ```
 
@@ -560,3 +560,115 @@ Knowledge Tabs 1.6x
 ```
 
 Recommended next work is findings-driven browser validation. After that, the natural Market continuation is `Market Secondary Fulfillment 7.1x`: reserve one active listing and reuse the existing Market cart/order/fulfillment contracts. Seller escrow, player-created listings and marketplace settlement should remain separate later scopes.
+
+
+## Installed scope verification — 15.20x
+
+```text
+Citizen Card Projection Boundary
+  Citizen record bundles use read-only projection adapters instead of the full Cyberware UI runtime
+  cold-entry Equipment, active Subscription and installed Cyberware summaries read canonical eager state
+  full-domain globals and command ownership remain unchanged
+
+Registry UI Dependency Foundation
+  registry confirmation and form/query helpers have one eager owner
+  Knowledge, Citizen Records and Subscriptions use explicit WS_APP.registryUI dependencies
+  no record schema, Knowledge content or persistence ownership changed
+
+Terminal Store Reactivity
+  Entry and Reminder events refresh only their mounted Terminal projection boundaries
+  updates are singleton, coalesced and guarded against duplicate direct/store renders
+  focus, filters, selection, open menus and scroll are preserved where restorable
+
+Subscriptions Catalog Cleanup
+  LearnMin, Skill Channel and retired technical seed contracts are absent from campaign data
+  every live product is CANONICAL or PROVISIONAL
+  v5 catalog storage discards the obsolete v4 overlay
+  fixture citizens and ItemInstances remain diagnostics only
+```
+
+Recommended follow-up is findings-driven browser validation. The next architectural scopes remain separate:
+
+```text
+Citizen Card Renderer Split 2.0x
+Subscriptions Catalog Authoring 4.8x
+```
+
+Do not combine renderer extraction with CSS retirement, and do not reintroduce fixture contracts or retired providers through authoring/import flows.
+
+
+## Post-15.21x validation priorities
+
+```text
+Terminal
+  verify panel-local refresh, Calendar isolation, focus and scroll preservation
+
+Citizen Card
+  verify player cold entry and GM Citizen Cards registry loading boundaries
+
+Registry controls
+  verify System, Encyclopedia, Citizen Records, Access and Subscription forms after retiring encyclopedia.css
+
+Equipment / Cyberware
+  verify cold independent entry, responsive styling and absence of the retired bridge
+
+Subscriptions authoring
+  verify draft, preview, publish, archive/restore and catalog v6 reload behavior
+
+Admin Cyberware
+  verify PLAYER WORLD and ADMIN DIRECT preview/execute flows and audit references
+
+Knowledge
+  verify the two-column relation index at desktop widths and normal-flow fallback below 1280px
+
+Market
+  verify ORDERS Ordered/Delivered classification, grouped Catalog, Secondary delivery checkout, failure compensation and return reopening
+```
+
+Recommended next patches must come from reproduced browser findings. Do not combine Equipment CSS consolidation, Market advanced filters or Secondary seller settlement without a separate approved scope.
+
+
+## Post-15.22x validation priorities
+
+```text
+Housing
+  verify Overview composition, legacy tab normalization and four-section navigation
+  verify Item Index locate for Household, Housing Storage and nested containers
+  verify focus restoration, highlight and narrow-layout drawer behavior
+
+Shared controls
+  verify Chromium and Firefox scrollbars across document, Admin, Terminal, Billing, Equipment, Cyberware and Housing
+  verify checkbox checked, unchecked, focus-visible and disabled states
+  verify radio inputs retain native/radio presentation and do not inherit square checkbox chrome
+
+Regression boundaries
+  verify Market remains cold-entry independent from Housing Household runtime
+  verify no retired housing-market runtime, local scrollbar theme or duplicate checkbox owner returns
+```
+
+Recommended next work must be findings-driven browser validation. Radio standardization, Housing drag/drop behavior and inventory schema changes remain separate scopes.
+
+
+## Post-15.23x validation priorities
+
+```text
+Terminal Inbox
+  verify v3/date-only records migrate once to schema v4
+  verify canonical Domain/Category/Event/Status/Severity filters and actions[] routing
+  verify 50-row initial window, deterministic LOAD MORE increments and state preservation
+
+Cyberware taxonomy
+  verify BODY → HEAD/TORSO/LIMBS navigation after migration
+  verify separate eyes, Jaw, paired Ears/Lungs/Kidneys and legacy alias resolution
+  verify migration replay creates no duplicate occupancy or ItemInstance records
+
+Equipment and Citizen Card
+  verify Equipment visual parity after CSS consolidation
+  verify Full/Compact and Equipment selection fast paths preserve focus, section state and scroll
+
+Billing and Subscriptions
+  verify marketplace capture, partial/final refund and recovery after reload
+  verify SubscriptionAPI remains the only public command surface and existing Citizen contracts reload unchanged
+```
+
+New corrective work should follow reproduced browser or recovery findings. Seller-created listing orchestration and marketplace payout integration remain separate Market/World Bridge scopes.

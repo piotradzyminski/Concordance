@@ -235,7 +235,7 @@ window.WS_APP = window.WS_APP || {};
             <button class="citizen-editor-button" type="button" data-admin-editor-action="assign-owner">Assign Owner</button>
           </div>
           <label class="citizen-admin-switch">
-            <input type="checkbox" data-admin-full-edit-switch ${citizen.ownerFullCardEdit === true ? "checked" : ""} ${citizen.ownerUserId ? "" : "disabled"} />
+            <input class="ui-select-control" type="checkbox" data-admin-full-edit-switch ${citizen.ownerFullCardEdit === true ? "checked" : ""} ${citizen.ownerUserId ? "" : "disabled"} />
             <span><b>ALLOW PLAYER FULL CARD EDIT</b><small>Admin-like editing of Citizen-owned fields for this card only.</small></span>
           </label>
         </section>
@@ -269,7 +269,7 @@ window.WS_APP = window.WS_APP || {};
           <label class="citizen-editor-field"><span>Name reveal access</span><select name="nameRevealAccess">
             ${["PUBLIC", "RESTRICTED", "CONFIDENTIAL", "BLACK", "GAME_MASTER"].map((value) => `<option value="${value}" ${identity.nameRevealAccess === value ? "selected" : ""}>${value}</option>`).join("")}
           </select></label>
-          <label class="citizen-admin-checkbox"><input name="encryptedName" type="checkbox" ${identity.encryptedName ? "checked" : ""} /><span>Encrypt legal name outside authorized access</span></label>
+          <label class="citizen-admin-checkbox"><input class="ui-select-control" name="encryptedName" type="checkbox" ${identity.encryptedName ? "checked" : ""} /><span>Encrypt legal name outside authorized access</span></label>
           <label class="citizen-editor-field"><span>Biological profile</span><select name="biologicalProfile">
             ${["ALPHA", "BETA", "GAMMA", "UNCLASSIFIED"].map((value) => `<option value="${value}" ${(citizen.biologicalProfile || citizen.profile) === value ? "selected" : ""}>${value}</option>`).join("")}
           </select></label>
@@ -335,7 +335,7 @@ window.WS_APP = window.WS_APP || {};
                   const value = skillValues.get(definition.id);
                   const level = clamp(value?.value || 1, 1, Number(definition.maxValue || 10));
                   return `<article class="citizen-admin-skill-card ${value ? "is-enabled" : ""}" data-skill-row data-skill-search="${escapeHtml(`${definition.label || ""} ${definition.id} ${definition.category || ""} ${definition.description || ""}`.toLowerCase())}">
-                    <label class="citizen-admin-skill-enable"><input type="checkbox" data-skill-enabled data-skill-id="${escapeHtml(definition.id)}" data-skill-label="${escapeHtml(definition.label || definition.id)}" ${value ? "checked" : ""} /><span><b>${escapeHtml(definition.label || definition.id)}</b><small>${escapeHtml(definition.id)}</small></span></label>
+                    <label class="citizen-admin-skill-enable"><input class="ui-select-control" type="checkbox" data-skill-enabled data-skill-id="${escapeHtml(definition.id)}" data-skill-label="${escapeHtml(definition.label || definition.id)}" ${value ? "checked" : ""} /><span><b>${escapeHtml(definition.label || definition.id)}</b><small>${escapeHtml(definition.id)}</small></span></label>
                     <p>${escapeHtml(definition.description || "No Skill description registered.")}</p>
                     <div class="citizen-admin-skill-value">
                       ${renderMechanicsStepper("skill", level, 1, Number(definition.maxValue || 10), "data-skill-value", !value)}
@@ -360,7 +360,7 @@ window.WS_APP = window.WS_APP || {};
       ${renderSectionHeader("Access & System Fields", "Card visibility and Citizen-owned access metadata. Risk uses a separate canonical command.")}
       <form class="citizen-admin-section-form" data-editor-section-form="access" autocomplete="off">
         <div class="citizen-editor-form-grid">
-          <label class="citizen-admin-checkbox"><input name="playerVisible" type="checkbox" ${citizen.playerVisible !== false ? "checked" : ""} /><span>Visible in player-facing Citizen registry</span></label>
+          <label class="citizen-admin-checkbox"><input class="ui-select-control" name="playerVisible" type="checkbox" ${citizen.playerVisible !== false ? "checked" : ""} /><span>Visible in player-facing Citizen registry</span></label>
           ${textField("recordState", "Record state", citizen.recordState || "ACTIVE", "text", "", true)}
           ${textareaField("accessTags", "Access tags — comma or line separated", utils().listToText?.(citizen.accessTags) || "", "is-wide")}
           ${textareaField("systemNote", "System note", citizen.systemNote || citizen.note || "", "is-wide")}

@@ -139,8 +139,8 @@ test("Admin workspace registry, lazy bundle and cache versions are canonical", (
 
   assert.match(registry, /id: "subscriptions"[\s\S]*bundleId: "admin-workspace-subscriptions"/);
   assert.match(modules, /"admin-workspace-subscriptions":\s*\{[\s\S]*css\/subscription-action-feedback\.css\?v=1[\s\S]*css\/admin-subscriptions\.css\?v=3[\s\S]*js\/subscription-action-feedback\.js\?v=1[\s\S]*js\/admin-subscriptions-control\.js\?v=5/);
-  assert.match(modules, /js\/admin\/admin-workspace-registry\.js\?v=5/);
-  assert.match(modules, /js\/admin-control\.js\?v=66/);
+  assert.match(modules, /js\/admin\/admin-workspace-registry\.js\?v=6/);
+  assert.match(modules, /js\/admin-control\.js\?v=68/);
   assert.match(subscriptionRenderer, /controller\?\.renderWorkspace/);
   assert.match(adminControl, /AdminSubscriptionsControl\.renderInspector/);
   assert.match(adminControl, /AdminSubscriptionsControl\?\.bind/);
@@ -150,6 +150,6 @@ test("Admin workspace registry, lazy bundle and cache versions are canonical", (
   assert.match(css, /Subscriptions Admin UI Stability 4\.2\.1/);
   assert.match(read("js/admin-subscriptions-control.js"), /captureScrollPosition[\s\S]*restoreScrollPosition/);
   assert.match(read("js/admin-subscriptions-control.js"), /getCommandPreview[\s\S]*confirmAction/);
-  assert.match(index, /js\/modules\.js\?v=309/);
+  assert.match(index, /js\/modules\.js\?v=318/);
 
 });

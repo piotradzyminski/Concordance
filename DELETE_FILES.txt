@@ -1,4 +1,4 @@
-# Canonical cleanup manifest — through Parallel Scope Merge 15.19x.
+# Canonical cleanup manifest — through Parallel Scope Merge 15.23x.
 docs/patchnotes/patch_notes_item_instance_view_cache_1.0x.md
 data/item-effect-catalog.js
 js/citizen-status-store.js
@@ -35,3 +35,5 @@ assets/market/products/habitat-waste-liner-roll.svg
 assets/market/products/habitat-water-filter-cartridges.svg
 assets/market/products/somnacore-alertness-tablets.svg
 js/housing-market-runtime.js
+css/encyclopedia.css
+js/equipment-cyberware-link.js

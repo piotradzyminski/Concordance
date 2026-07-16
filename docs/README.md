@@ -62,6 +62,8 @@ docs/contracts/core/terminal_inbox_datetime_contract.md
 docs/contracts/citizen/citizen_record_contract.md
 docs/contracts/citizen/citizen_creator_contract.md
 docs/contracts/citizen/citizen_card_editor_contract.md
+docs/contracts/citizen/citizen_card_projection_boundary_contract.md
+docs/contracts/citizen/citizen_card_renderer_split_contract.md
 docs/contracts/citizen/citizen_creator_editor_polish_contract.md
 docs/contracts/citizen/citizen_files_contract.md
 docs/contracts/citizen/database_record_relations_contract.md
@@ -76,6 +78,7 @@ docs/contracts/admin/admin_record_lifecycle_contract.md
 docs/contracts/admin/admin_audit_store_contract.md
 docs/contracts/admin/admin_workspace_runtime_contract.md
 docs/contracts/admin/admin_transfers_contract.md
+docs/contracts/admin/admin_cyberware_runtime_contract.md
 ```
 
 ### Services and subscriptions
@@ -97,6 +100,7 @@ docs/contracts/commerce/housing_household_furnishing_workspace_contract.md
 docs/contracts/commerce/market_partial_return_refund_contract.md
 docs/contracts/commerce/market_datetime_scheduler_contract.md
 docs/contracts/commerce/market_secondary_listing_contract.md
+docs/contracts/commerce/market_secondary_fulfillment_contract.md
 docs/contracts/commerce/market_wishlist_contract.md
 docs/contracts/commerce/housing_household_hub_contract.md
 docs/contracts/commerce/housing_bridge_contract.md
@@ -264,9 +268,45 @@ Knowledge Article Index Tabs extends the existing Knowledge Relations contract o
 ```text
 docs/contracts/commerce/market_datetime_scheduler_contract.md
 docs/contracts/commerce/market_secondary_listing_contract.md
+docs/contracts/commerce/market_secondary_fulfillment_contract.md
 docs/contracts/commerce/market_wishlist_contract.md
 docs/contracts/commerce/housing_household_hub_contract.md
 docs/contracts/cyberware/cyberware_upgrade_system_contract.md
 ```
 
 Knowledge Article Index Tabs 1.6x extends the existing Knowledge Relations contract only. It does not introduce a new Knowledge content source, registry or schema.
+
+
+## Active additions in 15.21x
+
+```text
+docs/contracts/citizen/citizen_card_renderer_split_contract.md
+docs/contracts/admin/admin_cyberware_runtime_contract.md
+docs/contracts/commerce/market_secondary_fulfillment_contract.md
+```
+
+Terminal Render Scope and Registry Controls CSS Extraction refine existing runtime/quality ownership without introducing competing contracts. Subscription Catalog Authoring updates the canonical Subscription contract. Equipment/Cyberware Stylesheet Boundary updates existing Cyberware contracts. Knowledge Relation Index Layout 2.0 remains presentation-only and updates the existing Knowledge Relations contract.
+
+
+## Active additions in 15.22x
+
+```text
+docs/contracts/commerce/housing_household_ui_consolidation_contract.md
+docs/contracts/quality/ui_controls_single_owner_contract.md
+```
+
+Housing consolidation changes presentation and transient locator state only. UI Controls Single Owner supersedes the source Housing patch's temporary scrollbar ownership in `css/modules.css`; all scrollbar and native checkbox appearance is canonical in eager `css/ui-controls.css`.
+
+
+## Active additions in 15.23x
+
+```text
+core/billing_marketplace_settlement_contract.md
+cyberware/cyberware_taxonomy_contract.md
+cyberware/cyberware_taxonomy_migration_contract.md
+equipment/equipment_css_consolidation_contract.md
+citizen/citizen_card_interaction_fast_path_contract.md
+subscriptions/citizen_subscription_adapter_contract.md
+```
+
+Terminal Inbox canonical identity and scalability refine the existing Terminal Inbox datetime and Terminal Notifications contracts; they do not introduce another Inbox store.

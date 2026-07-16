@@ -64,7 +64,7 @@ window.WS_APP = window.WS_APP || {};
   }
 
   function getSubscriptionDefinitions() {
-    if (typeof app.getSubscriptionCatalog === "function") return clone(app.getSubscriptionCatalog({ includeArchived: true }) || []);
+    if (typeof app.getSubscriptionCatalog === "function") return clone(app.getSubscriptionCatalog({ includeArchived: true, includeTestOnly: true, includeDeprecated: true }) || []);
     return clone(window.APP_DATA?.subscriptionCatalogDefinitions?.subscriptions || window.APP_DATA?.subscriptionCatalog?.subscriptions || []);
   }
 
@@ -122,13 +122,13 @@ window.WS_APP = window.WS_APP || {};
       },
       subscriptions: {
         title: "Subscription Definitions",
-        owner: "Subscription Catalog Store",
-        sourceFiles: ["data/subscription-catalog.js"],
+        owner: "Subscription Catalog Store + Admin Subscription Authoring",
+        sourceFiles: ["data/subscription-catalog.js", "js/subscription-catalog-store.js", "js/admin-subscription-catalog-authoring.js"],
         runtimeLabel: "Subscription Contracts",
         runtimeWorkspaceId: "subscriptions",
-        authoringStatus: "AVAILABLE_IN_SYSTEM",
-        authoringModuleId: "system",
-        authoringPatch: "patch_admin_subscriptions_consolidation_1.0x.zip"
+        authoringStatus: "AVAILABLE_IN_ADMIN",
+        authoringWorkspaceId: "catalog-management",
+        authoringPatch: "patch_subscriptions_catalog_authoring_4.8x.zip"
       }
     };
     const source = sourceMap[catalogId] || { title: catalogId, owner: "UNKNOWN", sourceFiles: [] };

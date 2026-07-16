@@ -2,17 +2,8 @@ window.WS_APP = window.WS_APP || {};
 
 (function initEquipmentDesignShell() {
   const EQUIPMENT_SHELL_VERSION = "1.1x";
-  const WORKSPACE_VIEWS = ["CYBERGRID"];
   const escapeHtml = window.WS_APP.escapeEquipmentHtml || ((value = "") => String(value ?? ""));
 
-  function normalizeWorkspaceView(value = "CYBERGRID") {
-    const normalized = String(value || "CYBERGRID").trim().toUpperCase();
-    return WORKSPACE_VIEWS.includes(normalized) ? normalized : "CYBERGRID";
-  }
-
-  function getActiveWorkspaceView(state = {}) {
-    return normalizeWorkspaceView(state?.selections?.activeWorkspaceView || "CYBERGRID");
-  }
 
   function cacheEquipmentRuntimeState(citizen = {}, state = null) {
     const citizenId = String(citizen?.id || "").trim();
@@ -203,10 +194,9 @@ window.WS_APP = window.WS_APP || {};
     return !expectedId || String(root.dataset.equipmentCitizenId || "").trim() === expectedId ? root : null;
   }
 
-  function markEquipmentWorkspaceDirty(citizenId = "", view = "CYBERGRID", dirty = true) {
+  function markEquipmentWorkspaceDirty(citizenId = "", dirty = true) {
     const root = getEquipmentModuleRoot(citizenId);
-    const normalizedView = normalizeWorkspaceView(view);
-    const screen = root?.querySelector?.(`[data-equipment-screen="${normalizedView}"]`) || null;
+    const screen = root?.querySelector?.('[data-equipment-screen="CYBERGRID"]') || null;
     if (screen) screen.dataset.equipmentScreenDirty = dirty ? "true" : "false";
     return Boolean(screen);
   }
@@ -217,18 +207,10 @@ window.WS_APP = window.WS_APP || {};
     if (!normalizedId || String(cache?.citizenId || "") === normalizedId) {
       window.WS_APP.equipmentRuntimeStateCache = null;
     }
-    if (options.markCybergrid !== false) markEquipmentWorkspaceDirty(normalizedId, "CYBERGRID", true);
+    if (options.markCybergrid !== false) markEquipmentWorkspaceDirty(normalizedId, true);
     return true;
   }
 
-  function applyEquipmentWorkspaceViewToState(state = {}, view = "CYBERGRID") {
-    if (!state || typeof state !== "object") return state;
-    state.selections = {
-      ...(state.selections && typeof state.selections === "object" ? state.selections : {}),
-      activeWorkspaceView: normalizeWorkspaceView(view)
-    };
-    return state;
-  }
 
   function renderEquipmentTargetSwitcher(user = window.WS_APP.currentUser, selectedId = "") {
     if (user?.role !== "admin") return "";
@@ -244,9 +226,6 @@ window.WS_APP = window.WS_APP || {};
     `;
   }
 
-  function renderEquipmentWorkspaceTabs() {
-    return "";
-  }
 
   function renderEquipmentShellHeader(state = {}) {
     return `
@@ -370,23 +349,15 @@ window.WS_APP = window.WS_APP || {};
     `;
   }
 
-  function getEquipmentScreenStateAttributes(active = false, mounted = true) {
+  function getEquipmentScreenStateAttributes(mounted = true) {
     return [
       `data-equipment-screen-mounted="${mounted ? "true" : "false"}"`,
       `data-equipment-screen-dirty="false"`,
-      active ? `aria-hidden="false"` : `hidden aria-hidden="true" inert`
+      `aria-hidden="false"`
     ].join(" ");
   }
 
-  function renderEquipmentScreenPlaceholder(view = "CYBERGRID") {
-    const normalizedView = normalizeWorkspaceView(view);
-    const modifier = normalizedView.toLowerCase();
-    return `
-      <section class="equipment-screen equipment-screen--${escapeHtml(modifier)} is-unmounted" data-equipment-screen="${escapeHtml(normalizedView)}" ${getEquipmentScreenStateAttributes(false, false)}></section>
-    `;
-  }
-
-  function renderCybergridScreen(state = {}, options = {}) {
+  function renderCybergridScreen(state = {}) {
     const gridWorkspace = typeof window.WS_APP.renderEquipmentCybergridPanel === "function"
       ? window.WS_APP.renderEquipmentCybergridPanel(state)
       : "";
@@ -397,7 +368,7 @@ window.WS_APP = window.WS_APP || {};
       ? window.WS_APP.renderEquipmentItemIndex(state)
       : "";
     return `
-      <section class="equipment-screen equipment-screen--cybergrid" data-equipment-screen="CYBERGRID" ${getEquipmentScreenStateAttributes(options.active === true, true)}>
+      <section class="equipment-screen equipment-screen--cybergrid" data-equipment-screen="CYBERGRID" ${getEquipmentScreenStateAttributes(true)}>
         <div class="equipment-cybergrid-workspace">
           <div class="equipment-cybergrid-main">
             ${bodymap}
@@ -418,13 +389,12 @@ window.WS_APP = window.WS_APP || {};
       ? window.WS_APP.getEquipmentState(citizen)
       : null);
     if (!state) return `<p class="file-empty">Equipment state model unavailable.</p>`;
-    applyEquipmentWorkspaceViewToState(state, "CYBERGRID");
     cacheEquipmentRuntimeState(citizen, state);
 
     return `
       ${renderEquipmentShellHeader(state)}
       <div class="equipment-shell-layout equipment-shell-layout--screen-split" data-equipment-workspace-host>
-        ${renderCybergridScreen(state, { active: true })}
+        ${renderCybergridScreen(state)}
       </div>
       <div class="equipment-hover-tooltip" data-equipment-hover-tooltip role="tooltip" hidden></div>
     `;
@@ -445,19 +415,6 @@ window.WS_APP = window.WS_APP || {};
   }
 
 
-  function setEquipmentScreenVisibility(screen = null, active = false) {
-    if (!screen) return;
-    screen.hidden = !active;
-    screen.setAttribute("aria-hidden", active ? "false" : "true");
-    if (active) screen.removeAttribute("inert");
-    else screen.setAttribute("inert", "");
-    screen.classList.toggle("is-active", active);
-  }
-
-  function syncEquipmentWorkspaceTabs() {
-    return true;
-  }
-
   function syncEquipmentShellHeader(root = null, state = {}) {
     if (!root) return;
     const hero = root.querySelector("[data-equipment-shell-hero]");
@@ -472,16 +429,14 @@ window.WS_APP = window.WS_APP || {};
     }
   }
 
-  function ensureEquipmentWorkspaceScreen(root = null, view = "CYBERGRID", citizen = {}, state = {}, options = {}) {
+  function ensureEquipmentWorkspaceScreen(root = null, state = {}, options = {}) {
     if (!root || !state) return null;
-    const normalizedView = normalizeWorkspaceView(view);
-    let screen = root.querySelector(`[data-equipment-screen="${normalizedView}"]`);
+    let screen = root.querySelector('[data-equipment-screen="CYBERGRID"]');
     const mounted = screen?.dataset?.equipmentScreenMounted === "true";
     const dirty = screen?.dataset?.equipmentScreenDirty === "true";
     if (mounted && !dirty && options.force !== true) return screen;
 
-    const markup = renderCybergridScreen(state, { active: false });
-    const next = createEquipmentMarkupNode(markup);
+    const next = createEquipmentMarkupNode(renderCybergridScreen(state));
     if (!next) return screen;
     if (screen) screen.replaceWith(next);
     else root.querySelector("[data-equipment-workspace-host]")?.appendChild(next);
@@ -491,8 +446,7 @@ window.WS_APP = window.WS_APP || {};
     return screen;
   }
 
-  function syncEquipmentWorkspaceShell(nextView = "CYBERGRID", options = {}) {
-    const normalizedView = normalizeWorkspaceView(nextView);
+  function syncEquipmentWorkspaceShell(options = {}) {
     const root = options.root || getEquipmentModuleRoot(options.citizen?.id || options.citizenId || "");
     if (!root) return null;
     const citizenId = String(root.dataset.equipmentCitizenId || "").trim();
@@ -506,18 +460,13 @@ window.WS_APP = window.WS_APP || {};
     }
     if (!state || !citizen) return null;
 
-    applyEquipmentWorkspaceViewToState(state, normalizedView);
     cacheEquipmentRuntimeState(citizen, state);
-    const targetScreen = ensureEquipmentWorkspaceScreen(root, normalizedView, citizen, state, { force: options.forceMount === true });
-    if (!targetScreen) return null;
-    if (normalizedView === "CYBERGRID") window.WS_APP.preloadEquipmentBodymapAssets?.(targetScreen);
-    root.querySelectorAll("[data-equipment-screen]").forEach((screen) => {
-      setEquipmentScreenVisibility(screen, screen === targetScreen);
-    });
-    syncEquipmentWorkspaceTabs(root, normalizedView);
+    const screen = ensureEquipmentWorkspaceScreen(root, state, { force: options.forceMount === true });
+    if (!screen) return null;
+    window.WS_APP.preloadEquipmentBodymapAssets?.(screen);
     syncEquipmentShellHeader(root, state);
     const status = document.querySelector("#module-status");
-    if (status) status.textContent = `EQUIPMENT / ${normalizedView}`;
+    if (status) status.textContent = "EQUIPMENT / CYBERGRID";
     return state;
   }
 
@@ -569,15 +518,14 @@ window.WS_APP = window.WS_APP || {};
     if (!citizen || !state) return null;
     cacheEquipmentRuntimeState(citizen, state);
 
-    const activeView = getActiveWorkspaceView(state);
     if (options.full === true) {
       renderEquipmentModule(user, { citizen, state });
       return state;
     }
 
-    let activeScreen = root.querySelector(`[data-equipment-screen="${activeView}"]`);
+    let activeScreen = root.querySelector('[data-equipment-screen="CYBERGRID"]');
     const wasMounted = activeScreen?.dataset?.equipmentScreenMounted === "true";
-    if (!wasMounted) activeScreen = ensureEquipmentWorkspaceScreen(root, activeView, citizen, state);
+    if (!wasMounted) activeScreen = ensureEquipmentWorkspaceScreen(root, state);
 
     if (wasMounted) {
       if (options.bodymap !== false && typeof window.WS_APP.renderEquipmentBodymapPanel === "function") {
@@ -598,7 +546,7 @@ window.WS_APP = window.WS_APP || {};
       if (activeScreen) activeScreen.dataset.equipmentScreenDirty = "false";
     }
 
-    syncEquipmentWorkspaceShell(activeView, { root, citizen, state });
+    syncEquipmentWorkspaceShell({ root, citizen, state });
     return state;
   }
 
@@ -612,7 +560,6 @@ window.WS_APP = window.WS_APP || {};
       : null);
     const preparedState = prepared?.state || (prepared?.citizenId && prepared?.items ? prepared : null);
     const state = preparedState || (citizen && typeof window.WS_APP.getEquipmentState === "function" ? window.WS_APP.getEquipmentState(citizen) : null);
-    const activeView = "CYBERGRID";
     if (status) status.textContent = "EQUIPMENT / CYBERGRID";
 
     container.innerHTML = `
@@ -662,7 +609,6 @@ window.WS_APP = window.WS_APP || {};
     renderEquipmentModule,
     renderEquipmentTargetSwitcher,
     renderEquipmentDesignShell,
-    renderEquipmentWorkspaceTabs,
     renderEquipmentCommandRail,
     refreshEquipmentWorkspace,
     syncEquipmentWorkspaceShell,
@@ -672,7 +618,6 @@ window.WS_APP = window.WS_APP || {};
   };
 
   window.WS_APP.renderEquipmentModule = renderEquipmentModule;
-  window.WS_APP.renderEquipmentWorkspaceTabs = renderEquipmentWorkspaceTabs;
   window.WS_APP.renderEquipmentCommandRail = renderEquipmentCommandRail;
   window.WS_APP.refreshEquipmentWorkspace = refreshEquipmentWorkspace;
   window.WS_APP.syncEquipmentWorkspaceShell = syncEquipmentWorkspaceShell;

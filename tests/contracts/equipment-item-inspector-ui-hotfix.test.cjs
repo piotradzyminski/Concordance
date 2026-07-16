@@ -98,10 +98,12 @@ test("Region Inspector uses local slot labels and grouped Quick Equip buttons", 
   assert.match(source, /RIGHT_THIGH_HOLSTER:\s*"MOUNT"/);
 });
 
-test("Item Inspector owns a terminal-styled scrollbar and centered wrapping ghost labels", () => {
-  const css = read("css/equipment.css");
-  assert.match(css, /\.equipment-cybergrid-inspector\s*\{[\s\S]*?scrollbar-color:/);
-  assert.match(css, /\.equipment-cybergrid-inspector::\-webkit\-scrollbar-thumb/);
-  assert.match(css, /\.equipment-loadout-slot-tile__ghost\s*\{[\s\S]*?place-items:\s*center;/);
-  assert.match(css, /\.equipment-loadout-slot-tile__ghost\s*\{[\s\S]*?white-space:\s*normal;/);
+test("Item Inspector inherits the global scrollbar and keeps centered wrapping ghost labels", () => {
+  const equipmentCss = read("css/equipment.css");
+  const controlsCss = read("css/ui-controls.css");
+  assert.doesNotMatch(equipmentCss, /scrollbar-(?:width|color)|::\-webkit\-scrollbar/);
+  assert.match(controlsCss, /\*::\-webkit\-scrollbar-thumb/);
+  assert.match(controlsCss, /scrollbar-color:\s*var\(--ui-scrollbar-thumb-firefox\)/);
+  assert.match(equipmentCss, /\.equipment-loadout-slot-tile__ghost\s*\{[\s\S]*?place-items:\s*center;/);
+  assert.match(equipmentCss, /\.equipment-loadout-slot-tile__ghost\s*\{[\s\S]*?white-space:\s*normal;/);
 });

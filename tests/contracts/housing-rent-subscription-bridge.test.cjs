@@ -185,6 +185,6 @@ test("Rent bridge loads after SubscriptionAPI and before the module shell", () =
   const index = read("index.html");
   assert.match(index, /js\/housing-rent-subscription-bridge\.js\?v=3/);
   assert.ok(index.indexOf("js/subscription-api.js?v=6") < index.indexOf("js/housing-rent-subscription-bridge.js?v=3"));
-  assert.ok(index.indexOf("js/housing-rent-subscription-bridge.js?v=3") < index.indexOf("js/modules.js?v=309"));
+  assert.ok(index.indexOf("js/housing-rent-subscription-bridge.js?v=3") < index.indexOf("js/modules.js?v=318"));
 
 });

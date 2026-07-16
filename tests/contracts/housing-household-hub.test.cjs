@@ -113,10 +113,12 @@ test("Household Hub is lazy Housing UI and does not create a second persistence 
   const catalog = read("data/equipment-catalog.js");
   assert.match(modules, /data\/housing-household-hub\.js\?v=1/);
   assert.match(modules, /js\/housing-household-hub\.js\?v=1/);
-  assert.match(modules, /js\/housing\.js\?v=53/);
+  assert.match(modules, /js\/housing\.js\?v=54/);
   assert.doesNotMatch(index, /housing-household-hub\.js/);
   assert.match(housing, /data-housing-tab="OVERVIEW"|tab\("OVERVIEW"/);
-  assert.match(housing, /data-housing-tab="COLLECTION"|tab\("COLLECTION"/);
+  assert.doesNotMatch(housing, /tab\("COLLECTION"/);
+  assert.match(housing, /renderHousingCollectionStoragePanel/);
+  assert.match(housing, /renderHousingDisplaySurfacesPanel/);
   assert.match(housing, /GLOBAL WEATHER FEED/);
   assert.match(domain, /INSTALLED_IN_ITEM/);
   assert.match(domain, /mountRole: "DISPLAY"/);

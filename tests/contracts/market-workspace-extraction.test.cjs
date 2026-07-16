@@ -10,8 +10,8 @@ const read = (relativePath) => fs.readFileSync(path.join(ROOT, relativePath), "u
 
 test("Market lazy bundle loads the extracted workspace runtime and no retired runtime", () => {
   const modules = read("js/modules.js");
-  assert.match(modules, /js\/market-workspace-runtime\.js\?v=3/);
-  assert.match(modules, /js\/market\.js\?v=4/);
+  assert.match(modules, /js\/market-workspace-runtime\.js\?v=6/);
+  assert.match(modules, /js\/market\.js\?v=5/);
   assert.doesNotMatch(modules, /housing-market-runtime\.js/);
 });
 

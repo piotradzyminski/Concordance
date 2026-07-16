@@ -295,7 +295,7 @@ window.TerminalNotifications = window.TerminalNotifications || {};
     const timestamps = resolveNotificationTimestamps(input);
 
     const entry = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       id: input.id,
       eventId: String(input.eventId || "").trim(),
       citizenId,

@@ -11,7 +11,7 @@ const read = (relativePath) => fs.readFileSync(path.join(PROJECT_ROOT, relativeP
 test("shared tab CSS is eager and not duplicated by lazy bundles", () => {
   const index = read("index.html");
   const modules = read("js/modules.js");
-  const modulesCss = index.indexOf('css/modules.css?v=147');
+  const modulesCss = index.indexOf('css/modules.css?v=149');
   const tabsCss = index.indexOf('css/system-tabs.css?v=8');
 
   assert.ok(modulesCss >= 0);

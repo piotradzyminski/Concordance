@@ -160,12 +160,6 @@ window.APP_DATA = window.APP_DATA || {};
     "market": "PRIVATE"
   },
   {
-    "id": "provider-learnmin-access",
-    "name": "LearnMin Access",
-    "organizationId": "learnmin-access",
-    "market": "SYSTEM"
-  },
-  {
     "id": "provider-cortex-ladder",
     "name": "Cortex Ladder",
     "organizationId": "cortex-ladder",
@@ -2901,115 +2895,6 @@ window.APP_DATA = window.APP_DATA || {};
     "revision": 1
   },
   {
-    "subscriptionCatalogId": "sub-skill-channel",
-    "providerId": "provider-learnmin-access",
-    "organizationId": "learnmin-access",
-    "productCode": "LRN-SKILL",
-    "title": "Skill Channel",
-    "provider": "LearnMin Access",
-    "category": "EDUCATION",
-    "market": "SYSTEM",
-    "domain": "EDUCATION",
-    "billingCycle": "WEEKLY",
-    "currency": "CREDIT",
-    "entitlementCodes": [
-      "LEARNMIN_EDUCATION_ACCESS"
-    ],
-    "targetPolicy": {
-      "allowedTargetTypes": [
-        "CITIZEN"
-      ],
-      "defaultTargetType": "CITIZEN",
-      "maximumTargets": 1
-    },
-    "coverageRules": [],
-    "tags": [
-      "SYSTEM"
-    ],
-    "logo": "LRN",
-    "summary": "Systemowe kursy, szkolenia i certyfikacje zawodowe.",
-    "description": "Systemowy kanał edukacyjny: szkolenia zawodowe, certyfikacje i dostęp do materiałów zależny od przydatności profilu.",
-    "tiers": [
-      {
-        "tierId": "learnmin-public-feed",
-        "tierLevel": 1,
-        "label": "T1 Public Feed",
-        "amount": 260,
-        "billingCycle": "WEEKLY",
-        "durationDays": 7,
-        "description": "Publiczne materiały edukacyjne, powtórki i podstawowe testy zgodności.",
-        "entitlementCodes": [
-          "LEARNMIN_EDUCATION_ACCESS_T1"
-        ],
-        "coverageRuleIds": [],
-        "active": true,
-        "revision": 1
-      },
-      {
-        "tierId": "learnmin-work-skill",
-        "tierLevel": 2,
-        "label": "T2 Work Skill",
-        "amount": 700,
-        "billingCycle": "WEEKLY",
-        "durationDays": 7,
-        "description": "Kursy robocze powiązane z aktualnym profilem zatrudnienia.",
-        "entitlementCodes": [
-          "LEARNMIN_EDUCATION_ACCESS_T2"
-        ],
-        "coverageRuleIds": [],
-        "active": true,
-        "revision": 1
-      },
-      {
-        "tierId": "learnmin-cert-track",
-        "tierLevel": 3,
-        "label": "T3 Certification Track",
-        "amount": 1500,
-        "billingCycle": "WEEKLY",
-        "durationDays": 7,
-        "description": "Ścieżki certyfikacyjne, egzaminy i potwierdzenia kompetencji zawodowych.",
-        "entitlementCodes": [
-          "LEARNMIN_EDUCATION_ACCESS_T3"
-        ],
-        "coverageRuleIds": [],
-        "active": true,
-        "revision": 1
-      },
-      {
-        "tierId": "learnmin-priority-exam",
-        "tierLevel": 4,
-        "label": "T4 Priority Exam",
-        "amount": 2900,
-        "billingCycle": "WEEKLY",
-        "durationDays": 7,
-        "description": "Priorytetowe terminy egzaminów, szybsza weryfikacja i lepszy dostęp do materiałów.",
-        "entitlementCodes": [
-          "LEARNMIN_EDUCATION_ACCESS_T4"
-        ],
-        "coverageRuleIds": [],
-        "active": true,
-        "revision": 1
-      },
-      {
-        "tierId": "learnmin-function-ladder",
-        "tierLevel": 5,
-        "label": "T5 Function Ladder",
-        "amount": 5200,
-        "billingCycle": "WEEKLY",
-        "durationDays": 7,
-        "description": "Systemowy program podnoszenia funkcji, awansu użytkowego i korekty profilu pracy.",
-        "entitlementCodes": [
-          "LEARNMIN_EDUCATION_ACCESS_T5"
-        ],
-        "coverageRuleIds": [],
-        "active": true,
-        "revision": 1
-      }
-    ],
-    "active": true,
-    "revision": 1
-  },
-  {
     "subscriptionCatalogId": "sub-executive-learning",
     "providerId": "provider-cortex-ladder",
     "organizationId": "cortex-ladder",
@@ -3289,15 +3174,6 @@ window.APP_DATA = window.APP_DATA || {};
       limitations: ["Zakres monitoringu i procedur fizjologicznych zależy od tieru.", "Kontrakt obejmuje jednego Citizen."],
       usageNotes: ["Pakiety należy porównać pod kątem regeneracji neurologicznej i używanej infrastruktury."]
     },
-    "sub-skill-channel": {
-      overview: "Systemowy kanał kursów, certyfikacji i materiałów zawodowych zależny od przydatności profilu.",
-      benefits: [
-        "Dostęp do materiałów i testów systemowych.",
-        "Wyższe tiery dodają kursy robocze, egzaminy, certyfikacje i ścieżkę funkcji."
-      ],
-      limitations: ["Zakres materiałów pozostaje zależny od profilu i wybranego tieru.", "Kontrakt obejmuje jednego Citizen."],
-      usageNotes: ["Pakiet powinien odpowiadać wymaganej ścieżce kompetencji lub certyfikacji."]
-    },
     "sub-executive-learning": {
       overview: "Prywatne przyspieszone uczenie, tutorzy i coaching kompetencyjny dla klientów korporacyjnych i wysokiego profilu.",
       benefits: [
@@ -3354,7 +3230,25 @@ window.APP_DATA = window.APP_DATA || {};
     return `LEVEL ${Number(tier.tierLevel || 0) || 1}`;
   }
 
+  const subscriptionCatalogStatusById = Object.freeze({
+    "sub-live-prevail": "CANONICAL",
+    "sub-trauma-team": "CANONICAL",
+    "sub-kagami-sentinel": "CANONICAL",
+    "sub-ws-network-fee": "CANONICAL",
+    "sub-ws-liveguard": "CANONICAL",
+    "sub-housing-standard-h": "CANONICAL",
+    "sub-housing-standard-g": "CANONICAL",
+    "sub-housing-standard-f": "CANONICAL",
+    "sub-housing-standard-e": "CANONICAL",
+    "sub-housing-standard-d": "CANONICAL",
+    "sub-housing-standard-c": "CANONICAL",
+    "sub-housing-standard-b": "CANONICAL",
+    "sub-housing-standard-a": "CANONICAL"
+  });
+
   subscriptions.forEach((subscription) => {
+    subscription.catalogStatus = subscriptionCatalogStatusById[subscription.subscriptionCatalogId] || "PROVISIONAL";
+
     const custom = subscriptionPresentationById[subscription.subscriptionCatalogId] || {};
     const policy = subscription.targetPolicy || {};
     const allowedTargets = Array.isArray(policy.allowedTargetTypes) && policy.allowedTargetTypes.length
@@ -3402,14 +3296,14 @@ window.APP_DATA = window.APP_DATA || {};
   });
 
   window.APP_DATA.subscriptionCatalog = {
-    schemaVersion: "subscription_catalog_housing_rent_4_0x",
+    schemaVersion: "subscription_catalog_authoring_4_8x",
     categories,
     providers,
     subscriptions
   };
 
   window.APP_DATA.subscriptionCatalogDefinitions = {
-    schemaVersion: "subscription_catalog_housing_rent_4_0x",
+    schemaVersion: "subscription_catalog_authoring_4_8x",
     subscriptions
   };
 })();

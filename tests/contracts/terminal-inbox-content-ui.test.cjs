@@ -21,13 +21,14 @@ test("Inbox cards render v2 content metadata and admin-only technical details", 
   assert.match(MODULE_SOURCE, /data-terminal-entry-lifecycle=/);
 });
 
-test("Inbox filtering is generated from Notification Event Catalog fields", () => {
+test("Inbox filtering is generated from canonical Notification Event fields", () => {
   assert.match(MODULE_SOURCE, /notificationRegistry\?\.getEvents\?\.\(\)/);
-  assert.match(MODULE_SOURCE, /DOMAIN:/);
-  assert.match(MODULE_SOURCE, /EVENT_CATEGORY:/);
-  assert.match(MODULE_SOURCE, /EVENT:/);
   assert.match(MODULE_SOURCE, /EVENT DOMAINS/);
   assert.match(MODULE_SOURCE, /EVENT CATEGORIES/);
+  assert.match(MODULE_SOURCE, /EVENT TYPES/);
+  assert.match(MODULE_SOURCE, /LIFECYCLE STATUS/);
+  assert.match(MODULE_SOURCE, /SEVERITY/);
+  assert.doesNotMatch(MODULE_SOURCE, /LEGACY CATEGORIES/);
 });
 
 test("Attention and lifecycle states have dedicated visual contracts", () => {
@@ -51,5 +52,5 @@ test("existing notification lifecycle API is exposed through Inbox actions", () 
 
 test("Terminal lazy bundle versions include Inbox Content UI assets", () => {
   assert.match(MODULE_BUNDLES, /css\/terminal-module\.css\?v=4/);
-  assert.match(MODULE_BUNDLES, /js\/terminal-module\.js\?v=11/);
+  assert.match(MODULE_BUNDLES, /js\/terminal-module\.js\?v=15/);
 });

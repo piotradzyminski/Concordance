@@ -5,27 +5,33 @@
 ```text
 index.html
   shared tabs: css/system-tabs.css?v=8
+  shared native controls: css/ui-controls.css?v=1 after css/modules.css?v=149
   Terminal Entry/Reminder stores: v2 / v1 before Citizen Store
-  Citizen integration store: v144
+  Registry UI: js/registry-ui.js?v=1 eager before module routing
+  Citizen Subscription Adapter: v1 before Citizen Store; Citizen integration store: v147
+  Citizen Card CSS: v24
   Household Store: v4
   Housing Rent standards data/store: v1 / v1
   Housing Layout pools data/store: v1 / v1
   Housing Furnishing lifecycle data/runtime: v1 / v1
   Housing Rent Subscription Bridge: v3
-  Subscription catalog data/store: v13 / v8
-  Notification event/templates/resolver/policy/API/Market producer/Housing bridge/Housing producer: v6 / v3 / v4 / v2 / v4 / v1 / v1 / v1
-  Market offers/store: v4 / v12
-  ItemInstance data/store: v8 / v15
-  shared bundle map: js/modules.js?v=307
+  Subscription catalog data/store/editor: v15 / v10 / v3
+  Notification event/templates/resolver/policy/API/Market producer/Housing bridge/Housing producer: v6 / v3 / v4 / v2 / v5 / v1 / v1 / v1
+  Market offers/store/Secondary Store: v4 / v14 / v2
+  ItemInstance data/store: v10 / v17
+  Billing Store v5; Campaign Data I/O adapters v12; shared bundle map: js/modules.js?v=318
   player Subscriptions scripts: lazy-only, not eager
 
 js/modules.js
   canonical lazy bundle registry
-  Terminal Inbox: css v4 / runtime v11
-  Subscriptions: css v21, runtime/profile v35, workspace v7, action feedback v1
-  Equipment: css v129, store v35, actions v57, Bodymap panel v25, items v30, containers v39, Cyberware bridge v20, shell v118
-  Housing: css v36, Storage runtime v3, Household runtime v3, shell v51
-  Global Market: Market offers/store v4/v12, workspace runtime v1, module v2
+  Terminal Inbox: css v4 / runtime v15 / Billing CSS v12
+  Subscriptions: css v21, runtime/profile v36, workspace v7, action feedback v1
+  Citizen Card projections v1, renderers v1, shell v3, GM registry v1, facade v39
+  Equipment: css v132, store v36, actions v58, Bodymap panel v25, items v30, containers v39, shell v119
+  Cyberware: taxonomy data/runtime/migration v1/v1/v1, store v11, css v3, Anatomy CSS v2, workspace v4, module v3
+  Housing: css v40, Storage runtime v4, Household runtime v4, Household Hub v1, shell v54
+  Global Market: Market offers/store v4/v14, Wishlist v1, workspace runtime v6, module v5
+  Admin shell: css v35, control v68, Operations renderer v2
   Admin Subscriptions: css v3 / controller v5
 ```
 
@@ -415,4 +421,157 @@ index.html
 ```text
 index.html: Item Type v5; Equipment Catalog v28; ItemInstance seed/store v9/v16; Market Store v13; Campaign Data I/O v11; Market scheduler/listing v1; modules v309
 js/modules.js: Cyberware Upgrade catalog/runtime v1; Cyberware CSS/module/workspace v2/v3/v3; Market CSS v38, Wishlist v1, workspace v3, shell v4; Household Hub data/runtime v1, Housing shell v53
+```
+
+
+## Runtime 15.20x additions
+
+### Citizen Card Projection Boundary 1.0x
+
+| Responsibility | Canonical files |
+|---|---|
+| read-only Equipment summary projection | `js/citizen-card-equipment-projection.js` |
+| read-only active Subscription tile projection | `js/citizen-card-subscription-projection.js` |
+| read-only installed Cyberware/card compliance projection | `js/citizen-card-cyberware-projection.js` |
+| Citizen record renderer consuming the projection namespace | `js/citizen-records.js?v=38` |
+| card presentation ownership | `css/citizen-card.css?v=24` |
+| projection boundary contract and regression coverage | `docs/contracts/citizen/citizen_card_projection_boundary_contract.md`, `tests/contracts/citizen-card-projection-boundary.test.cjs` |
+
+### Registry UI Dependency Foundation 1.0x
+
+| Responsibility | Canonical files |
+|---|---|
+| shared registry confirmation, inputs, textareas, selects, list parsing and query normalization | `js/registry-ui.js?v=1` |
+| System and System Index integration | `js/system-registry.js?v=19` |
+| Encyclopedia integration | `js/encyclopedia-module.js?v=16` |
+| Citizen record lifecycle confirmation | `js/citizen-records.js?v=38` |
+| Subscriptions confirmation integration | `js/subscriptions.js?v=36` |
+| dependency boundary regression coverage | `tests/contracts/registry-ui-dependency-foundation.test.cjs` |
+
+`js/modules.js` no longer owns registry field/query helpers. Registry UI does not own schemas, persistence, Knowledge data or record lifecycle commands.
+
+### Terminal Store Reactivity 1.0x
+
+| Responsibility | Canonical files |
+|---|---|
+| singleton reaction to Terminal Entry and Reminder events | `js/terminal-module.js?v=12` |
+| Inbox/cards-only and Calendar-only refresh boundaries | `js/terminal-module.js?v=12` |
+| reactivity contract and listener lifecycle coverage | `tests/contracts/terminal-store-reactivity.test.cjs` |
+
+### Subscriptions Catalog Cleanup 4.7x
+
+| Responsibility | Canonical files |
+|---|---|
+| cleaned live catalog and explicit authoring status | `data/subscription-catalog.js?v=14` |
+| v5 normalization, filtering, serialization and storage reset | `js/subscription-catalog-store.js?v=9` |
+| exact retired seed-contract/reference filter | `js/subscription-data-cleanup.js?v=1` |
+| cleaned Citizen and ItemInstance seeds | `data/citizens.js?v=80`, `data/item-instances.js?v=10` |
+| cleanup-aware Citizen and ItemInstance normalization | `js/store.js?v=145`, `js/item-instance-store.js?v=17` |
+| cleaned provider identity and notification manifests | `data/organizations.js?v=2`, `data/notification-provider-capabilities.js?v=5` |
+| active contract and regression coverage | `docs/contracts/services/subscription_contracts_contract.md`, `tests/contracts/subscriptions-catalog-cleanup.test.cjs` |
+
+Bridge fixture records remain isolated in `data/subscription-bridge-fixtures.js` and are not inserted into campaign Citizen or ItemInstance stores.
+
+
+## Runtime 15.21x additions
+
+### Terminal render boundaries
+
+| Responsibility | Canonical files |
+|---|---|
+| Terminal navigation and panel-local projections | `js/terminal-module.js?v=13` |
+| dedicated Billing projection adapter | `js/billing.js?v=16` |
+
+### Registry controls and Knowledge layout
+
+| Responsibility | Canonical files |
+|---|---|
+| shared eager registry controls | `css/registry-controls.css?v=1`, `js/registry-ui.js?v=1` |
+| Knowledge article/relation index grid | `css/knowledge-sections.css?v=16`, `docs/contracts/knowledge/knowledge_relations_contract.md` |
+| retired shared registry stylesheet | `css/encyclopedia.css` through `DELETE_FILES.txt` |
+
+### Citizen Card renderer split
+
+| Responsibility | Canonical files |
+|---|---|
+| shared card detail renderers | `js/citizen-card-renderers.js?v=1` |
+| card shell, controller and actions | `js/citizen-card-shell.js?v=1` |
+| GM-only Citizen Cards registry | `js/citizen-cards-registry.js?v=1` |
+| compatibility entrypoints | `js/citizen-records.js?v=39` |
+
+### Equipment and Cyberware boundaries
+
+| Responsibility | Canonical files |
+|---|---|
+| Equipment CyberGrid runtime | `js/equipment.js?v=119`, `js/equipment-store.js?v=36`, `js/equipment-actions.js?v=58`, `css/equipment.css?v=130` |
+| standalone Cyberware workspace styling | `js/cyberware-workspace.js?v=4`, `css/cyberware.css?v=3`, `css/cyberware-anatomy-bodymap.css?v=1` |
+| retired navigation bridge | `js/equipment-cyberware-link.js` through `DELETE_FILES.txt` |
+
+### Subscriptions authoring and Admin Cyberware
+
+| Responsibility | Canonical files |
+|---|---|
+| Subscription Catalog authoring state and commands | `js/admin-subscription-catalog-authoring.js?v=1`, `js/admin-catalog-management.js?v=3`, `js/subscription-catalog-store.js?v=10` |
+| authoring presentation | `css/admin-subscription-catalog-authoring.css?v=1`, `js/admin/workspaces/admin-workspace-catalog-management.js?v=3` |
+| Admin Cyberware command boundary and workspace | `js/admin-cyberware-runtime-command.js?v=1`, `js/admin/workspaces/admin-workspace-cyberware-runtime.js?v=1` |
+| Admin registry/shell integration | `js/admin/admin-workspace-registry.js?v=6`, `js/admin-control.js?v=67` |
+
+### Market structure and Secondary fulfillment
+
+| Responsibility | Canonical files |
+|---|---|
+| Market Ordered/Delivered subviews and grouped Catalog | `js/market-workspace-runtime.js?v=5`, `js/market.js?v=5`, `css/housing.css?v=39` |
+| canonical Market order, shipment, return and Secondary checkout | `js/market-store.js?v=14` |
+| Secondary listing custody, reservation and reopening | `js/market-secondary-listing-store.js?v=2` |
+| active contracts | `docs/contracts/commerce/market_workspace_runtime_contract.md`, `docs/contracts/commerce/market_secondary_listing_contract.md`, `docs/contracts/commerce/market_secondary_fulfillment_contract.md` |
+
+```text
+index.html: registry-controls v1; modules v314; subscription catalog/store/editor v15/v10/v3; Market Store v14; Secondary Store v2; Knowledge CSS v16
+js/modules.js: Terminal billing/module v16/v13; Citizen renderers v1 + facade v39; Equipment CSS/store/actions/shell v130/v36/v58/v119; Cyberware CSS/workspace v3/v4; Market CSS/store/workspace/shell v39/v14/v5/v5; Admin registry/control v6/v67
+```
+
+
+## Runtime 15.22x additions
+
+### Housing Household UI consolidation
+
+| Responsibility | Canonical files |
+|---|---|
+| four-section Housing shell and legacy tab normalization | `js/housing.js?v=54`, `css/housing.css?v=40` |
+| transient Storage Item Index, canonical locator and nested-container projection | `js/housing-storage-runtime.js?v=4` |
+| consolidated Household furnishing/display actions | `js/housing-household-runtime.js?v=4` |
+| active ownership contract | `docs/contracts/commerce/housing_household_ui_consolidation_contract.md` |
+
+### Shared UI controls
+
+| Responsibility | Canonical files |
+|---|---|
+| sole scrollbar and native checkbox visual owner | `css/ui-controls.css?v=1` |
+| generic module chrome and button-based selection only | `css/modules.css?v=149` |
+| shared control ownership contract | `docs/contracts/quality/ui_controls_single_owner_contract.md` |
+| affected eager controls | `css/terminal-effects.css?v=45`, `css/citizen-admin-editor.css?v=4`, `js/access-control.js?v=12`, `js/case-files.js?v=51`, `js/citizen-creator.js?v=4`, `js/citizen-admin-editor.js?v=6` |
+| affected lazy controls | `css/admin-control.css?v=35`, `css/billing.css?v=12`, `css/equipment.css?v=131`, `css/cyberware-anatomy-bodymap.css?v=2`, `js/admin-control.js?v=68`, `js/admin/workspaces/admin-workspace-operations.js?v=2`, `js/citizen-database.js?v=4`, `js/citizen-card-shell.js?v=2`, `js/market-workspace-runtime.js?v=6` |
+
+```text
+index.html: modules CSS v149; UI Controls v1 eager; modules runtime v315
+js/modules.js: Housing CSS/storage/household/shell v40/v4/v4/v54; Market workspace v6; Equipment CSS v131; Anatomy CSS v2; Admin control v68; Citizen Card shell v2
+```
+
+
+## Runtime 15.23x additions
+
+| Ownership | Canonical files |
+|---|---|
+| Terminal Inbox schema-v4 normalization and legacy adapter | `js/store.js`, `js/notification-api.js`, `js/terminal-entry-store.js`, `docs/contracts/core/terminal_inbox_datetime_contract.md` |
+| bounded Inbox rendering, pagination and delegated actions | `js/terminal-module.js`, `tests/contracts/terminal-inbox-scalability.test.cjs` |
+| canonical Cyberware taxonomy vocabulary | `data/cyberware-taxonomy.js`, `js/cyberware-taxonomy.js`, `docs/contracts/cyberware/cyberware_taxonomy_contract.md` |
+| idempotent legacy BODY slot migration | `js/cyberware-taxonomy-migration.js`, `js/cyberware-store.js`, `docs/contracts/cyberware/cyberware_taxonomy_migration_contract.md` |
+| Equipment-only stylesheet ownership | `css/equipment.css`, `docs/contracts/equipment/equipment_css_consolidation_contract.md` |
+| mounted Citizen Card interaction refresh | `js/citizen-card-shell.js`, `docs/contracts/citizen/citizen_card_interaction_fast_path_contract.md` |
+| marketplace account settlement and refunds | `js/billing-store.js`, `js/campaign-data-io-adapters.js`, `docs/contracts/core/billing_marketplace_settlement_contract.md` |
+| low-level Citizen-backed Subscription commands | `js/citizen-subscription-adapter.js`, `js/store.js`, `docs/contracts/subscriptions/citizen_subscription_adapter_contract.md` |
+
+```text
+index.html: Citizen Subscription Adapter v1; Citizen Store v147; Notification API v5; Billing Store v5; modules runtime v318; Campaign Data I/O adapters v12
+js/modules.js: Terminal runtime v15; Equipment CSS v132; Cyberware taxonomy data/runtime/migration v1 and store v11; Citizen Card shell v3
 ```

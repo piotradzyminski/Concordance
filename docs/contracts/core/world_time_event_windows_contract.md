@@ -256,7 +256,7 @@ Terminal Inbox provides the convenience boundary:
 TerminalNotifications.emitDuringCampaignAdvance(event, input)
 ```
 
-It persists a resolved within-advance timestamp on notification record v3. A deferred result is returned to the source domain without creating an Inbox entry.
+It persists a resolved within-advance timestamp on notification record v4. A deferred result is returned to the source domain without creating an Inbox entry.
 
 ## Ownership boundaries
 

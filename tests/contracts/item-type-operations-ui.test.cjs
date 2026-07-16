@@ -226,10 +226,10 @@ test("Equipment Inspector and delegated actions are wired to the Item Operations
   assert.match(operationsUi, /USAGE LOG/);
   assert.doesNotMatch(operationsUi, /previewConsumableEffect|getCitizenStatusEffects|effectResolutionStatus/);
   assert.match(modules, /js\/item-type-operations-ui\.js\?v=3/);
-  assert.match(modules, /css\/equipment\.css\?v=129/);
+  assert.match(modules, /css\/equipment\.css\?v=132/);
   assert.match(index, /js\/item-type-operations\.js\?v=3/);
-  assert.match(index, /js\/modules\.js\?v=309/);
+  assert.match(index, /js\/modules\.js\?v=318/);
 
-  assert.match(css, /Item type operation controls 1\.2x/);
+  assert.match(css, /Canonical Equipment presentation/);
   assert.match(css, /\.item-type-operation-status-grid/);
 });

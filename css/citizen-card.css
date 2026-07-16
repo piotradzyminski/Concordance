@@ -1505,6 +1505,20 @@
   outline: none;
 }
 
+.citizen-card-subscription-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(143, 189, 180, 0.22);
+  background: rgba(143, 189, 180, 0.06);
+  color: var(--text);
+  font-size: var(--type-micro);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .citizen-card-subscription-main,
 .citizen-card-subscription-side {
   display: grid;

@@ -10,12 +10,21 @@ function read(relativePath) {
   return fs.readFileSync(path.join(PROJECT_ROOT, relativePath), "utf8");
 }
 
+function readCitizenRecordSources() {
+  return [
+    "js/citizen-card-renderers.js",
+    "js/citizen-card-shell.js",
+    "js/citizen-cards-registry.js",
+    "js/citizen-records.js"
+  ].map(read).join("\n");
+}
+
 test("Citizen Card Editor loads separate profile and admin workspaces", () => {
   const html = read("index.html");
   assert.match(html, /css\/citizen-profile-editor\.css\?v=2/);
-  assert.match(html, /css\/citizen-admin-editor\.css\?v=3/);
+  assert.match(html, /css\/citizen-admin-editor\.css\?v=4/);
   assert.match(html, /js\/citizen-profile-editor\.js\?v=2/);
-  assert.match(html, /js\/citizen-admin-editor\.js\?v=5/);
+  assert.match(html, /js\/citizen-admin-editor\.js\?v=6/);
 });
 
 test("Citizen editor router does not inject buttons through MutationObserver", () => {
@@ -24,7 +33,7 @@ test("Citizen editor router does not inject buttons through MutationObserver", (
   assert.doesNotMatch(router, /querySelectorAll\(\s*["']\[data-citizen-id\]/);
 
   const profile = read("js/citizen-profile.js");
-  const records = read("js/citizen-records.js");
+  const records = readCitizenRecordSources();
   assert.match(profile, /data-citizen-editor-open/);
   assert.match(records, /data-citizen-editor-open/);
 });
@@ -57,7 +66,7 @@ test("Citizen polish loads templates and Quick NPC Creator through explicit asse
   assert.match(html, /css\/citizen-quick-npc\.css\?v=1/);
   assert.match(html, /js\/citizen-quick-npc\.js\?v=1/);
 
-  const records = read("js/citizen-records.js");
+  const records = readCitizenRecordSources();
   const quickNpc = read("js/citizen-quick-npc.js");
   assert.match(records, /id="citizen-quick-npc-button"/);
   assert.match(quickNpc, /createQuickNpc/);
@@ -77,7 +86,7 @@ test("Citizen workspaces expose keyboard save and section navigation shortcuts",
 
 test("Citizen polish preserves Admin Audit producers from Card Editor 2.0x", () => {
   const admin = read("js/citizen-admin-editor.js");
-  const records = read("js/citizen-records.js");
+  const records = readCitizenRecordSources();
   assert.match(admin, /appendAdminAuditEvent/);
   assert.match(records, /appendAdminAuditEvent/);
 });
@@ -133,7 +142,7 @@ test("Citizen browser fixtures isolate external network and expose a dedicated C
 test("Citizen seed portraits and empty portrait renderers do not request missing local assets", () => {
   const citizens = read("data/citizens.js");
   const profile = read("js/citizen-profile.js");
-  const records = read("js/citizen-records.js");
+  const records = readCitizenRecordSources();
   assert.doesNotMatch(citizens, /assets\/portraits\//);
   assert.match(profile, /citizen\.portrait \? `<img/);
   assert.match(records, /citizen\.portrait \? `<img/);

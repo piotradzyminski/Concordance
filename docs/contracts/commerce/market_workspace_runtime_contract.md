@@ -1,4 +1,4 @@
-# Market Workspace Runtime Contract 6.4x
+# Market Workspace Runtime Contract 7.1x
 
 ## Purpose
 
@@ -11,7 +11,8 @@ catalog filters
 selected product
 cart dialog state
 selected MarketOrder
-Catalog / Orders / Delivered mode
+Catalog / Secondary / Orders mode
+Ordered / Delivered order subview
 order, refund, pickup and delivery command controls
 ```
 
@@ -54,7 +55,74 @@ marketCartOpenByCitizen
 marketSearchDebounce
 ```
 
-No migration is required for the previous transient keys in pre-alpha.
+Transient state normalization maps the retired presentation values without changing Market Store data:
+
+```text
+mode DELIVERED → mode ORDERS + order view DELIVERED
+order view ACTIVE → ORDERED
+order view HISTORY → DELIVERED
+catalog department EQUIPMENT / MEDICAL / FOOD → GENERAL
+```
+
+The normalization is idempotent and affects only UI state.
+
+## Workspace navigation
+
+The primary Market navigation has exactly three sections:
+
+```text
+CATALOG
+SECONDARY
+ORDERS
+```
+
+`DELIVERED` is not a primary Market mode. `ORDERS` owns two internal views:
+
+```text
+ORDERED
+DELIVERED
+```
+
+`ORDERED` contains every order not proven to have completed a successful fulfillment, including in-progress, held, recovery, failed and cancelled records. `DELIVERED` contains orders with a successful Housing delivery, completed vendor pickup or completed Service fulfillment. A later partial or full refund does not erase the fact that fulfillment occurred.
+
+Back navigation resolves locally before leaving Market:
+
+```text
+open modal → close modal
+ORDERS / DELIVERED → ORDERS / ORDERED
+ORDERS / ORDERED or SECONDARY → CATALOG
+CATALOG → module-level Back
+```
+
+## Catalog presentation groups
+
+Catalog navigation uses a broad UI projection without changing Equipment Catalog identity:
+
+```text
+HOUSEHOLD
+CYBERWARE
+GENERAL
+```
+
+`HOUSEHOLD` includes furnishings, fixtures, furnishing modules, storage furniture, decorations, hygiene, cleaning and domestic supplies. `CYBERWARE` includes packaged and direct cyberware definitions. `GENERAL` contains Equipment, Medical, Food and all other catalog domains.
+
+Original `category`, `subtype`, tags, definition IDs and offer linkage remain canonical. The grouping is renderer-owned and must not be persisted back into catalog definitions.
+
+## Order summary projection
+
+Collapsed order cards expose:
+
+```text
+STATUS
+ETA or DELIVERED AT
+TIME REMAINING
+FULFILLMENT
+DESTINATION
+```
+
+Successful fulfillment classification must use fulfillment state, not only whether an order status is terminal. Failed or cancelled orders remain in `ORDERED`.
+
+ETA and remaining time are derived from persisted MarketOrder/MarketShipment records and the canonical exact Campaign Time. The workspace must not create a second timer or scheduler.
 
 ## Canonical domain ownership
 
@@ -126,4 +194,6 @@ Housing lazy bundle:
 
 ## Datetime projection
 
-Market and Housing projections render full Campaign timestamps as `DD.MM.YYYY / HH:MM`. Date-only values remain readable during migration. Formatting is presentation-only and must not resolve, schedule or mutate Market records.
+Market projections render full Campaign timestamps as `DD.MM.YYYY / HH:MM`. Date-only values remain readable during migration. Remaining time is calculated from `getCampaignTimeIso()` and the persisted ETA whenever the Market shell re-renders after `ws:campaign-time-updated`.
+
+Formatting and countdown projection are presentation-only. They must not resolve, schedule, advance or mutate Market records. Exact event processing remains owned by Market Time Scheduler and World Time Scheduled Events.

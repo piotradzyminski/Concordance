@@ -16,7 +16,7 @@ test("Catalog Management is a lazy Admin workspace with a dedicated canonical ad
   const adapter = read("js/admin-catalog-management.js");
 
   assert.match(registry, /id: "catalog-management"[\s\S]*bundleId: "admin-workspace-catalog-management"/);
-  assert.match(modules, /"admin-workspace-catalog-management":\s*\{[\s\S]*CYBERWARE_CATALOG_DATA_SCRIPTS[\s\S]*admin-equipment-catalog-authoring\.js\?v=1[\s\S]*admin-catalog-management\.js\?v=2[\s\S]*admin-workspace-catalog-management\.js\?v=2/);
+  assert.match(modules, /"admin-workspace-catalog-management":\s*\{[\s\S]*CYBERWARE_CATALOG_DATA_SCRIPTS[\s\S]*admin-equipment-catalog-authoring\.js\?v=1[\s\S]*admin-catalog-management\.js\?v=3[\s\S]*admin-workspace-catalog-management\.js\?v=3/);
   assert.match(renderer, /registerRenderer\("catalog-management"/);
   assert.match(renderer, /RUNTIME INSTANCES/);
   assert.match(renderer, /REUSABLE DEFINITIONS/);

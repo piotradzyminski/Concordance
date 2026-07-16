@@ -6,11 +6,11 @@ window.WS_APP = window.WS_APP || {};
   const MARKET_DELIVERABLE_SHIPMENT_STATUSES = new Set(["PENDING", "PAID", "PACKED", "IN_TRANSIT"]);
   const MARKET_SHIPMENT_ACTIVE_STATUSES = new Set(["PENDING", "PAID", "PACKED", "IN_TRANSIT", "HELD"]);
   const MARKET_SHIPMENT_CLOSED_STATUSES = new Set(["DELIVERED", "FAILED", "CANCELLED", "RETURNED"]);
-  const MARKET_MODES = ["CATALOG", "SECONDARY", "ORDERS", "DELIVERED"];
-  const MARKET_ORDER_VIEWS = ["ACTIVE", "HISTORY"];
+  const MARKET_MODES = ["CATALOG", "SECONDARY", "ORDERS"];
+  const MARKET_ORDER_VIEWS = ["ORDERED", "DELIVERED"];
   const MARKET_ORDER_CLOSED_STATUSES = new Set(["COMPLETED", "REFUNDED", "FAILED", "CANCELLED"]);
   const MARKET_PAGE_SIZE = 6;
-  const MARKET_DEPARTMENTS = ["ALL", "EQUIPMENT", "CYBERWARE", "MEDICAL", "FOOD", "HOUSEHOLD"];
+  const MARKET_DEPARTMENTS = ["ALL", "HOUSEHOLD", "CYBERWARE", "GENERAL"];
   const MARKET_SORTS = ["CATEGORY", "PRICE_ASC", "PRICE_DESC", "TIER_ASC", "TIER_DESC", "ETA_ASC", "ETA_DESC", "MANUFACTURER", "NAME"];
   const MARKET_STATUSES = ["ALL", "BUYABLE", "TOO_EXPENSIVE", "TOO_LARGE", "REQUIRES_SUBSCRIPTION", "NO_STORAGE", "CONTROLLED"];
   const MARKET_VENDOR_DEFAULTS = {
@@ -399,10 +399,13 @@ window.WS_APP = window.WS_APP || {};
   }
 
 
-  window.addEventListener?.("ws:market-secondary-listings-updated", () => {
+  function refreshOpenMarketModule() {
     if (!document.querySelector?.("[data-market-module]")) return;
     renderMarketModule(window.WS_APP.currentUser);
-  });
+  }
+
+  window.addEventListener?.("ws:market-secondary-listings-updated", refreshOpenMarketModule);
+  window.addEventListener?.("ws:campaign-time-updated", refreshOpenMarketModule);
 
   window.WS_APP.ensureMarketRuntime = ensureMarketRuntime;
   window.WS_APP.renderMarketModule = renderMarketModule;

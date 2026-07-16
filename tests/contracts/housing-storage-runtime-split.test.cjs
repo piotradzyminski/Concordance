@@ -24,9 +24,9 @@ test("Housing and Market are separate lazy module bundles", () => {
   const market = extractBlock(modules, "  market: {", "  housing: {");
   const housing = extractBlock(modules, "  housing: {", "  database: {");
 
-  const storageIndex = housing.indexOf('"js/housing-storage-runtime.js?v=3"');
-  const householdIndex = housing.indexOf('"js/housing-household-runtime.js?v=3"');
-  const housingIndex = housing.indexOf('"js/housing.js?v=53"');
+  const storageIndex = housing.indexOf('"js/housing-storage-runtime.js?v=4"');
+  const householdIndex = housing.indexOf('"js/housing-household-runtime.js?v=4"');
+  const housingIndex = housing.indexOf('"js/housing.js?v=54"');
   assert.ok(storageIndex >= 0);
   assert.ok(householdIndex > storageIndex);
   assert.ok(housingIndex > householdIndex);
@@ -35,8 +35,8 @@ test("Housing and Market are separate lazy module bundles", () => {
   assert.doesNotMatch(housing, /market\.js/);
 
   assert.match(market, /CYBERWARE_MARKET_PROJECTION_SCRIPTS/);
-  assert.match(market, /js\/market-workspace-runtime\.js\?v=3/);
-  assert.match(market, /js\/market\.js\?v=4/);
+  assert.match(market, /js\/market-workspace-runtime\.js\?v=6/);
+  assert.match(market, /js\/market\.js\?v=5/);
 });
 
 test("Housing Storage, Housing shell and global Market own separate boundaries", () => {

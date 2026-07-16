@@ -34,7 +34,7 @@ test("Market workspace exposes named wishlist management and whole-list cart tra
 test("Market bundle loads wishlist persistence before the workspace runtime", () => {
   const modules = readProjectFile("js/modules.js");
   const storeIndex = modules.indexOf('js/market-wishlist-store.js?v=1');
-  const runtimeIndex = modules.indexOf('js/market-workspace-runtime.js?v=3');
+  const runtimeIndex = modules.indexOf('js/market-workspace-runtime.js?v=6');
   assert.ok(storeIndex >= 0);
   assert.ok(runtimeIndex > storeIndex);
 

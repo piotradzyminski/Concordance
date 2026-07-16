@@ -28,7 +28,7 @@ function createServiceRuntime(overrides = {}) {
     appData: { citizens: [citizen] },
     wsApp: { currentUser: { login: "admin", role: "admin" } }
   });
-  runtime.loadMany(["js/store-utils.js", "js/service-log-lifecycle.js", "js/terminal-entry-store.js", "js/terminal-reminder-store.js", "js/store.js"]);
+  runtime.loadMany(["js/store-utils.js", "js/service-log-lifecycle.js", "js/terminal-entry-store.js", "js/terminal-reminder-store.js", "js/citizen-subscription-adapter.js", "js/store.js"]);
   return runtime;
 }
 

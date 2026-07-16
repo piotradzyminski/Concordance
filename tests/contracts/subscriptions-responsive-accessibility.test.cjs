@@ -54,10 +54,10 @@ test("responsive CSS owns 980, 720 and 520 layouts, visible focus and reduced mo
   assert.match(adminCss, /@media \(max-width: 720px\)/);
   assert.match(adminCss, /role="option"\]:focus-visible/);
   assert.match(modules, /css\/subscriptions\.css\?v=21/);
-  assert.match(modules, /js\/subscriptions\.js\?v=35/);
+  assert.match(modules, /js\/subscriptions\.js\?v=36/);
   assert.match(modules, /js\/subscriptions-workspace\.js\?v=7/);
   assert.match(modules, /css\/admin-subscriptions\.css\?v=3/);
   assert.match(modules, /js\/admin-subscriptions-control\.js\?v=5/);
-  assert.match(index, /js\/modules\.js\?v=309/);
+  assert.match(index, /js\/modules\.js\?v=318/);
 
 });

@@ -531,7 +531,7 @@ window.WS_APP = window.WS_APP || {};
             <legend>Related Citizen Files</legend>
             ${citizenFiles.length ? citizenFiles.map((file) => `
               <label>
-                <input type="checkbox" name="relatedCitizenFileIds" value="${escapeAttr(file.fileId)}" ${(draft.relatedCitizenFileIds || []).includes(file.fileId) ? "checked" : ""}>
+                <input class="ui-select-control" type="checkbox" name="relatedCitizenFileIds" value="${escapeAttr(file.fileId)}" ${(draft.relatedCitizenFileIds || []).includes(file.fileId) ? "checked" : ""}>
                 <span>${escapeHtml(file.title)} <small>${escapeHtml(file.fileId)} / ${escapeHtml(file.citizenId)}</small></span>
               </label>
             `).join("") : '<p class="file-empty">No Citizen File records available.</p>'}

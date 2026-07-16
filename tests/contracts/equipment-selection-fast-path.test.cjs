@@ -11,7 +11,7 @@ const read = (file) => fs.readFileSync(path.join(PROJECT_ROOT, file), "utf8");
 test("Cybergrid and Bodymap item clicks enter the selection fast path before any fallback refresh", () => {
   const source = read("js/equipment-actions.js");
   const containerBranch = source.match(/const containerItemButton[\s\S]*?\n\s*const containerButton/);
-  const itemBranch = source.match(/const itemButton[\s\S]*?\n\s*const cyberwareButton/);
+  const itemBranch = source.match(/const itemButton[\s\S]*?\n\s*const protectedSurface/);
   assert.ok(containerBranch, "container item selection branch must exist");
   assert.ok(itemBranch, "generic item selection branch must exist");
   for (const branch of [containerBranch[0], itemBranch[0]]) {

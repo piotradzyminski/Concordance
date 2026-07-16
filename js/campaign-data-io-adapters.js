@@ -85,7 +85,7 @@ window.WS_APP = window.WS_APP || {};
 
   registerStorage({
     domainId: "billing",
-    schemaVersion: "billing_bridge_schema_2_1x",
+    schemaVersion: "billing_bridge_schema_2_2x",
     classification: C.CAMPAIGN_PERSISTENT,
     required: true,
     storageKeys: [
@@ -93,6 +93,7 @@ window.WS_APP = window.WS_APP || {};
       json("ws_app_billing_transactions_v2"),
       json("ws_app_billing_transfer_accounts_v1"),
       json("ws_app_billing_transfers_v1"),
+      json("ws_app_billing_marketplace_settlements_v1"),
       json("ws_app_billing_history_v1"),
       text("ws_app_billing_bridge_schema")
     ]

@@ -13,7 +13,7 @@ test("Database record relations load after Case and Citizen File stores", () => 
   const caseStoreIndex = index.indexOf("js/case-store.js?v=43");
   const citizenFileStoreIndex = index.indexOf("js/citizen-file-store.js?v=1");
   const relationStoreIndex = index.indexOf("js/database-relations.js?v=1");
-  const caseUiIndex = index.indexOf("js/case-files.js?v=50");
+  const caseUiIndex = index.indexOf("js/case-files.js?v=51");
 
   assert.ok(caseStoreIndex >= 0);
   assert.ok(caseStoreIndex < citizenFileStoreIndex);

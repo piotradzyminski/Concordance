@@ -95,14 +95,14 @@ test("Standalone Cyberware bundle and workspace expose the Index through the sha
   const modules = fs.readFileSync(path.join(PROJECT_ROOT, "js/modules.js"), "utf8");
   const link = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-workspace.js"), "utf8");
   const actions = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-module.js"), "utf8");
-  const css = fs.readFileSync(path.join(PROJECT_ROOT, "css/equipment.css"), "utf8");
+  const css = fs.readFileSync(path.join(PROJECT_ROOT, "css/cyberware.css"), "utf8");
 
   assert.match(modules, /js\/cyberware-index\.js\?v=2/);
   assert.match(link, /data-cyberware-index-toggle/);
   assert.match(link, /renderCyberwareIndex\?\.\(citizenId\)/);
   assert.match(actions, /data-cyberware-index-select/);
   assert.match(actions, /syncCyberwareIndexOverlay/);
-  assert.match(css, /Cyberware Index 13\.6x/);
+  assert.match(css, /Standalone Cyberware presentation boundary/);
   assert.match(css, /\.cyberware-index-drawer/);
   assert.match(css, /\.cyberware-index-content/);
 });
@@ -110,7 +110,7 @@ test("Standalone Cyberware bundle and workspace expose the Index through the sha
 test("Cyberware shell uses shared card and compact tab families and hides the duplicate hero", () => {
   const link = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-workspace.js"), "utf8");
   const module = fs.readFileSync(path.join(PROJECT_ROOT, "js/cyberware-module.js"), "utf8");
-  const css = fs.readFileSync(path.join(PROJECT_ROOT, "css/equipment.css"), "utf8");
+  const css = fs.readFileSync(path.join(PROJECT_ROOT, "css/cyberware.css"), "utf8");
 
   assert.match(link, /cyberware-ui-section system-segment-tile system-segment-tile--card/);
   assert.match(link, /cyberware-ui-tabs system-inline-tabs/);

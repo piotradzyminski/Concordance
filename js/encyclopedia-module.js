@@ -170,13 +170,13 @@ function bindEntryRegistry(user) {
   });
 
   function applyFilters() {
-    const query = normalizeRegistryQuery(input?.value || "");
+    const query = window.WS_APP.registryUI.normalizeQuery(input?.value || "");
     const sortMode = sort?.value || "term";
     let entries = getVisibleEntries(user).filter((entry) => {
       const categoryMatch = activeCategory === "ALL" || String(entry.category || "").toUpperCase() === activeCategory;
       if (!categoryMatch) return false;
       if (!query) return true;
-      return normalizeRegistryQuery(entrySearchBlob(entry)).includes(query);
+      return window.WS_APP.registryUI.normalizeQuery(entrySearchBlob(entry)).includes(query);
     });
 
     entries = sortEntries(entries, sortMode);
@@ -325,14 +325,14 @@ function bindEntryRecordControls(user, entry) {
     window.alert?.(window.WS_APP.summarizeAdminRecordLifecyclePreview?.(preview) || preview?.message || "Preview unavailable.");
   });
   document.querySelector("#entry-delete-button")?.addEventListener("click", async () => {
-    const confirmed = await confirmRegistryAction("HARD DELETE ENCYCLOPEDIA TERM", "Hard delete this archived glossary term? This cannot be undone.", "Hard Delete");
+    const confirmed = await window.WS_APP.registryUI.confirmAction("HARD DELETE ENCYCLOPEDIA TERM", "Hard delete this archived glossary term? This cannot be undone.", "Hard Delete");
     if (!confirmed) return;
     const result = window.WS_APP.requestAdminRecordLifecycleAction?.({ recordType: "ENCYCLOPEDIA_ENTRY", recordId: entry.id, action: "HARD_DELETE", actor: user, expectedRevision: window.WS_APP.getAdminRecordLifecycleRevision?.(entry) || 0, label: entry.title || entry.term || entry.id });
     if (!result?.ok) return window.alert?.(`Hard delete failed: ${result?.resultCode || "UNKNOWN"}`);
     renderEncyclopediaModule(user);
   });
   document.querySelector("#entry-archive-button")?.addEventListener("click", async () => {
-    const confirmed = await confirmRegistryAction("ARCHIVE ENCYCLOPEDIA TERM", "Archive this glossary term?", "Archive");
+    const confirmed = await window.WS_APP.registryUI.confirmAction("ARCHIVE ENCYCLOPEDIA TERM", "Archive this glossary term?", "Archive");
     if (!confirmed) return;
     const result = window.WS_APP.requestAdminRecordLifecycleAction?.({ recordType: "ENCYCLOPEDIA_ENTRY", recordId: entry.id, action: "ARCHIVE", actor: user, expectedRevision: window.WS_APP.getAdminRecordLifecycleRevision?.(entry) || 0, label: entry.title || entry.term || entry.id });
     if (!result?.ok) return window.alert?.(`Archive failed: ${result?.resultCode || "UNKNOWN"}`);
@@ -413,14 +413,14 @@ function renderEntryForm(user, entryId = null) {
       <form class="entry-form" id="entry-form" autocomplete="off">
         <div class="entry-form-message" id="entry-form-message"></div>
         <div class="entry-form-grid">
-          ${renderEntryInput("term", "Term", entry?.term || entry?.title || "")}
-          ${renderEntryInput("localTerm", "Local term / PL", entry?.localTerm || "")}
-          ${renderEntryInput("category", "Category", entry?.category || "UNCLASSIFIED")}
-          ${renderEntryInput("aliases", "Aliases, comma separated", (entry?.aliases || []).join(", "))}
-          ${window.WS_APP.renderContentTagSelect?.("tags", entry?.tags || [], { label: "Content tags", extraClass: "is-wide" }) || renderEntryInput("tags", "Content tags", (entry?.tags || []).join(", "), "is-wide")}
-          ${renderEntryInput("shortDefinition", "Short definition", entry?.shortDefinition || entry?.summary || "", "is-wide")}
-          ${renderEntryTextarea("body", "Definition body", entry?.body || entry?.publicText || "", "is-wide", 7)}
-          ${renderEntryTextarea("relatedTerms", "Related terms, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(entry?.relatedTerms || entry?.related || [], "encyclopedia") || entry?.relatedTerms || entry?.related || []).join(", "), "is-wide", 3)}
+          ${window.WS_APP.registryUI.renderInput("term", "Term", entry?.term || entry?.title || "")}
+          ${window.WS_APP.registryUI.renderInput("localTerm", "Local term / PL", entry?.localTerm || "")}
+          ${window.WS_APP.registryUI.renderInput("category", "Category", entry?.category || "UNCLASSIFIED")}
+          ${window.WS_APP.registryUI.renderInput("aliases", "Aliases, comma separated", (entry?.aliases || []).join(", "))}
+          ${window.WS_APP.renderContentTagSelect?.("tags", entry?.tags || [], { label: "Content tags", extraClass: "is-wide" }) || window.WS_APP.registryUI.renderInput("tags", "Content tags", (entry?.tags || []).join(", "), "is-wide")}
+          ${window.WS_APP.registryUI.renderInput("shortDefinition", "Short definition", entry?.shortDefinition || entry?.summary || "", "is-wide")}
+          ${window.WS_APP.registryUI.renderTextarea("body", "Definition body", entry?.body || entry?.publicText || "", "is-wide", 7)}
+          ${window.WS_APP.registryUI.renderTextarea("relatedTerms", "Related terms, comma separated", (window.WS_APP.formatKnowledgeRelationRefsForEditor?.(entry?.relatedTerms || entry?.related || [], "encyclopedia") || entry?.relatedTerms || entry?.related || []).join(", "), "is-wide", 3)}
         </div>
         <footer class="entry-form-actions">
           <button class="entry-form-cancel" type="button" id="entry-form-cancel">Cancel</button>
@@ -456,13 +456,13 @@ function collectEntryForm(form) {
     term: String(data.get("term") || "").trim(),
     localTerm: String(data.get("localTerm") || "").trim(),
     category: String(data.get("category") || "UNCLASSIFIED").trim().toUpperCase(),
-    aliases: parseRegistryList(data.get("aliases")),
-    tags: window.WS_APP.collectContentTagValues?.(form, "tags") || parseRegistryList(data.get("tags")),
+    aliases: window.WS_APP.registryUI.parseList(data.get("aliases")),
+    tags: window.WS_APP.collectContentTagValues?.(form, "tags") || window.WS_APP.registryUI.parseList(data.get("tags")),
     shortDefinition: String(data.get("shortDefinition") || "").trim(),
     body: String(data.get("body") || "").trim(),
     relatedTerms: typeof window.WS_APP.normalizeKnowledgeRelationRefs === "function"
-      ? window.WS_APP.normalizeKnowledgeRelationRefs(parseRegistryList(data.get("relatedTerms")), "encyclopedia")
-      : parseRegistryList(data.get("relatedTerms"))
+      ? window.WS_APP.normalizeKnowledgeRelationRefs(window.WS_APP.registryUI.parseList(data.get("relatedTerms")), "encyclopedia")
+      : window.WS_APP.registryUI.parseList(data.get("relatedTerms"))
   };
 }
 

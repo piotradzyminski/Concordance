@@ -283,7 +283,7 @@ window.WS_APP = window.WS_APP || {};
         ${(window.WS_APP.getSkillDefinitions?.() || []).map((definition) => {
           const entry = selected.get(definition.id);
           return `<label class="citizen-creator-skill-row" data-creator-skill-row data-search="${escapeHtml(`${definition.label} ${definition.category} ${definition.description}`.toLowerCase())}">
-            <input type="checkbox" name="skill-selected:${escapeHtml(definition.id)}" ${entry ? "checked" : ""} ${disabled}>
+            <input class="ui-select-control" type="checkbox" name="skill-selected:${escapeHtml(definition.id)}" ${entry ? "checked" : ""} ${disabled}>
             <strong>${escapeHtml(definition.label)}</strong>
             <span>${escapeHtml(definition.description || definition.category || "")}</span>
             <input type="number" name="skill-value:${escapeHtml(definition.id)}" min="${escapeHtml(config.skillMin ?? 1)}" max="${escapeHtml(definition.maxValue ?? config.skillMax ?? 10)}" value="${escapeHtml(entry?.value ?? 1)}" ${entry && editable ? "" : "disabled"}>

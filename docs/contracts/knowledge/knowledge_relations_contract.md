@@ -5,7 +5,7 @@
 ```text
 relation schema: future-noir.knowledge-relations v2
 pack relation schema: stable-id-v2
-patch: Knowledge Relation Article Index Tabs 1.6x
+patch: Knowledge Relation Index Layout 2.0
 ```
 
 ## Registry boundaries
@@ -85,28 +85,43 @@ At viewport widths `>= 1280px`, visible same-registry relation blocks may render
 
 The sidecar must never make Encyclopedia relations visible inside System Index, or System Index relations visible inside Encyclopedia. Source-patch content is not authoritative and must not be imported as part of the UI layout change.
 
-## Article-anchored index-tab presentation
+## Deterministic relation index layout
 
-At desktop width the `.knowledge-related-sidecar` is absolutely anchored to `.knowledge-record-layout--with-sidecar`, not allocated as a visible grid column. Its index tabs begin to the left of the article and extend beneath the article edge. The `.knowledge-reading-panel` remains an opaque higher stacking layer, so the overlapping right section is fully occluded and only the file-index portion protruding from behind the document is visible.
+At desktop width the relation UI is a two-column grid owned by `.knowledge-record-layout--with-sidecar`:
+
+```text
+184px relation column | unchanged article column
+```
+
+The wrapper expands `184px` to the left and uses a matching negative outer margin, so the article remains in its existing position. The sidecar is normal-flow grid content rather than an absolutely positioned layer.
 
 Desktop presentation requirements:
 
 ```text
-sidecar position: absolute relative to the current article layout
-sidecar stacking: negative local layer below the reading panel
-reading panel: opaque left edge with explicit occlusion strip
-all tabs: one fixed width and one fixed height
-hidden overlap: deeper beneath the article than the visible index portion
+layout: explicit 184px + article grid columns
+sidecar: static grid item, no negative stacking layer
+article: unchanged horizontal position
+all tabs: 226px × 68px
+visible tab viewport: 168px
+concealed tab section: 58px
+mask boundary: deterministic overflow clipping at the outer article edge
 connector lines: none
-relation heading: retained without any background strip
+relation heading: retained without a background strip
 title label: dedicated wrapper with balanced multi-line wrapping
 hover/focus: no geometry or length change
 ```
 
-The visible tabs behave as document index markers, not as an independent navigation rail. This is strictly presentational. It does not change stable relation IDs, registry ownership, migration, visibility policy, seed records or the canonical SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX split.
+The `168px` tab viewport preserves the accepted 1.6x article-edge mask. The grid relation column remains `184px` wide because the Knowledge record sits inside the `16px` `.module-detail` content inset. The final `16px` of the relation column corresponds to that inset; clipping the tab list at `168px` aligns the visible tab end with the outer article boundary.
 
-### Article-edge masking
+The implementation must not use:
 
-The tab list is clipped independently of the article surface. The desktop mask ends at the outer article edge rather than the inner reading-panel edge. With the current geometry this uses a `58px` right inset: `42px` of tab underlap plus the `16px` `.module-detail` content inset. The mask is the canonical occlusion boundary; article background opacity is not relied upon to hide the tab continuation.
+```text
+position: absolute for the desktop sidecar
+z-index: -1
+isolation: isolate for occlusion
+clip-path masking
+!important wrapping overrides
+article background or box-shadow as a masking surface
+```
 
-Masking changes no tab position, width, height, heading placement, label wrapping or hover/focus geometry.
+This remains strictly presentational. It does not change stable relation IDs, registry ownership, migration, visibility policy, seed records or the canonical SYSTEM / ENCYCLOPEDIA / SYSTEM INDEX split.
